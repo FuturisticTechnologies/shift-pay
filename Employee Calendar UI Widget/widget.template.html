@@ -1,0 +1,328 @@
+<!--
+  Service Portal Widget: My Shift Submissions
+  =============================================
+  AngularJS 1.x · ServiceNow Service Portal
+  Bound to the `c` controller (clientScript) and `c.data` (serverScript).
+
+  Class naming: BEM-light. All custom classes are namespaced `shift-`.
+  Bootstrap 3 (.btn, .btn-default, .btn-primary, .panel) is available
+  on every Service Portal page, so we lean on it for buttons.
+-->
+<div class="panel panel-default shift-widget" tabindex="0" ng-keydown="c.onKeydown($event)">
+
+  <!-- Header ===================================================== -->
+  <div class="shift-widget__header">
+    <div>
+      <h2 class="shift-widget__title">
+        {{::c.options.title}}
+        <i class="fa fa-info-circle shift-widget__info"
+           uib-tooltip="{{::c.options.tooltip}}"
+           tooltip-placement="bottom"
+           tooltip-append-to-body="true"
+           aria-label="Help"></i>
+      </h2>
+      <div class="shift-widget__subtitle">{{::c.options.subtitle}}</div>
+    </div>
+
+    <div class="shift-widget__header-actions">
+      <button type="button"
+              class="btn btn-sm"
+              ng-class="c.bulkMode ? 'btn-primary' : 'btn-default'"
+              ng-click="c.toggleBulk()"
+              ng-disabled="c.locked">
+        <i class="fa" ng-class="c.bulkMode ? 'fa-check-square-o' : 'fa-th'"></i>
+        <span ng-bind="c.bulkMode ? 'Exit bulk edit' : 'Bulk edit'"></span>
+      </button>
+
+      <div class="shift-widget__monthnav">
+        <button type="button" class="btn btn-link btn-sm"
+                ng-click="c.changeMonth(-1)" aria-label="Previous month">
+          <i class="fa fa-chevron-left"></i>
+        </button>
+        <span class="shift-widget__monthlabel">{{c.monthLabel}}</span>
+        <button type="button" class="btn btn-link btn-sm"
+                ng-click="c.changeMonth(1)" aria-label="Next month">
+          <i class="fa fa-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Legend ===================================================== -->
+  <div class="shift-widget__legend">
+
+    <div class="shift-legend-btn-wrap">
+      <!-- Transparent backdrop — clicking outside closes the panel -->
+      <div class="shift-legend-backdrop"
+           ng-if="c.legendOpen"
+           ng-click="c.legendOpen = false"></div>
+
+      <button type="button" class="shift-legend-btn" ng-click="c.toggleLegend()">
+        <span class="shift-legend-btn__swatches">
+          <span ng-repeat="t in c.shiftTypeList | limitTo:5 track by t.key"
+                class="shift-legend-btn__swatch"
+                ng-style="{'background-color': t.color}"></span>
+        </span>
+        <span>Shift types ({{c.shiftTypeList.length}})</span>
+        <i class="fa" ng-class="c.legendOpen ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+      </button>
+
+      <div class="shift-legend-panel" ng-if="c.legendOpen">
+        <div ng-repeat="group in c.legendGroups track by group.title">
+          <div class="shift-legend-panel__heading" ng-bind="group.title"></div>
+          <div class="shift-legend-panel__row"
+               ng-repeat="t in group.items track by t.key">
+            <span class="shift-legend-panel__chip"
+                  ng-style="{'background-color': t.color, 'color': '#fff'}"
+                  ng-bind="t.short"></span>
+            <span ng-bind="t.label"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <span class="shift-widget__locked" ng-if="c.locked">
+      <i class="fa fa-lock"></i> Locked — submitted {{c.submittedOn}}
+    </span>
+  </div>
+
+  <!-- Body: calendar + summary =================================== -->
+  <div class="shift-widget__body">
+
+    <!-- Calendar --------------------------------------------------->
+    <div class="shift-widget__cal">
+
+      <div class="shift-cal__weekheader">
+        <div ng-repeat="d in ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']"
+             ng-class="{'shift-cal__weekheader--weekend': $index >= 5}"
+             ng-bind="d"></div>
+      </div>
+
+      <div class="shift-cal__grid">
+        <button type="button"
+                class="shift-cell"
+                ng-repeat="cell in c.cells track by cell.idx"
+                ng-class="{
+                  'shift-cell--outside':  !cell.inMonth,
+                  'shift-cell--weekend':  cell.weekend,
+                  'shift-cell--future':   cell.future,
+                  'shift-cell--today':    cell.isToday,
+                  'shift-cell--selected': c.selected[cell.key],
+                  'shift-cell--open':     c.openCellKey === cell.key && !c.bulkMode,
+                  'shift-cell--has-shift':!!cell.shift
+                }"
+                ng-style="cell.shift && {'background-color': c.shiftTypes[cell.shift].colorSoft}"
+                ng-disabled="c.locked || (!cell.inMonth)"
+                ng-click="c.onCellClick(cell, $event)">
+
+          <span class="shift-cell__top">
+            <span class="shift-cell__date" ng-bind="cell.day"></span>
+            <!-- checkbox in bulk mode -->
+            <span class="shift-cell__check"
+                  ng-if="c.bulkMode && cell.inMonth && !cell.weekend"
+                  ng-class="{'shift-cell__check--on': c.selected[cell.key]}">
+              <i class="fa fa-check" ng-if="c.selected[cell.key]"></i>
+            </span>
+            <!-- comment dot in single mode -->
+            <span class="shift-cell__dot"
+                  ng-if="!c.bulkMode && cell.hasComment"
+                  uib-tooltip="{{cell.comment}}"></span>
+          </span>
+
+          <span class="shift-cell__chip"
+                ng-if="cell.shift"
+                ng-style="{'background-color': c.shiftTypes[cell.shift].color}">
+            <span ng-bind="c.shiftTypes[cell.shift].short"></span>
+          </span>
+
+          <span class="shift-cell__hint"
+                ng-if="!cell.shift && cell.inMonth && !cell.weekend && !c.bulkMode">
+            Tap to log
+          </span>
+        </button>
+
+        <!-- Mobile backdrop — tapping it closes the popover (CSS hides it on desktop) -->
+        <div class="shift-popover-backdrop"
+             ng-if="c.openCellKey && !c.bulkMode"
+             ng-click="c.closePopover()"></div>
+
+        <!-- Popover (positioned by client script) -->
+        <div class="shift-popover"
+             ng-if="c.openCellKey && !c.bulkMode"
+             ng-style="c.popoverStyle">
+          <div class="shift-popover__header">
+            <div>
+              <div class="shift-popover__weekday">{{c.openDate | date:'EEEE'}}</div>
+              <div class="shift-popover__date">{{c.openDate | date:'d MMMM yyyy'}}</div>
+            </div>
+            <button type="button" class="shift-popover__close"
+                    ng-click="c.closePopover()" aria-label="Close">
+              <i class="fa fa-times"></i>
+            </button>
+          </div>
+
+          <div class="shift-popover__label">Shift worked</div>
+          <div class="shift-dropdown">
+            <button type="button"
+                    class="shift-dropdown__trigger"
+                    ng-class="{'shift-dropdown__trigger--open': c.dropdownOpen}"
+                    ng-click="c.dropdownOpen = !c.dropdownOpen">
+              <span ng-if="c.draftShift" class="shift-dropdown__selected">
+                <span class="shift-dropdown__chip"
+                      ng-style="{'background-color': c.shiftTypes[c.draftShift].color}"
+                      ng-bind="c.shiftTypes[c.draftShift].short"></span>
+                <span class="shift-dropdown__selected-label"
+                      ng-bind="c.shiftTypes[c.draftShift].label"></span>
+              </span>
+              <span ng-if="!c.draftShift" class="shift-dropdown__placeholder">Select a shift…</span>
+              <i class="fa" ng-class="c.dropdownOpen ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+            </button>
+
+            <div class="shift-dropdown__list" ng-if="c.dropdownOpen">
+              <div ng-repeat="group in c.groupedDropdownList track by group.title">
+                <div class="shift-dropdown__group-heading" ng-bind="group.title"></div>
+                <button type="button"
+                        class="shift-dropdown__item"
+                        ng-repeat="t in group.items track by t.key"
+                        ng-class="{'shift-dropdown__item--active': c.draftShift === t.key}"
+                        ng-style="c.draftShift === t.key
+                                  ? {'background-color': t.colorSoft} : null"
+                        ng-click="c.selectDropdownShift(t.key)">
+                  <span class="shift-dropdown__item-chip"
+                        ng-style="{'background-color': t.color}"
+                        ng-bind="t.short"></span>
+                  <span class="shift-dropdown__item-label" ng-bind="t.label"></span>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="shift-popover__error" ng-if="c.saveError" ng-bind="c.saveError"></div>
+
+          <div class="shift-popover__label">
+            <span>Comments</span>
+            <span class="shift-popover__count">{{(c.draftComment || '').length}}/200</span>
+          </div>
+          <textarea class="shift-popover__textarea"
+                    ng-model="c.draftComment"
+                    ng-maxlength="200"
+                    maxlength="200"
+                    rows="2"
+                    placeholder="Optional — handover notes, on-call ticket"></textarea>
+
+          <div class="shift-popover__footer">
+            <button type="button" class="btn btn-link btn-sm"
+                    ng-click="c.clearCell()"
+                    ng-if="c.entries[c.openCellKey]">Clear</button>
+            <span ng-if="!c.entries[c.openCellKey]"></span>
+            <button type="button" class="btn btn-primary btn-sm"
+                    ng-click="c.saveCell()"
+                    ng-disabled="!c.draftShift || c.saving">
+              <i class="fa fa-spinner fa-spin" ng-if="c.saving"></i>
+              <span ng-bind="c.saving ? 'Saving…' : 'Save'"></span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bulk action bar -->
+      <div class="shift-bulkbar" ng-if="c.bulkMode" role="region" aria-label="Bulk apply">
+        <div class="shift-bulkbar__left">
+          <span class="shift-bulkbar__badge" ng-bind="c.selectionCount"></span>
+          <span ng-bind="c.selectionCount === 1 ? 'day selected' : 'days selected'"></span>
+          <button type="button" class="shift-bulkbar__link"
+                  ng-click="c.selectAllWeekdays()"
+                  ng-disabled="c.selectionCount === c.workingDayCount">
+            Select all weekdays
+          </button>
+        </div>
+        <div class="shift-bulkbar__right">
+          <span class="shift-bulkbar__hint">Apply:</span>
+          <button type="button"
+                  class="shift-bulkbar__pill"
+                  ng-repeat="t in c.bulkAllowedList track by t.key"
+                  ng-style="{'background-color': t.color}"
+                  ng-disabled="c.selectionCount === 0 || c.saving"
+                  ng-click="c.bulkApply(t.key)"
+                  ng-bind="t.short"></button>
+          <span class="shift-bulkbar__hint" ng-if="c.bulkAllowedList.length === 0">
+            No shifts available for the selected days
+          </span>
+          <button type="button" class="shift-bulkbar__cancel"
+                  ng-click="c.exitBulk()">Cancel</button>
+        </div>
+        <div class="shift-bulkbar__error" ng-if="c.bulkError" ng-bind="c.bulkError"></div>
+      </div>
+    </div>
+
+    <!-- Right: this-month + last-month summary -------------------->
+    <aside class="shift-summary">
+      <div class="shift-summary__kicker">This month</div>
+      <div class="shift-summary__month" ng-bind="c.monthLabel"></div>
+      <div class="shift-summary__counts">
+        <span ng-repeat="t in c.shiftTypeList track by t.key">
+          <span class="shift-summary__short"
+                ng-style="{color: t.color}"
+                ng-bind="t.short"></span>
+          <span ng-bind="c.currentMonthCounts[t.key]"></span>
+          <span ng-if="!$last" class="shift-summary__sep">·</span>
+        </span>
+      </div>
+
+      <hr class="shift-summary__rule"/>
+
+      <div class="shift-summary__kicker">Last month</div>
+      <div class="shift-summary__month" ng-bind="c.lastMonthLabel"></div>
+
+      <div class="shift-summary__mini">
+        <div class="shift-summary__miniheader">
+          <span ng-repeat="d in ['M','T','W','T','F','S','S']" ng-bind="d"></span>
+        </div>
+        <div class="shift-summary__minigrid">
+          <div ng-repeat="cell in c.lastMonthCells track by $index"
+               class="shift-mini-cell"
+               ng-class="{'shift-mini-cell--empty': !cell.inMonth}"
+               ng-style="cell.shift && {'background-color': c.shiftTypes[cell.shift].color, color: '#fff'}"
+               ng-bind="cell.inMonth ? cell.day : ''"></div>
+        </div>
+      </div>
+
+      <hr class="shift-summary__rule"/>
+
+      <div class="shift-summary__kicker">Summary</div>
+      <div class="shift-summary__counts">
+        <span ng-repeat="t in c.shiftTypeList track by t.key">
+          <span class="shift-summary__short"
+                ng-style="{color: t.color}"
+                ng-bind="t.short"></span>
+          <span ng-bind="c.lastMonthCounts[t.key]"></span>
+          <span ng-if="!$last" class="shift-summary__sep">·</span>
+        </span>
+      </div>
+
+      <div class="shift-summary__meta" ng-if="c.lastMonthSubmitted">
+        Submitted {{c.lastMonthSubmitted}} · Locked
+      </div>
+    </aside>
+  </div>
+
+  <!-- Footer ===================================================== -->
+  <div class="shift-widget__footer">
+    <div class="shift-widget__status">
+      <strong ng-bind="c.loggedCount"></strong>
+      of
+      <strong ng-bind="c.workingDayCount"></strong>
+      working days logged
+    </div>
+    <div class="shift-widget__submitwrap">
+      <button type="button" class="btn btn-primary shift-widget__submit"
+              ng-click="c.submitMonth()"
+              ng-disabled="!c.canSubmit || c.saving">
+        <span ng-bind="c.locked ? 'Submitted' : 'Submit month'"></span>
+      </button>
+      <div class="shift-widget__submithint"
+           ng-if="c.submitHint"
+           ng-bind="c.submitHint"></div>
+    </div>
+  </div>
+
+</div>

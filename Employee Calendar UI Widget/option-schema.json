@@ -1,0 +1,63 @@
+[
+  {
+    "name": "title",
+    "label": "Widget title",
+    "type": "string",
+    "default": "My Shift Submissions",
+    "section": "Presentation"
+  },
+  {
+    "name": "subtitle",
+    "label": "Subtitle / context line",
+    "type": "string",
+    "default": "India ops · Logging shifts worked for billing & payroll alignment",
+    "section": "Presentation"
+  },
+  {
+    "name": "tooltip",
+    "label": "Info-icon tooltip text",
+    "type": "string",
+    "default": "Log the shift you worked each day. Submissions lock at month-end.",
+    "section": "Presentation"
+  },
+  {
+    "name": "shift_table",
+    "label": "Day-entry table",
+    "type": "string",
+    "default": "u_shift_submission",
+    "hint": "Table name. Must have columns u_user, u_date, u_shift_type (reference to catalogue), u_comment.",
+    "section": "Data"
+  },
+  {
+    "name": "lock_table",
+    "label": "Month-lock table",
+    "type": "string",
+    "default": "u_shift_submission_lock",
+    "hint": "Table name. Must have columns u_user, u_year, u_month, u_submitted_on.",
+    "section": "Data"
+  },
+  {
+    "name": "catalog_table",
+    "label": "Shift catalogue table",
+    "type": "string",
+    "default": "u_shift_type_catalog",
+    "hint": "Table name. Active rows are loaded live on every loadMonth. Must have columns name, description, rate, currency, effective_date, active, valid_till, u_color_hex.",
+    "section": "Data"
+  },
+  {
+    "name": "summary_table",
+    "label": "Aggregate summary table",
+    "type": "string",
+    "default": "u_shift_submission_summary",
+    "hint": "Table name. Stores weekly and monthly shift-type counts with rate snapshots. See README for full schema.",
+    "section": "Data"
+  },
+  {
+    "name": "entitlement_table",
+    "label": "CO entitlement table",
+    "type": "string",
+    "default": "u_shift_co_entitlement",
+    "hint": "Table name. Tracks CO rights earned by compound OC shifts. See README for full schema.",
+    "section": "Data"
+  }
+]

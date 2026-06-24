@@ -1,0 +1,851 @@
+/*
+  My Shift Submissions — widget styles
+  ====================================
+  Conventions:
+   - Class names use BEM-light: .block, .block__element, .block--modifier
+   - All custom selectors are namespaced (`shift-`) to avoid leaking outside the widget
+   - Shift colors and tokens live in CSS custom properties on .shift-widget
+     so themers can override per-instance without recompiling
+
+  Service Portal note: this file is intentionally written as FLAT plain CSS
+  (no `&__suffix`, no nested selectors, no `@media` nested inside selectors).
+  Service Portal's bundled LibSass build does not support Sass 3.3+ parent-
+  selector concatenation, so `&__title` silently fails the whole compile and
+  the widget falls back to inline-only styling. Keeping selectors flat side-
+  steps that. Only block comments are used in this file (SCSS line comments
+  with double-slash are avoided too, in case the compiler is strict).
+*/
+
+/* =========================================================
+   Design tokens (override at the page level to reskin)
+   ========================================================= */
+/*
+   Note: shift colours are no longer defined here as CSS custom properties.
+   They come from the catalogue (u_color_hex) or the client-script FALLBACK_COLORS
+   map, and are applied via ng-style bindings. See widget.clientscript.js.
+*/
+.shift-widget {
+  --shift-text:       #0F172A;
+  --shift-text-mute:  #64748B;
+  --shift-text-faint: #94A3B8;
+  --shift-border:     #E5E7EB;
+  --shift-surface:    #FFFFFF;
+  --shift-bg-subtle:  #F8FAFC;
+  --shift-bg-footer:  #FAFBFC;
+  --shift-bg-input:   #F9FAFB;
+
+  --shift-radius:      8px;
+  --shift-radius-sm:   4px;
+  --shift-radius-pill: 999px;
+
+  background: var(--shift-surface);
+  color: var(--shift-text);
+  border: 1px solid var(--shift-border);
+  border-radius: var(--shift-radius);
+  max-width: 960px;
+  margin: 0 auto;
+  overflow: hidden;
+  outline: none;
+}
+
+/* =========================================================
+   Header
+   ========================================================= */
+.shift-widget__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 20px 24px 12px;
+}
+.shift-widget__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+}
+.shift-widget__info {
+  color: var(--shift-text-faint);
+  font-size: 13px;
+  margin-left: 6px;
+  cursor: help;
+}
+.shift-widget__subtitle {
+  color: var(--shift-text-mute);
+  font-size: 12px;
+  margin-top: 4px;
+}
+.shift-widget__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.shift-widget__monthnav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--shift-border);
+  border-radius: 6px;
+  padding: 2px;
+}
+.shift-widget__monthlabel {
+  font-size: 13px;
+  font-weight: 600;
+  min-width: 130px;
+  text-align: center;
+  padding: 0 8px;
+}
+
+/* =========================================================
+   Legend
+   ========================================================= */
+.shift-widget__legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  padding: 0 24px 14px;
+}
+.shift-widget__locked {
+  margin-left: auto;
+  font-size: 11px;
+  color: #B45309;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  font-weight: 700;
+}
+.shift-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--shift-text-mute);
+}
+.shift-legend__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+/* =========================================================
+   Legend button + panel (Option B)
+   ========================================================= */
+.shift-legend-btn-wrap {
+  position: relative;
+}
+.shift-legend-backdrop {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 19;
+}
+.shift-legend-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--shift-border);
+  background: var(--shift-surface);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--shift-text);
+  cursor: pointer;
+}
+.shift-legend-btn__swatches {
+  display: inline-flex;
+  gap: 2px;
+}
+.shift-legend-btn__swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  display: inline-block;
+  flex: none;
+}
+.shift-legend-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 460px;
+  background: var(--shift-surface);
+  border: 1px solid var(--shift-border);
+  border-radius: var(--shift-radius);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+  padding: 14px;
+  z-index: 20;
+}
+.shift-legend-panel__heading {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--shift-text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-top: 12px;
+  margin-bottom: 6px;
+}
+.shift-legend-panel__heading:first-child {
+  margin-top: 0;
+}
+.shift-legend-panel__row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 11px;
+  color: #334155;
+  margin-bottom: 4px;
+  line-height: 1.45;
+}
+.shift-legend-panel__chip {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-weight: 700;
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  flex: none;
+  min-width: 64px;
+  text-align: center;
+}
+
+/* =========================================================
+   Body grid (calendar + summary)
+   ========================================================= */
+.shift-widget__body {
+  display: grid;
+  grid-template-columns: 1fr 240px;
+  gap: 20px;
+  padding: 0 24px 16px;
+}
+
+/* =========================================================
+   Footer
+   ========================================================= */
+.shift-widget__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 24px;
+  border-top: 1px solid var(--shift-border);
+  background: var(--shift-bg-footer);
+}
+.shift-widget__status {
+  font-size: 12px;
+  color: var(--shift-text-mute);
+}
+.shift-widget__status strong {
+  color: var(--shift-text);
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-weight: 700;
+}
+.shift-widget__submitwrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+.shift-widget__submithint {
+  font-size: 11px;
+  color: var(--shift-text-faint);
+  font-style: italic;
+}
+
+/* =========================================================
+   Calendar grid
+   ========================================================= */
+.shift-cal__weekheader {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.shift-cal__weekheader > div {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--shift-text-mute);
+  padding: 4px 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+.shift-cal__weekheader--weekend,
+.shift-cal__weekheader > div.shift-cal__weekheader--weekend {
+  color: var(--shift-text-faint);
+}
+.shift-cal__grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  position: relative; /* popover is positioned within this */
+}
+
+/* =========================================================
+   Day cell
+   ========================================================= */
+.shift-cell {
+  position: relative;
+  height: 78px;
+  padding: 6px;
+  border: 1px solid var(--shift-border);
+  border-radius: var(--shift-radius);
+  background: var(--shift-surface);
+  text-align: left;
+  font: inherit;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+  transition: border-color 80ms, box-shadow 120ms;
+}
+.shift-cell:hover:not(:disabled) {
+  border-color: #CBD5E1;
+}
+.shift-cell:focus {
+  outline: 2px solid rgba(15, 23, 42, 0.15);
+  outline-offset: 2px;
+}
+.shift-cell:disabled {
+  cursor: default;
+}
+
+.shift-cell--outside .shift-cell__date {
+  color: var(--shift-text-faint);
+  opacity: 0.5;
+}
+.shift-cell--outside {
+  background: transparent;
+}
+.shift-cell--weekend .shift-cell__date {
+  color: var(--shift-text-faint);
+}
+.shift-cell--weekend:not(.shift-cell--has-shift) {
+  opacity: 0.55;
+}
+.shift-cell--today {
+  border: 1.5px solid var(--shift-text);
+}
+.shift-cell--selected {
+  border: 1.5px solid var(--shift-text);
+  box-shadow: 0 0 0 4px rgba(15, 23, 42, 0.08);
+}
+.shift-cell--open {
+  border: 1.5px solid var(--shift-text);
+}
+
+.shift-cell__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.shift-cell__date {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--shift-text);
+}
+.shift-cell__chip {
+  display: block;
+  padding: 4px 6px;
+  border-radius: var(--shift-radius-sm);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  color: #fff;
+}
+.shift-cell__hint {
+  font-size: 10px;
+  color: var(--shift-text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.shift-cell__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--shift-radius-pill);
+  background: var(--shift-text);
+  opacity: 0.5;
+}
+.shift-cell__check {
+  width: 16px;
+  height: 16px;
+  border-radius: var(--shift-radius-sm);
+  border: 1.5px solid #CBD5E1;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+}
+.shift-cell__check--on {
+  background: var(--shift-text);
+  border-color: var(--shift-text);
+  color: #fff;
+}
+
+/* =========================================================
+   Popover
+   ========================================================= */
+.shift-popover {
+  position: absolute;
+  z-index: 10;
+  width: 280px;
+  padding: 14px;
+  background: var(--shift-surface);
+  border: 1px solid var(--shift-border);
+  border-radius: var(--shift-radius);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.16), 0 2px 4px rgba(15, 23, 42, 0.06);
+}
+.shift-popover__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+.shift-popover__weekday {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--shift-text-mute);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+.shift-popover__date {
+  font-size: 18px;
+  font-weight: 700;
+  margin-top: 2px;
+}
+.shift-popover__close {
+  background: transparent;
+  border: 0;
+  color: var(--shift-text-mute);
+  padding: 4px;
+  cursor: pointer;
+}
+.shift-popover__label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--shift-text-mute);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin: 12px 0 8px;
+}
+.shift-popover__count {
+  font-family: ui-monospace, monospace;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--shift-text-faint);
+}
+.shift-popover__textarea {
+  width: 100%;
+  border: 1px solid var(--shift-border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  resize: none;
+  background: var(--shift-bg-input);
+  color: var(--shift-text);
+}
+.shift-popover__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+}
+.shift-popover__error {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #DC2626;
+}
+.shift-pill--disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Backdrop behind the popover (mobile only — hidden on desktop) */
+.shift-popover-backdrop {
+  display: none;
+}
+
+/* =========================================================
+   Shift pills (inside the popover)
+   ========================================================= */
+.shift-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.shift-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: var(--shift-radius-pill);
+  border: 1px solid var(--shift-border);
+  background: var(--shift-surface);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.shift-pill--active {
+  border-width: 1.5px;
+}
+.shift-pill__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+/* =========================================================
+   Grouped dropdown (replaces shift-pills in single-day popover)
+   ========================================================= */
+.shift-dropdown {
+  position: relative;
+}
+.shift-dropdown__trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 11px;
+  border: 1px solid #CBD5E1;
+  border-radius: 6px;
+  background: var(--shift-surface);
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.shift-dropdown__trigger--open {
+  border: 1.5px solid var(--shift-text);
+}
+.shift-dropdown__selected {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.shift-dropdown__chip {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-weight: 700;
+  font-size: 10px;
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 3px;
+  flex: none;
+}
+.shift-dropdown__selected-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--shift-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.shift-dropdown__placeholder {
+  font-size: 12px;
+  color: var(--shift-text-faint);
+}
+.shift-dropdown__list {
+  margin-top: 4px;
+  border: 1px solid var(--shift-border);
+  border-radius: 6px;
+  background: var(--shift-surface);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.10);
+  max-height: 240px;
+  overflow-y: auto;
+}
+.shift-dropdown__group-heading {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--shift-text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  padding: 8px 10px 4px;
+}
+.shift-dropdown__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-top: 1px solid #F1F5F9;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+}
+.shift-dropdown__item:hover {
+  background: var(--shift-bg-subtle);
+}
+.shift-dropdown__item-chip {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-weight: 700;
+  font-size: 10px;
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 3px;
+  flex: none;
+  min-width: 56px;
+  text-align: center;
+}
+.shift-dropdown__item-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--shift-text);
+}
+
+/* =========================================================
+   Bulk action bar
+   ========================================================= */
+.shift-bulkbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: var(--shift-text);
+  color: #fff;
+  border-radius: var(--shift-radius);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
+}
+.shift-bulkbar__left,
+.shift-bulkbar__right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 13px;
+}
+.shift-bulkbar__badge {
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  background: #fff;
+  color: var(--shift-text);
+  padding: 3px 8px;
+  border-radius: var(--shift-radius-sm);
+}
+.shift-bulkbar__link {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #fff;
+  border-radius: 5px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.shift-bulkbar__link:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.shift-bulkbar__hint {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+}
+.shift-bulkbar__pill {
+  padding: 5px 9px;
+  border-radius: var(--shift-radius-pill);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.shift-bulkbar__pill:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.shift-bulkbar__cancel {
+  background: transparent;
+  border: 0;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+.shift-bulkbar__error {
+  padding: 4px 16px 8px;
+  font-size: 12px;
+  color: #FCA5A5;
+}
+
+/* =========================================================
+   Right-side summary panel (last month)
+   ========================================================= */
+.shift-summary {
+  background: var(--shift-bg-subtle);
+  border: 1px solid var(--shift-border);
+  border-radius: var(--shift-radius);
+  padding: 14px;
+  font-size: 12px;
+}
+.shift-summary__kicker {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--shift-text-mute);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+.shift-summary__month {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 2px 0 12px;
+}
+.shift-summary__mini {
+  margin-bottom: 4px;
+}
+.shift-summary__miniheader {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+  margin-bottom: 3px;
+}
+.shift-summary__miniheader > span {
+  text-align: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--shift-text-faint);
+}
+.shift-summary__minigrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+.shift-mini-cell {
+  height: 26px;
+  border-radius: var(--shift-radius-sm);
+  background: #F1F5F9;
+  color: #CBD5E1;
+  font-family: ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.shift-mini-cell--empty {
+  background: transparent;
+}
+.shift-summary__rule {
+  margin: 12px 0;
+  border: 0;
+  border-top: 1px solid var(--shift-border);
+}
+.shift-summary__counts {
+  font-family: ui-monospace, monospace;
+  color: #334155;
+}
+.shift-summary__short {
+  font-weight: 700;
+}
+.shift-summary__sep {
+  color: #CBD5E1;
+  padding: 0 6px;
+}
+.shift-summary__meta {
+  font-size: 11px;
+  color: var(--shift-text-faint);
+  font-style: italic;
+  margin-top: 10px;
+}
+
+/* =========================================================
+   Responsive — mobile (<= 760px)
+   All @media blocks live at top level (not nested inside
+   selectors) for the same LibSass compatibility reason.
+   ========================================================= */
+@media (max-width: 760px) {
+  .shift-widget__body {
+    grid-template-columns: 1fr;
+    padding: 0 16px 12px;
+  }
+  .shift-widget__header {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px 16px 10px;
+  }
+  .shift-widget__header-actions {
+    justify-content: space-between;
+  }
+  .shift-widget__monthlabel {
+    min-width: 100px;
+  }
+  .shift-widget__legend {
+    padding: 0 16px 12px;
+    gap: 10px;
+  }
+  .shift-legend-panel {
+    width: calc(100vw - 32px);
+    max-width: 400px;
+  }
+  .shift-widget__footer {
+    padding: 10px 16px;
+  }
+
+  .shift-cell {
+    height: 56px;
+    padding: 4px;
+  }
+  .shift-cell__hint {
+    display: none;
+  }
+  .shift-cell__chip {
+    font-size: 10px;
+    padding: 3px 4px;
+  }
+
+  /* Popover becomes a fixed bottom sheet */
+  .shift-popover {
+    position: fixed !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    top: auto !important;
+    width: 100% !important;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -8px 32px rgba(15, 23, 42, 0.22);
+    z-index: 1000;
+    padding: 20px 16px 32px;
+    animation: shiftSlideUpBottom 0.2s ease;
+  }
+  .shift-popover-backdrop {
+    display: block;
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background: rgba(15, 23, 42, 0.3);
+    z-index: 999;
+    animation: shiftFadeInBd 0.15s ease;
+  }
+
+  .shift-bulkbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+}
+
+/* =========================================================
+   Animations (top-level — never nested)
+   Prefixed with `shift` to avoid colliding with portal-wide keyframes.
+   ========================================================= */
+@keyframes shiftSlideUpBottom {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+@keyframes shiftFadeInBd {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
