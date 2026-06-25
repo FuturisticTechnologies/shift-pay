@@ -5,7 +5,7 @@
  * is active. Review CONFIG before running.
  *
  * What it does:
- * - Finds or creates a few demo users.
+ * - Finds users from a sys_user encoded query.
  * - Inserts or updates daily shift submissions for a few months.
  * - Skips existing non-dummy submissions by default.
  * - Recomputes week/month summary rows for the generated date range.
@@ -17,37 +17,33 @@
 (function () {
   var CONFIG = {
     seedMarker: 'SPM_DUMMY_SHIFT_DATA_2026_06',
-    createMissingUsers: true,
     skipExistingNonDummyRows: true,
+    userEncodedQuery: 'active=true^user_nameLIKEshiftpay.demo',
+    userLimit: 5,
 
     // Current month is 0. Example: [-2, -1, 0] seeds previous two months plus current month.
+    // The current month only gets its first half seeded; past/future months are seeded fully.
     monthOffsets: [-2, -1, 0],
 
-    users: [
-      { user_name: 'shiftpay.demo.employee1', first_name: 'ShiftPay', last_name: 'Demo One', email: 'shiftpay.demo.employee1@example.com' },
-      { user_name: 'shiftpay.demo.employee2', first_name: 'ShiftPay', last_name: 'Demo Two', email: 'shiftpay.demo.employee2@example.com' },
-      { user_name: 'shiftpay.demo.employee3', first_name: 'ShiftPay', last_name: 'Demo Three', email: 'shiftpay.demo.employee3@example.com' }
-    ],
-
     tables: {
-      day: 'u_shift_submission',
-      catalog: 'u_shift_type_catalog',
-      summary: 'u_shift_submission_summary'
+      day: 'x_1995110_shift_0_u_shift_submission',
+      catalog: 'x_1995110_shift_0_shift_type',
+      summary: 'x_1995110_shift_0_shift_submission_summary'
     }
   };
 
   var stats = {
-    usersCreated: 0,
     usersFound: 0,
     daysInserted: 0,
     daysUpdated: 0,
+    daysDeleted: 0,
     daysSkipped: 0,
     summariesInserted: 0,
     summariesDeleted: 0,
     warnings: []
   };
 
-  var users = resolveUsers(CONFIG.users);
+  var users = resolveUsers(CONFIG.userEncodedQuery);
   var shifts = loadRequiredShifts();
   var months = resolveMonths(CONFIG.monthOffsets);
 
@@ -71,54 +67,22 @@
 
   logStats();
 
-  function resolveUsers(configUsers) {
+  function resolveUsers(encodedQuery) {
     var resolved = [];
-    for (var i = 0; i < configUsers.length; i++) {
-      var cfg = configUsers[i];
-      var user = findUser(cfg.user_name);
-      if (user) {
-        stats.usersFound++;
-        resolved.push(user);
-        continue;
-      }
-
-      if (!CONFIG.createMissingUsers) {
-        stats.warnings.push('User not found and createMissingUsers=false: ' + cfg.user_name);
-        continue;
-      }
-
-      var created = createUser(cfg);
-      if (created) {
-        stats.usersCreated++;
-        resolved.push(created);
-      }
+    if (!encodedQuery) {
+      stats.warnings.push('CONFIG.userEncodedQuery is empty. Refusing to seed all sys_user records.');
+      return resolved;
+    }
+    var gr = new GlideRecord('sys_user');
+    gr.addEncodedQuery(encodedQuery);
+    gr.orderBy('user_name');
+    if (CONFIG.userLimit && CONFIG.userLimit > 0) gr.setLimit(CONFIG.userLimit);
+    gr.query();
+    while (gr.next()) {
+      resolved.push({ sys_id: gr.getUniqueValue(), user_name: gr.getValue('user_name') });
+      stats.usersFound++;
     }
     return resolved;
-  }
-
-  function findUser(userName) {
-    var gr = new GlideRecord('sys_user');
-    gr.addQuery('user_name', userName);
-    gr.setLimit(1);
-    gr.query();
-    if (!gr.next()) return null;
-    return { sys_id: gr.getUniqueValue(), user_name: gr.getValue('user_name') };
-  }
-
-  function createUser(cfg) {
-    var gr = new GlideRecord('sys_user');
-    gr.initialize();
-    gr.setValue('user_name', cfg.user_name);
-    gr.setValue('first_name', cfg.first_name || 'ShiftPay');
-    gr.setValue('last_name', cfg.last_name || 'Demo');
-    gr.setValue('email', cfg.email || (cfg.user_name + '@example.com'));
-    gr.setValue('active', true);
-    var id = gr.insert();
-    if (!id) {
-      stats.warnings.push('Could not create user: ' + cfg.user_name);
-      return null;
-    }
-    return { sys_id: id, user_name: cfg.user_name };
   }
 
   function loadRequiredShifts() {
@@ -150,11 +114,37 @@
   }
 
   function seedMonth(user, year, month) {
-    var days = daysInMonth(year, month);
+    var days = seedThroughDay(year, month);
     for (var d = 1; d <= days; d++) {
       var dateKey = year + '-' + pad(month + 1) + '-' + pad(d);
       var shift = chooseShift(user, year, month, d);
       upsertDay(user, dateKey, shift.sys_id);
+    }
+    deleteCurrentMonthDummyRowsAfter(user, year, month, days);
+  }
+
+  function seedThroughDay(year, month) {
+    var days = daysInMonth(year, month);
+    var now = new Date();
+    if (year === now.getFullYear() && month === now.getMonth()) return Math.floor(days / 2);
+    return days;
+  }
+
+  function deleteCurrentMonthDummyRowsAfter(user, year, month, throughDay) {
+    var now = new Date();
+    if (year !== now.getFullYear() || month !== now.getMonth()) return;
+
+    var afterDate = year + '-' + pad(month + 1) + '-' + pad(throughDay);
+    var monthEnd = lastOfMonthKey(year, month);
+    var gr = new GlideRecord(CONFIG.tables.day);
+    gr.addQuery('u_user', user.sys_id);
+    gr.addQuery('u_date', '>', afterDate);
+    gr.addQuery('u_date', '<=', monthEnd);
+    gr.addQuery('u_comment', 'CONTAINS', CONFIG.seedMarker);
+    gr.query();
+    while (gr.next()) {
+      gr.deleteRecord();
+      stats.daysDeleted++;
     }
   }
 
@@ -329,9 +319,9 @@
 
   function logStats() {
     gs.info('[ShiftPay dummy seed] usersFound=' + stats.usersFound +
-      ', usersCreated=' + stats.usersCreated +
       ', daysInserted=' + stats.daysInserted +
       ', daysUpdated=' + stats.daysUpdated +
+      ', daysDeleted=' + stats.daysDeleted +
       ', daysSkipped=' + stats.daysSkipped +
       ', summariesDeleted=' + stats.summariesDeleted +
       ', summariesInserted=' + stats.summariesInserted);
