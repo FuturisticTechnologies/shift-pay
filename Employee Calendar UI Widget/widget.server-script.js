@@ -25,22 +25,35 @@
   var HOLIDAY_PROP = 'x_shiftpay.holiday_schedule';
   var USER_ID    = gs.getUserID();
 
+  // CO entitlement is an optional capability. When disabled, the server skips
+  // all entitlement reads/writes and treats CO/compound-OC rows as ordinary
+  // shifts governed purely by their u_allow_* flags.
+  var CO_ENABLED = (options.enable_co_entitlement === undefined ||
+                    options.enable_co_entitlement === '' ||
+                    options.enable_co_entitlement === null)
+                   ? true
+                   : (options.enable_co_entitlement === true ||
+                      options.enable_co_entitlement === 'true');
+
   // ── Load catalogue (needed by validation + client rendering) ────────────
   var catalogue = loadCatalogue();
   data.shiftCatalogue = catalogue;
 
-  // Lookup maps derived from catalogue
+  // Lookup maps derived from catalogue.
+  // Semantics are driven by catalogue columns (oc_role etc.), never by the
+  // display `name`, so renaming a shift type never changes behaviour.
   var catalogById   = {};   // sys_id → row
-  var compoundOcIds = {};   // sys_id → true for OC+CO, OC+B+CO, OC+C+CO
-  var coSysId       = null; // sys_id of standalone CO
+  var compoundOcIds = {};   // sys_id → true for shifts whose oc_role grants a CO
+  var coSysId       = null; // sys_id of the shift whose oc_role consumes a CO
   for (var ci = 0; ci < catalogue.length; ci++) {
     var crow = catalogue[ci];
     catalogById[crow.sys_id] = crow;
-    if (crow.name === 'CO') coSysId = crow.sys_id;
-    if (crow.name === 'OC + CO' || crow.name === 'OC + B + CO' || crow.name === 'OC + C + CO') {
-      compoundOcIds[crow.sys_id] = true;
-    }
+    if (crow.oc_role === 'consumes_co') coSysId = crow.sys_id;
+    if (crow.oc_role === 'grants_co')   compoundOcIds[crow.sys_id] = true;
   }
+
+  // ── Validate catalogue configuration (fail loudly, not silently) ─────────
+  validateCatalogue();
 
   // ── Load holidays ────────────────────────────────────────────────────────
   var holidaySet = loadHolidays();
@@ -87,10 +100,31 @@
         rate:         gr.getValue('rate')          || '0',
         currency:     gr.getValue('currency')      || 'INR',
         effective_date: gr.getValue('effective_date') || '',
-        color_hex:    gr.getValue('u_color_hex')   || ''
+        color_hex:    gr.getValue('color_hex')   || '',
+        // Semantic columns — the contract the code branches on.
+        oc_role:                gr.getValue('oc_role')                  || 'none',
+        allow_weekday:          isTrue(gr.getValue('allow_weekday')),
+        allow_weekend_holiday:  isTrue(gr.getValue('allow_weekend_holiday')),
+        day_category:           gr.getValue('day_category')             || ''
       });
     }
     return result;
+  }
+
+  function validateCatalogue() {
+    var problems = [];
+    var hasConsumer = false;
+    for (var i = 0; i < catalogue.length; i++) {
+      var row = catalogue[i];
+      if (!row.day_category) {
+        problems.push('Shift type "' + row.name + '" is missing a day category.');
+      }
+      if (row.oc_role === 'consumes_co') hasConsumer = true;
+    }
+    if (CO_ENABLED && !hasConsumer) {
+      problems.push('CO entitlement is enabled but no shift type has the "consumes_co" role.');
+    }
+    data.configError = problems.length ? problems.join(' ') : '';
   }
 
   function loadHolidays() {
@@ -126,20 +160,16 @@
   // ============================================================ //
 
   function baseAllowedSysIds(dateKey) {
-    // Returns sys_ids allowed by calendar role alone (CO handled separately).
-    var weekend = isWeekend(dateKey);
-    var holiday = isHoliday(dateKey);
+    // Returns sys_ids allowed by calendar role alone. When CO is enabled the
+    // consumes_co row is excluded here and added separately by entitlement
+    // window; when CO is disabled it is treated as an ordinary shift.
+    var weekendOrHoliday = isWeekend(dateKey) || isHoliday(dateKey);
     var ids = [];
     for (var i = 0; i < catalogue.length; i++) {
       var row = catalogue[i];
-      var n = row.name;
-      if (weekend || holiday) {
-        // B and C are not available; standalone CO is also not available
-        if (n !== 'B' && n !== 'C' && n !== 'CO') ids.push(row.sys_id);
-      } else {
-        // Plain weekday: B, C, L, Not Eligible (CO added if entitled)
-        if (n === 'B' || n === 'C' || n === 'L' || n === 'Not Eligible') ids.push(row.sys_id);
-      }
+      if (CO_ENABLED && row.oc_role === 'consumes_co') continue;
+      var allowed = weekendOrHoliday ? row.allow_weekend_holiday : row.allow_weekday;
+      if (allowed) ids.push(row.sys_id);
     }
     return ids;
   }
@@ -148,12 +178,12 @@
     var result = {};
     var dim = daysInMonth(y, m);
     // Load all unconsumed entitlements for this user once, bucket for fast lookup
-    var unconsumed = loadUnconsumedEntitlements();
+    var unconsumed = CO_ENABLED ? loadUnconsumedEntitlements() : [];
     for (var d = 1; d <= dim; d++) {
       var dk = y + '-' + pad(m + 1) + '-' + pad(d);
       var allowed = baseAllowedSysIds(dk);
       // CO available on plain weekdays when an unconsumed entitlement window covers dk
-      if (coSysId && !isWeekend(dk) && !isHoliday(dk)) {
+      if (CO_ENABLED && coSysId && !isWeekend(dk) && !isHoliday(dk)) {
         if (hasUnconsumedEntitlementFor(unconsumed, dk)) allowed.push(coSysId);
       }
       result[dk] = allowed;
@@ -206,7 +236,7 @@
       var prevShift = getPrevShift(date);
 
       // --- Entitlement side-effects for removing prevShift ---
-      if (prevShift && prevShift !== newShift) {
+      if (CO_ENABLED && prevShift && prevShift !== newShift) {
         if (isCompoundOc(prevShift)) {
           var oldEnt = findEntitlementByOcDate(date);
           if (oldEnt && oldEnt.co_entry) {
@@ -223,7 +253,7 @@
 
       // --- Pre-check CO entitlement before writing ---
       var eligibleEnt = null;
-      if (newShift !== prevShift && newShift === coSysId) {
+      if (CO_ENABLED && newShift !== prevShift && newShift === coSysId) {
         eligibleEnt = findEarliestUnconsumedEntitlementFor(date);
         if (!eligibleEnt) {
           gs.addErrorMessage('CO not available for ' + date + ' — log an OC+CO shift on a prior holiday first.');
@@ -235,7 +265,7 @@
       var newEntrySysId = upsertDay(date, newShift, inp.comment);
 
       // --- Entitlement side-effects for adding newShift ---
-      if (newShift !== prevShift) {
+      if (CO_ENABLED && newShift !== prevShift) {
         if (isCompoundOc(newShift)) insertEntitlementRow(date, newEntrySysId);
         if (newShift === coSysId && eligibleEnt) consumeEntitlement(eligibleEnt.sysid, date, newEntrySysId);
       }
@@ -247,7 +277,7 @@
       var clDate = inp.date;
       if (!clDate) return;
       var clPrev = getPrevShift(clDate);
-      if (clPrev) {
+      if (CO_ENABLED && clPrev) {
         if (isCompoundOc(clPrev)) {
           var clEnt = findEntitlementByOcDate(clDate);
           if (clEnt && clEnt.co_entry) {
@@ -268,8 +298,9 @@
     else if (action === 'bulkSave') {
       var bShift = inp.shift;
       if (!isValidShift(bShift)) return;
-      // CO and compound-OC must be logged individually (entitlement validation too complex for bulk)
-      if (bShift === coSysId || isCompoundOc(bShift)) {
+      // CO and compound-OC must be logged individually (entitlement validation too complex for bulk).
+      // Only relevant while CO entitlement is enabled; otherwise they are ordinary shifts.
+      if (CO_ENABLED && (bShift === coSysId || isCompoundOc(bShift))) {
         gs.addErrorMessage('This shift type cannot be applied in bulk — please log it on each date individually.');
         return;
       }
@@ -621,6 +652,9 @@
   }
 
   function isValidShift(sysId) { return !!catalogById[sysId]; }
+
+  // glide_boolean getValue() yields '1'/'0'; tolerate 'true' too.
+  function isTrue(v) { return v === '1' || v === 'true' || v === true; }
 
   function isoDate(gdt) { return gdt.getDate().getValue(); }
 
