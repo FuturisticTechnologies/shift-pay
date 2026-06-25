@@ -48,7 +48,7 @@ Shift Pay Management streamlines the process of logging shift work, calculating 
 - Automatic recomputation on every save/clear action
 
 ### 🔄 CO Entitlement Tracking
-- Compound OC shifts (OC+CO, OC+B+CO, OC+C+CO) automatically generate CO entitlements
+- Compound OC shifts (OC+CO, OC+UK+CO, OC+US+CO) automatically generate CO entitlements
 - 7-weekday window enforcement for CO usage
 - Standalone CO only available when valid entitlements exist
 
@@ -121,24 +121,36 @@ Configuration table defining available shift types and their pay rates.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `name` | String | Shift code (e.g., "B", "C", "L", "OC", "CO") |
+| `name` | String | Display code (e.g., "UK", "US", "L", "OC", "CO"). **Cosmetic only** — no logic branches on it. |
 | `description` | String | Display label |
 | `rate` | Float | Pay rate per shift |
 | `currency` | Reference → `fx_currency` | Currency for the rate |
 | `active` | Boolean | Whether shift type is available |
+| `color_hex` | String | Chip colour (`#rrggbb`); the pale cell tint is derived from it. |
+| `oc_role` | Choice | `none` / `grants_co` (compound-OC shifts that earn a CO) / `consumes_co` (the standalone CO). Drives entitlement logic. |
+| `allow_weekday` | Boolean | Selectable on a plain weekday. |
+| `allow_weekend_holiday` | Boolean | Selectable on a weekend or declared holiday. |
+| `day_category` | Choice | `regular` / `off` / `holiday` — UI grouping and legend. |
+
+> **Semantics are data-driven.** Availability, UI grouping, colour, and CO-entitlement
+> behaviour all come from the columns above — never from the `name` string. Renaming a
+> shift type is purely cosmetic and changes no behaviour. Adding a new shift type only
+> requires setting these columns. The widget shows a config-error banner if a shift type
+> is missing `day_category`, or if CO entitlement is enabled but no row has
+> `oc_role = consumes_co`.
 
 **Available Shift Types:**
 
 | Code | Description | Availability |
 |------|-------------|--------------|
-| B | Base shift | Weekdays only |
-| C | C-shift | Weekdays only |
+| UK | UK shift | Weekdays only |
+| US | US shift | Weekdays only |
 | L | Leave | Weekdays only |
 | OC | On-Call | Weekends/Holidays |
 | CO | Compensatory Off | Weekdays (with valid entitlement) |
 | OC+CO | On-Call + CO | Weekends/Holidays |
-| OC+B+CO | On-Call + Base + CO | Weekends/Holidays |
-| OC+C+CO | On-Call + C + CO | Weekends/Holidays |
+| OC+UK+CO | On-Call + UK + CO | Weekends/Holidays |
+| OC+US+CO | On-Call + US + CO | Weekends/Holidays |
 
 ### Monthly Timesheet (`x_1995110_shift_0_monthly_timesheet`)
 
@@ -201,6 +213,7 @@ Tracks CO entitlements earned from compound OC shifts.
 | `title` | "My Shift Submissions" | Widget heading |
 | `subtitle` | "India ops · Logging shifts worked..." | Context line |
 | `tooltip` | "Log the shift you worked each day..." | Info icon tooltip |
+| `enable_co_entitlement` | `true` | When off, skips all CO entitlement logic; CO/compound-OC shifts behave as ordinary shifts. |
 | `shift_table` | `u_shift_submission` | Day-entry table |
 | `lock_table` | `u_shift_submission_lock` | Month-lock table |
 | `catalog_table` | `u_shift_type_catalog` | Shift catalogue table |
@@ -313,15 +326,20 @@ Access the employee portal at: `https://<instance>.service-now.com/shiftpay`
 
 | Day Type | Available Shifts |
 |----------|-----------------|
-| Weekday | B, C, L, Not Eligible, CO (if entitled) |
-| Weekend/Holiday | OC, OC+CO, OC+B+CO, OC+C+CO |
+| Weekday | UK, US, L, Not Eligible, CO (if entitled) |
+| Weekend/Holiday | OC, OC+CO, OC+UK+CO, OC+US+CO |
 
 ### CO Entitlement Rules
 
-1. Working a compound OC shift (OC+CO, OC+B+CO, OC+C+CO) earns one CO entitlement
+1. Working a compound OC shift (OC+CO, OC+UK+CO, OC+US+CO) earns one CO entitlement
 2. The CO must be used within the next **7 weekdays** (excluding weekends/holidays)
 3. Standalone CO selection is only available when a valid, unused entitlement exists
 4. Each entitlement can only be consumed once
+
+> **Optional feature.** CO entitlement can be turned off entirely via the
+> `enable_co_entitlement` widget option (set `false`). For a deployment that doesn't use
+> CO, also deactivate the OC/CO catalogue rows — because availability is data-driven they
+> then simply disappear from the calendar with no code change.
 
 ### Submission Window
 

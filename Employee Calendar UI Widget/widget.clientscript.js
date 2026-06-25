@@ -3,38 +3,38 @@ api.controller = function ($scope, $element, $timeout) {
   var c = this;
 
   // ───── Shift type catalogue ───────────────────────────────────────────────
-  // Colours are supplied by the catalogue's u_color_hex field.
-  // This map is the client-side fallback for when that field is blank.
-  var FALLBACK_COLORS = {
-    'B':            { color: '#1E3A8A', colorSoft: '#E0E7FF' },
-    'C':            { color: '#B45309', colorSoft: '#FEF0D6' },
-    'L':            { color: '#15803D', colorSoft: '#D6F0DE' },
-    'Not Eligible': { color: '#64748B', colorSoft: '#E5E7EB' },
-    'OC':           { color: '#7C3AED', colorSoft: '#EDE4FE' },
-    'CO':           { color: '#0E7490', colorSoft: '#CFFAFE' },
-    'OC + CO':      { color: '#9333EA', colorSoft: '#F3E8FF' },
-    'OC + B + CO':  { color: '#4338CA', colorSoft: '#E0E7FF' },
-    'OC + C + CO':  { color: '#A16207', colorSoft: '#FEF3C7' }
-  };
+  // All shift semantics are data-driven: colour comes from the catalogue's
+  // color_hex field and the UI group from its day_category field. The pale
+  // "soft" tint is derived from the main colour (no separate stored value).
+  var NEUTRAL_COLOR = '#64748B';
 
-  var SHIFT_GROUPS = {
-    'B': 'regular', 'C': 'regular',
-    'L': 'off', 'Not Eligible': 'off',
-    'CO': 'holiday', 'OC': 'holiday',
-    'OC + CO': 'holiday', 'OC + B + CO': 'holiday', 'OC + C + CO': 'holiday'
-  };
+  // Labels keyed by the stable category codes (not by display name).
   var GROUP_LABELS = {
     'regular': 'Regular shifts',
     'off':     'Off / Not eligible',
     'holiday': 'Holiday work (weekend or declared holiday)'
   };
+  // Fixed display order of the category groups.
+  var GROUP_ORDER = ['regular', 'off', 'holiday'];
+
+  // Lighten a #rrggbb hex toward white by `amount` (0–1) for cell backgrounds.
+  function softTint(hex, amount) {
+    var m = /^#?([0-9a-fA-F]{6})$/.exec(hex || '');
+    if (!m) return '#E5E7EB';
+    var n = parseInt(m[1], 16);
+    var r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    r = Math.round(r + (255 - r) * amount);
+    g = Math.round(g + (255 - g) * amount);
+    b = Math.round(b + (255 - b) * amount);
+    return 'rgb(' + r + ',' + g + ',' + b + ')';
+  }
 
   function buildShiftTypes(catalogue) {
     if (!catalogue || !catalogue.length) return;
     c.shiftTypes    = {};
     c.shiftTypeList = [];
     catalogue.forEach(function (row) {
-      var fb = FALLBACK_COLORS[row.name] || { color: '#64748B', colorSoft: '#E5E7EB' };
+      var color = row.color_hex || NEUTRAL_COLOR;
       var entry = {
         key:       row.sys_id,
         name:      row.name,
@@ -42,9 +42,9 @@ api.controller = function ($scope, $element, $timeout) {
         short:     row.name,
         rate:      Number(row.rate) || 0,
         currency:  row.currency || 'INR',
-        color:     row.color_hex || fb.color,
-        colorSoft: fb.colorSoft,
-        group:     SHIFT_GROUPS[row.name] || 'other'
+        color:     color,
+        colorSoft: softTint(color, 0.88),
+        group:     row.day_category || 'other'
       };
       c.shiftTypes[row.sys_id] = entry;
       c.shiftTypeList.push(entry);
@@ -54,7 +54,7 @@ api.controller = function ($scope, $element, $timeout) {
 
   function buildLegendGroups() {
     var groups = [];
-    ['regular', 'off', 'holiday'].forEach(function (cat) {
+    GROUP_ORDER.forEach(function (cat) {
       var items = c.shiftTypeList.filter(function (t) { return t.group === cat; });
       if (items.length) groups.push({ title: GROUP_LABELS[cat], items: items });
     });
@@ -63,7 +63,7 @@ api.controller = function ($scope, $element, $timeout) {
 
   function buildGroupedDropdownList(dateKey) {
     var groups = [];
-    ['regular', 'off', 'holiday'].forEach(function (cat) {
+    GROUP_ORDER.forEach(function (cat) {
       var items = c.shiftTypeList.filter(function (t) {
         return t.group === cat && c.isAllowed(t.key, dateKey);
       });
@@ -86,8 +86,10 @@ api.controller = function ($scope, $element, $timeout) {
   //   data.comments         { 'YYYY-MM-DD': string }
   //   data.locked           boolean
   //   data.submittedOn      display date for lock note
-  //   data.shiftCatalogue   [{sys_id, name, description, rate, currency, color_hex}]
+  //   data.shiftCatalogue   [{sys_id, name, description, rate, currency, color_hex,
+  //                            oc_role, allow_weekday, allow_weekend_holiday, day_category}]
   //   data.allowedShifts    { 'YYYY-MM-DD': [sys_id, ...] }
+  //   data.configError      string — non-empty when the catalogue is misconfigured
   //   data.lastMonthYear, data.lastMonthMonth, data.lastMonthEntries, data.lastMonthSubmitted
   c.entries       = c.data.entries  || {};
   c.comments      = c.data.comments || {};
