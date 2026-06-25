@@ -52,8 +52,8 @@
     return;
   }
 
-  if (!shifts.B || !shifts.C || !shifts.L || !shifts.OC) {
-    gs.error('[ShiftPay dummy seed] Missing required shift catalogue rows. Need active names: B, C, L, OC.');
+  if (!shifts.UK || !shifts.US || !shifts.L || !shifts.OC) {
+    gs.error('[ShiftPay dummy seed] Missing required shift catalogue rows. Need active names: UK, US, L, OC.');
     logStats();
     return;
   }
@@ -87,7 +87,7 @@
 
   function loadRequiredShifts() {
     var result = {};
-    var names = ['B', 'C', 'L', 'OC'];
+    var names = ['UK', 'US', 'L', 'OC'];
     var gr = new GlideRecord(CONFIG.tables.catalog);
     gr.addQuery('name', 'IN', names.join(','));
     if (gr.isValidField('active')) gr.addQuery('active', true);
@@ -156,8 +156,8 @@
 
     if (dow === 0 || dow === 6) return shifts.OC;
     if (selector === 0) return shifts.L;
-    if (selector === 1 || selector === 2 || selector === 3) return shifts.C;
-    return shifts.B;
+    if (selector === 1 || selector === 2 || selector === 3) return shifts.US;
+    return shifts.UK;
   }
 
   function upsertDay(user, dateKey, shiftSysId) {

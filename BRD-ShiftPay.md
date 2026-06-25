@@ -237,7 +237,7 @@ The file layout is **one row per employee × shift type**, with a clearly identi
 | --- | --- |
 | BR-C1 | Shift types are defined centrally in a **configurable shift catalogue** (name, description, rate, currency, effective date, colour, active flag). The catalogue is the single source of truth for shift types and rates. |
 | BR-C2 | Which shifts are **selectable for a given date** depends on whether the date is a **weekday, weekend, or holiday**, and on **Comp-Off (CO) entitlement**. |
-| BR-C3 | **On-Call compound shifts** (e.g. "OC + CO", "OC + B + CO", "OC + C + CO") worked on a holiday/weekend **earn a Comp-Off (CO) entitlement** that can later be consumed on a normal weekday within an entitlement window. |
+| BR-C3 | **On-Call compound shifts** (e.g. "OC + CO", "OC + UK + CO", "OC + US + CO") worked on a holiday/weekend **earn a Comp-Off (CO) entitlement** that can later be consumed on a normal weekday within an entitlement window. |
 | BR-C4 | A **CO** day can only be logged if the employee holds an unconsumed CO entitlement whose window covers that date. |
 | BR-C5 | An entry that **granted** a CO that is still relied upon cannot be changed or cleared while a dependent CO exists. |
 | BR-C6 | Public **holidays** come from a configurable schedule; holiday/weekend status changes shift eligibility. |
@@ -363,7 +363,7 @@ All notifications must be delivered via standard ServiceNow notifications so cus
 | Shift type | A category of work (UK, US, On-Call, Leave, Comp-Off, etc.) with an associated pay rate. |
 | OC | On-Call shift. |
 | CO / Comp-Off | Compensatory off earned by working an on-call/holiday shift, consumable later. |
-| Compound OC | A shift such as "OC + CO" / "OC + B + CO" that grants a CO entitlement. |
+| Compound OC | A shift such as "OC + CO" / "OC + UK + CO" that grants a CO entitlement. |
 | Timesheet | An employee's set of shift entries for one calendar month. |
 | Lock / Submit | The action that freezes an employee's month for review. |
 | RITM | Requested Item — a ServiceNow request record. |

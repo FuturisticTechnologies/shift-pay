@@ -48,6 +48,12 @@
     </div>
   </div>
 
+  <!-- Config error banner ======================================== -->
+  <div class="shift-widget__configerror" ng-if="c.data.configError" role="alert">
+    <i class="fa fa-exclamation-triangle"></i>
+    <span>Shift catalogue is misconfigured — contact an administrator. ({{c.data.configError}})</span>
+  </div>
+
   <!-- Legend ===================================================== -->
   <div class="shift-widget__legend">
 

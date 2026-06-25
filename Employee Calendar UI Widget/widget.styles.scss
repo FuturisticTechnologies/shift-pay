@@ -21,8 +21,9 @@
    ========================================================= */
 /*
    Note: shift colours are no longer defined here as CSS custom properties.
-   They come from the catalogue (u_color_hex) or the client-script FALLBACK_COLORS
-   map, and are applied via ng-style bindings. See widget.clientscript.js.
+   The chip colour comes from the catalogue (color_hex, with a neutral
+   default); the pale cell tint is derived from it in the client script via
+   softTint(). Both are applied via ng-style bindings. See widget.clientscript.js.
 */
 .shift-widget {
   --shift-text:       #0F172A;
@@ -57,6 +58,18 @@
   align-items: flex-start;
   gap: 16px;
   padding: 20px 24px 12px;
+}
+.shift-widget__configerror {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 24px 12px;
+  padding: 10px 12px;
+  border: 1px solid #FCA5A5;
+  border-radius: 6px;
+  background: #FEF2F2;
+  color: #B91C1C;
+  font-size: 13px;
 }
 .shift-widget__title {
   margin: 0;
