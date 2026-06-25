@@ -21,6 +21,14 @@
     "section": "Presentation"
   },
   {
+    "name": "enable_co_entitlement",
+    "label": "Enable CO entitlement",
+    "type": "boolean",
+    "default": true,
+    "hint": "When off, the widget skips all compensatory-off (CO) entitlement logic and CO/compound-OC shifts behave as ordinary shifts. Set off (and deactivate the OC/CO catalogue rows) for deployments that don't use CO.",
+    "section": "Behaviour"
+  },
+  {
     "name": "shift_table",
     "label": "Day-entry table",
     "type": "string",
@@ -41,7 +49,7 @@
     "label": "Shift catalogue table",
     "type": "string",
     "default": "u_shift_type_catalog",
-    "hint": "Table name. Active rows are loaded live on every loadMonth. Must have columns name, description, rate, currency, effective_date, active, valid_till, u_color_hex.",
+    "hint": "Table name. Active rows are loaded live on every loadMonth. Must have columns name, description, rate, currency, effective_date, active, valid_till, color_hex, plus the semantic columns oc_role (none|grants_co|consumes_co), allow_weekday, allow_weekend_holiday, day_category (regular|off|holiday).",
     "section": "Data"
   },
   {
