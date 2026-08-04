@@ -8,6 +8,7 @@ A **ServiceNow scoped application** (scope `x_1995110_shift_0`, portal `/shiftpa
 
 ## Layout
 
+- `Landing Page UI Widget/` — simple ShiftPay home screen with always-visible links to the employee calendar and manager approvals. It uses the signed-in user's first name for the greeting and configurable Service Portal page IDs for both destinations.
 - `Employee Calendar UI Widget/` — the complete, working widget ("My Shift Submissions" calendar). Each file is one part of a Service Portal widget:
   - `widget.template.html` — AngularJS 1.x template, bound to controller `c` and `c.data`
   - `widget.clientscript.js` — `api.controller` function (the `c` controller)

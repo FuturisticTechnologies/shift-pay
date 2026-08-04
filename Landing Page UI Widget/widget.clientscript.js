@@ -1,0 +1,3 @@
+api.controller = function () {
+  var c = this;
+};
