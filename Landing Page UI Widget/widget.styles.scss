@@ -1,0 +1,289 @@
+/*
+  ShiftPay Home — widget styles
+  =============================
+  Flat SCSS/CSS for compatibility with Service Portal's bundled LibSass.
+  All custom selectors are namespaced with `shift-home`.
+*/
+
+.shift-home {
+  --shift-home-text: #0F172A;
+  --shift-home-muted: #64748B;
+  --shift-home-faint: #94A3B8;
+  --shift-home-border: #DDE2E8;
+  --shift-home-surface: #FFFFFF;
+  --shift-home-background: #F8FAFC;
+  --shift-home-accent: #0B57D0;
+  --shift-home-accent-soft: #EAF2FF;
+
+  min-height: calc(100vh - 64px);
+  padding: 96px 24px 140px;
+  background: var(--shift-home-background);
+  color: var(--shift-home-text);
+}
+
+.shift-home__inner {
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+.shift-home__intro {
+  margin: 0 auto 64px;
+  text-align: center;
+}
+
+.shift-home__title {
+  margin: 0;
+  color: var(--shift-home-text);
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.7px;
+}
+
+.shift-home__subtitle {
+  margin: 18px 0 0;
+  color: var(--shift-home-muted);
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.shift-home__cards {
+  display: flex;
+  align-items: stretch;
+  gap: 42px;
+}
+
+.shift-home-card {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 350px;
+  padding: 48px 40px 32px;
+  flex-direction: column;
+  color: var(--shift-home-text);
+  background: var(--shift-home-surface);
+  border: 1px solid var(--shift-home-border);
+  border-radius: 8px;
+  text-decoration: none;
+  transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+}
+
+.shift-home-card:hover,
+.shift-home-card:focus,
+.shift-home-card:active {
+  color: var(--shift-home-text);
+  text-decoration: none;
+}
+
+.shift-home-card:hover {
+  border-color: #B8C7DC;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.07);
+  transform: translateY(-2px);
+}
+
+.shift-home-card:focus {
+  outline: 3px solid rgba(11, 87, 208, 0.25);
+  outline-offset: 3px;
+}
+
+.shift-home-card__content {
+  display: flex;
+  align-items: center;
+  gap: 34px;
+  min-height: 154px;
+}
+
+.shift-home-card__icon {
+  position: relative;
+  width: 104px;
+  flex: 0 0 104px;
+  color: var(--shift-home-text);
+  font-size: 78px;
+  line-height: 1;
+  text-align: center;
+}
+
+.shift-home-card__icon--manager {
+  font-size: 68px;
+}
+
+.shift-home-card__check {
+  position: absolute;
+  right: 2px;
+  bottom: 1px;
+  padding: 2px;
+  color: var(--shift-home-accent);
+  background: var(--shift-home-surface);
+  border-radius: 999px;
+  font-size: 32px;
+}
+
+.shift-home-card__copy {
+  min-width: 0;
+}
+
+.shift-home-card__title {
+  margin: 0;
+  color: var(--shift-home-text);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.3px;
+}
+
+.shift-home-card__description {
+  max-width: 270px;
+  margin: 16px 0 0;
+  color: var(--shift-home-muted);
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+.shift-home-card__divider {
+  height: 1px;
+  margin: 34px 0 26px;
+  background: var(--shift-home-border);
+}
+
+.shift-home-card__action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  color: var(--shift-home-accent);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.shift-home-card__arrow {
+  display: inline-flex;
+  width: 52px;
+  height: 46px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #7AA7F7;
+  border-radius: 6px;
+  background: var(--shift-home-surface);
+  font-size: 19px;
+  transition: color 140ms ease, background 140ms ease, border-color 140ms ease;
+}
+
+.shift-home-card:hover .shift-home-card__arrow,
+.shift-home-card:focus .shift-home-card__arrow {
+  color: #FFFFFF;
+  background: var(--shift-home-accent);
+  border-color: var(--shift-home-accent);
+}
+
+@media (max-width: 900px) {
+  .shift-home {
+    padding-top: 64px;
+  }
+
+  .shift-home__cards {
+    gap: 24px;
+  }
+
+  .shift-home-card {
+    padding: 38px 28px 28px;
+  }
+
+  .shift-home-card__content {
+    align-items: flex-start;
+    gap: 24px;
+  }
+
+  .shift-home-card__icon {
+    width: 76px;
+    flex-basis: 76px;
+    font-size: 60px;
+  }
+
+  .shift-home-card__icon--manager {
+    font-size: 54px;
+  }
+
+  .shift-home-card__check {
+    font-size: 25px;
+  }
+}
+
+@media (max-width: 700px) {
+  .shift-home {
+    min-height: auto;
+    padding: 44px 16px 72px;
+  }
+
+  .shift-home__intro {
+    margin-bottom: 36px;
+    text-align: left;
+  }
+
+  .shift-home__title {
+    font-size: 30px;
+  }
+
+  .shift-home__subtitle {
+    margin-top: 12px;
+    font-size: 16px;
+  }
+
+  .shift-home__cards {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .shift-home-card {
+    flex: 0 0 auto;
+    min-height: 0;
+    padding: 30px 24px 24px;
+  }
+
+  .shift-home-card__content {
+    min-height: 0;
+  }
+
+  .shift-home-card__title {
+    font-size: 21px;
+  }
+
+  .shift-home-card__description {
+    max-width: none;
+    margin-top: 10px;
+    font-size: 15px;
+  }
+
+  .shift-home-card__divider {
+    margin: 26px 0 20px;
+  }
+}
+
+@media (max-width: 420px) {
+  .shift-home-card__content {
+    display: block;
+  }
+
+  .shift-home-card__icon {
+    width: auto;
+    margin-bottom: 22px;
+    text-align: left;
+  }
+
+  .shift-home-card__check {
+    right: auto;
+    left: 45px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shift-home-card,
+  .shift-home-card__arrow {
+    transition: none;
+  }
+
+  .shift-home-card:hover {
+    transform: none;
+  }
+}
