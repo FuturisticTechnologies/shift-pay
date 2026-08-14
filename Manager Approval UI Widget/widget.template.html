@@ -1,0 +1,260 @@
+<!--
+  Service Portal Widget: Team Timesheet Approvals
+  ===============================================
+  The manager's queue. One row per direct reportee for the selected month,
+  showing the shift mix and its cost, with approve/reject per row.
+
+  Design notes (inherited from the Employee Calendar widget):
+   - Ink (#0F172A) is the only emphasis colour. There is no brand accent.
+   - Colour means SHIFT TYPE and nothing else — the nine catalogue chips already
+     occupy most of the wheel (US is amber, L is green), so status is carried by
+     fill, weight and glyph instead of hue. Do not "improve" this by making
+     Approved green; it collides with the Leave chip.
+   - Red is reserved for destructive and error only.
+  Classes are namespaced `shift-mgr-` so nothing collides with the calendar.
+-->
+<div class="shift-mgr" ng-class="{'shift-mgr--busy': c.saving}">
+
+  <!-- Header ==================================================== -->
+  <div class="shift-mgr__header">
+    <div>
+      <h2 class="shift-mgr__title">{{::c.options.title || 'Team Timesheet Approvals'}}</h2>
+      <p class="shift-mgr__subtitle">
+        <span ng-if="c.data.canManage">
+          {{c.data.reporteeCount}} direct {{c.data.reporteeCount === 1 ? 'reportee' : 'reportees'}}
+          · showing {{c.data.monthLabel}}
+        </span>
+        <span ng-if="!c.data.canManage">{{::c.options.subtitle}}</span>
+      </p>
+    </div>
+
+    <div class="shift-mgr__headeractions" ng-if="c.data.canManage">
+      <div class="shift-mgr__monthnav">
+        <button type="button" class="shift-mgr__navbtn" ng-click="c.prevMonth()"
+                ng-disabled="c.saving" aria-label="Previous month">
+          <i class="fa fa-chevron-left" aria-hidden="true"></i>
+        </button>
+        <span class="shift-mgr__monthlabel">{{c.data.monthLabel}}</span>
+        <button type="button" class="shift-mgr__navbtn" ng-click="c.nextMonth()"
+                ng-disabled="c.saving" aria-label="Next month">
+          <i class="fa fa-chevron-right" aria-hidden="true"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Action error ============================================== -->
+  <div class="shift-mgr__error" ng-if="c.data.actionError" role="alert">
+    <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+    <span>{{c.data.actionError}}</span>
+  </div>
+
+  <!-- No reportees ============================================== -->
+  <div class="shift-mgr__empty" ng-if="!c.data.canManage">
+    <i class="fa fa-users" aria-hidden="true"></i>
+    <div class="shift-mgr__empty-title">Nobody reports to you</div>
+    <p class="shift-mgr__empty-body">
+      This page lists the timesheets of your direct reportees. If that looks wrong,
+      the reporting line on your team's user records may need updating.
+    </p>
+  </div>
+
+  <div ng-if="c.data.canManage">
+
+    <!-- Tabs ==================================================== -->
+    <div class="shift-mgr__tabs" role="tablist">
+      <button type="button" class="shift-mgr__tab"
+              ng-repeat="t in c.tabs"
+              ng-class="{'shift-mgr__tab--on': c.filter === t.key}"
+              ng-click="c.setFilter(t.key)"
+              role="tab" aria-selected="{{c.filter === t.key}}">
+        <span>{{t.label}}</span>
+        <span class="shift-mgr__tabcount">{{c.data.counts[t.count]}}</span>
+      </button>
+    </div>
+
+    <!-- Stat strip ============================================== -->
+    <div class="shift-mgr__strip">
+      <div class="shift-mgr__stat shift-mgr__stat--lead">
+        <span class="shift-mgr__statk">Awaiting action</span>
+        <span class="shift-mgr__statv">{{c.data.counts.submitted}}</span>
+      </div>
+      <div class="shift-mgr__stat">
+        <span class="shift-mgr__statk">Approved</span>
+        <span class="shift-mgr__statv shift-mgr__statv--quiet">{{c.data.counts.approved}}</span>
+      </div>
+      <div class="shift-mgr__stat">
+        <span class="shift-mgr__statk">Rejected</span>
+        <span class="shift-mgr__statv shift-mgr__statv--quiet">{{c.data.counts.rejected}}</span>
+      </div>
+      <div class="shift-mgr__stat" ng-if="c.data.showPay">
+        <span class="shift-mgr__statk">Pending cost</span>
+        <span class="shift-mgr__statv">{{c.money(c.data.totals.pendingAmount, c.data.totals.currency)}}</span>
+      </div>
+      <div class="shift-mgr__stat" ng-if="c.data.showPay">
+        <span class="shift-mgr__statk">Approved cost</span>
+        <span class="shift-mgr__statv shift-mgr__statv--quiet">{{c.money(c.data.totals.approvedAmount, c.data.totals.currency)}}</span>
+      </div>
+    </div>
+
+    <!-- Toolbar ================================================= -->
+    <div class="shift-mgr__toolbar">
+      <div class="shift-mgr__search">
+        <i class="fa fa-search" aria-hidden="true"></i>
+        <input type="text" ng-model="c.search" ng-change="c.recalc()"
+               placeholder="Search reportee…" aria-label="Search reportee">
+      </div>
+      <span class="shift-mgr__paynote" ng-if="!c.data.showPay">
+        <i class="fa fa-eye-slash" aria-hidden="true"></i> Pay amounts hidden
+      </span>
+    </div>
+
+    <!-- Table =================================================== -->
+    <div class="shift-mgr__tablewrap">
+      <table class="shift-mgr__table">
+        <thead>
+          <tr>
+            <th>Employee</th>
+            <th>Shift mix</th>
+            <th class="shift-mgr__num">Weekdays</th>
+            <th class="shift-mgr__num" ng-if="c.data.showPay">Total pay</th>
+            <th>Status</th>
+            <th>Submitted</th>
+            <th class="shift-mgr__actionhead">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr ng-repeat="row in c.visible track by row.userId"
+              ng-class="{'shift-mgr__row--todo': row.canAction, 'shift-mgr__row--done': !row.canAction}">
+
+            <td>
+              <div class="shift-mgr__person">
+                <span class="shift-mgr__avatar">{{row.initials}}</span>
+                <span class="shift-mgr__personname">
+                  <span class="shift-mgr__nm">{{row.name}}</span>
+                  <span class="shift-mgr__id" ng-if="row.employeeId">{{row.employeeId}}</span>
+                </span>
+              </div>
+            </td>
+
+            <td>
+              <div class="shift-mgr__chips" ng-if="row.mix.length">
+                <span class="shift-mgr__chipset" ng-repeat="m in row.mix track by m.shiftId"
+                      title="{{m.name}} × {{m.count}}">
+                  <span class="shift-mgr__chip" ng-style="c.chipStyle(m.color_hex)">{{m.name}}</span>
+                  <span class="shift-mgr__chipn">{{m.count}}</span>
+                </span>
+              </div>
+              <span class="shift-mgr__muted" ng-if="!row.mix.length">No shifts logged</span>
+            </td>
+
+            <td class="shift-mgr__num">
+              <span ng-class="{'shift-mgr__short': row.weekdaysLogged < c.data.weekdaysInMonth}">
+                {{row.weekdaysLogged}} / {{c.data.weekdaysInMonth}}
+              </span>
+            </td>
+
+            <td class="shift-mgr__num" ng-if="c.data.showPay">
+              {{c.money(row.totalAmount, row.currency)}}
+            </td>
+
+            <td>
+              <span class="shift-mgr__pill"
+                    ng-class="c.pillClass(row.status)">
+                <span class="shift-mgr__pillglyph" aria-hidden="true">{{c.pillGlyph(row.status)}}</span>
+                {{row.statusLabel}}
+              </span>
+              <div class="shift-mgr__reason" ng-if="row.status === 'rejected' && row.managerComment"
+                   title="{{row.managerComment}}">{{row.managerComment}}</div>
+            </td>
+
+            <td class="shift-mgr__when">
+              <span ng-if="row.submittedOn">{{row.submittedOn}}</span>
+              <span class="shift-mgr__muted" ng-if="!row.submittedOn">—</span>
+              <div class="shift-mgr__by" ng-if="row.actionedOn">
+                {{row.status === 'approved' ? 'approved' : 'rejected'}} {{row.actionedOn}}
+              </div>
+            </td>
+
+            <td>
+              <div class="shift-mgr__acts">
+                <button type="button" class="shift-mgr__btn shift-mgr__btn--pri"
+                        ng-if="row.canAction"
+                        ng-click="c.approve(row)"
+                        ng-disabled="c.saving">
+                  <i class="fa fa-check" aria-hidden="true"></i> Approve
+                </button>
+                <button type="button" class="shift-mgr__btn shift-mgr__btn--danger"
+                        ng-if="row.canAction"
+                        ng-click="c.openReject(row)"
+                        ng-disabled="c.saving"
+                        aria-label="Reject {{row.name}}'s timesheet">
+                  <i class="fa fa-times" aria-hidden="true"></i>
+                </button>
+                <span class="shift-mgr__btn shift-mgr__btn--ghost" ng-if="!row.canAction && row.status">
+                  {{row.status === 'approved' ? 'Locked' : 'With employee'}}
+                </span>
+                <span class="shift-mgr__muted" ng-if="!row.status">Not submitted</span>
+              </div>
+            </td>
+          </tr>
+
+          <tr ng-if="!c.visible.length">
+            <td colspan="7" class="shift-mgr__norows">
+              Nothing here for {{c.data.monthLabel}}<span ng-if="c.search"> matching “{{c.search}}”</span>.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="shift-mgr__footer">
+      <span>Chip colours and rates come from the shift catalogue.</span>
+      <span ng-if="c.data.showPay">Amounts use the rate snapshot taken when the month was aggregated.</span>
+    </div>
+  </div>
+
+  <!-- Reject dialog ============================================= -->
+  <!-- A reason is mandatory: it is the only thing telling the employee what to
+       fix, and the server refuses an empty one regardless of this dialog. -->
+  <div class="shift-mgr__backdrop" ng-if="c.rejecting" ng-click="c.cancelReject()"></div>
+  <div class="shift-mgr__modal" ng-if="c.rejecting" role="dialog" aria-modal="true"
+       aria-labelledby="shift-mgr-reject-title">
+    <div class="shift-mgr__modalhead">
+      <h3 id="shift-mgr-reject-title" class="shift-mgr__modaltitle">
+        Reject {{c.rejecting.name}}'s {{c.data.monthLabel}} timesheet
+      </h3>
+      <p class="shift-mgr__modalsub">
+        {{c.rejecting.name}} will be able to edit and resubmit the month.
+      </p>
+    </div>
+    <div class="shift-mgr__modalbody">
+      <label class="shift-mgr__label" for="shift-mgr-reason">
+        Reason <span class="shift-mgr__req">required</span>
+      </label>
+      <textarea id="shift-mgr-reason" class="shift-mgr__textarea"
+                ng-class="{'shift-mgr__textarea--err': c.rejectError}"
+                ng-model="c.rejectComment"
+                ng-change="c.rejectError = ''"
+                rows="3"
+                placeholder="Tell them what to fix…"></textarea>
+      <div class="shift-mgr__helper" ng-class="{'shift-mgr__helper--err': c.rejectError}">
+        <span ng-if="!c.rejectError">Sent to the employee and stored on the record.</span>
+        <span ng-if="c.rejectError">{{c.rejectError}}</span>
+      </div>
+      <div class="shift-mgr__note">
+        <i class="fa fa-reply" aria-hidden="true"></i>
+        <span>Rejecting reopens {{c.data.monthLabel}} for editing and removes it from the payroll export.</span>
+      </div>
+    </div>
+    <div class="shift-mgr__modalfoot">
+      <button type="button" class="shift-mgr__btn" ng-click="c.cancelReject()">Cancel</button>
+      <button type="button" class="shift-mgr__btn shift-mgr__btn--danger"
+              ng-click="c.confirmReject()"
+              ng-disabled="c.saving || !c.rejectComment.trim()">
+        Reject timesheet
+      </button>
+    </div>
+  </div>
+
+</div>

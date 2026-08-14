@@ -1,0 +1,677 @@
+/*
+  Team Timesheet Approvals — widget styles
+  ========================================
+  Conventions match the Employee Calendar widget:
+   - BEM-light, every selector namespaced (`shift-mgr-`) so nothing leaks
+   - tokens as CSS custom properties on .shift-mgr for per-instance reskinning
+
+  Service Portal note: written as FLAT plain CSS — no `&__suffix`, no nested
+  selectors, no `@media` nested inside a selector. Service Portal's bundled
+  LibSass build does not support Sass 3.3+ parent-selector concatenation, and a
+  single `&__x` silently fails the whole compile, dropping the widget back to
+  unstyled. Block comments only.
+
+  COLOUR RULE: ink is the only emphasis colour and hue means shift type. The
+  catalogue occupies navy, amber, green, purple, teal, indigo, ochre and slate
+  (US is #B45309 amber, L is #15803D green), so a colour-coded status pill would
+  collide with a chip on the same row. Status is fill + weight + glyph. Red is
+  destructive/error only; no catalogue chip is red.
+*/
+
+.shift-mgr {
+  --shift-text:       #0F172A;
+  --shift-text-mute:  #64748B;
+  --shift-text-faint: #94A3B8;
+  --shift-text-body:  #334155;
+  --shift-border:     #E5E7EB;
+  --shift-border-2:   #CBD5E1;
+  --shift-divider:    #F1F5F9;
+  --shift-surface:    #FFFFFF;
+  --shift-bg-subtle:  #F8FAFC;
+  --shift-bg-footer:  #FAFBFC;
+  --shift-bg-input:   #F9FAFB;
+
+  --shift-red:        #B91C1C;
+  --shift-red-bg:     #FEF2F2;
+  --shift-red-border: #FCA5A5;
+
+  --shift-radius:      8px;
+  --shift-radius-sm:   4px;
+  --shift-radius-pill: 999px;
+
+  --shift-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  background: var(--shift-surface);
+  color: var(--shift-text);
+  border: 1px solid var(--shift-border);
+  border-radius: var(--shift-radius);
+  max-width: 1180px;
+  margin: 0 auto;
+  overflow: hidden;
+  position: relative;
+}
+.shift-mgr--busy {
+  cursor: progress;
+}
+
+/* =========================================================
+   Header
+   ========================================================= */
+.shift-mgr__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 20px 24px 14px;
+}
+.shift-mgr__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+}
+.shift-mgr__subtitle {
+  margin: 4px 0 0;
+  color: var(--shift-text-mute);
+  font-size: 12px;
+}
+.shift-mgr__headeractions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.shift-mgr__monthnav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--shift-border);
+  border-radius: 6px;
+  padding: 2px;
+}
+.shift-mgr__navbtn {
+  border: 0;
+  background: transparent;
+  color: var(--shift-text-mute);
+  padding: 4px 9px;
+  border-radius: var(--shift-radius-sm);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
+.shift-mgr__navbtn:hover:not(:disabled) {
+  background: var(--shift-bg-subtle);
+  color: var(--shift-text);
+}
+.shift-mgr__navbtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.shift-mgr__monthlabel {
+  font-size: 13px;
+  font-weight: 600;
+  min-width: 130px;
+  text-align: center;
+  padding: 0 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* =========================================================
+   Error + empty states
+   ========================================================= */
+.shift-mgr__error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 24px 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--shift-red-border);
+  border-radius: 6px;
+  background: var(--shift-red-bg);
+  color: var(--shift-red);
+  font-size: 13px;
+}
+.shift-mgr__empty {
+  padding: 48px 24px 56px;
+  text-align: center;
+  color: var(--shift-text-mute);
+}
+.shift-mgr__empty i {
+  font-size: 26px;
+  color: var(--shift-text-faint);
+  margin-bottom: 12px;
+  display: block;
+}
+.shift-mgr__empty-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--shift-text);
+  margin-bottom: 6px;
+}
+.shift-mgr__empty-body {
+  margin: 0 auto;
+  max-width: 46ch;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.shift-mgr__norows {
+  text-align: center;
+  padding: 34px 16px;
+  color: var(--shift-text-faint);
+  font-size: 13px;
+}
+
+/* =========================================================
+   Tabs
+   ========================================================= */
+.shift-mgr__tabs {
+  display: flex;
+  gap: 2px;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--shift-border);
+  overflow-x: auto;
+}
+.shift-mgr__tab {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+  padding: 8px 13px 9px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--shift-text-mute);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+.shift-mgr__tab:hover {
+  color: var(--shift-text);
+}
+.shift-mgr__tab--on {
+  color: var(--shift-text);
+  border-bottom-color: var(--shift-text);
+}
+.shift-mgr__tabcount {
+  font-family: var(--shift-mono);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: var(--shift-radius-sm);
+  background: var(--shift-divider);
+  color: var(--shift-text-mute);
+  font-variant-numeric: tabular-nums;
+}
+.shift-mgr__tab--on .shift-mgr__tabcount {
+  background: var(--shift-text);
+  color: #fff;
+}
+
+/* =========================================================
+   Stat strip
+   ========================================================= */
+.shift-mgr__strip {
+  display: flex;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--shift-border);
+  background: var(--shift-bg-subtle);
+}
+.shift-mgr__stat {
+  padding: 12px 24px;
+  border-right: 1px solid var(--shift-border);
+  min-width: 148px;
+}
+.shift-mgr__stat--lead {
+  background: var(--shift-surface);
+  box-shadow: inset 3px 0 0 var(--shift-text);
+}
+.shift-mgr__statk {
+  display: block;
+  font-family: var(--shift-mono);
+  font-size: 10px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--shift-text-faint);
+}
+.shift-mgr__statv {
+  display: block;
+  margin-top: 3px;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  font-variant-numeric: tabular-nums;
+}
+.shift-mgr__statv--quiet {
+  color: var(--shift-text-mute);
+  font-weight: 600;
+}
+
+/* =========================================================
+   Toolbar
+   ========================================================= */
+.shift-mgr__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 24px;
+  border-bottom: 1px solid var(--shift-border);
+  flex-wrap: wrap;
+}
+.shift-mgr__search {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--shift-border-2);
+  border-radius: 6px;
+  padding: 5px 10px;
+  background: var(--shift-bg-input);
+  flex: 1 1 220px;
+  max-width: 320px;
+  color: var(--shift-text-faint);
+}
+.shift-mgr__search input {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--shift-text);
+  width: 100%;
+  outline: none;
+}
+.shift-mgr__paynote {
+  margin-left: auto;
+  font-size: 11.5px;
+  color: var(--shift-text-faint);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* =========================================================
+   Table
+   ========================================================= */
+.shift-mgr__tablewrap {
+  overflow-x: auto;
+}
+.shift-mgr__table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 900px;
+}
+.shift-mgr__table th {
+  text-align: left;
+  font-family: var(--shift-mono);
+  font-size: 10px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--shift-text-faint);
+  font-weight: 700;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--shift-border);
+  background: var(--shift-bg-subtle);
+  white-space: nowrap;
+}
+.shift-mgr__table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--shift-border);
+  vertical-align: middle;
+  font-size: 13px;
+}
+.shift-mgr__table tr:last-child td {
+  border-bottom: 0;
+}
+.shift-mgr__num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-family: var(--shift-mono);
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.shift-mgr__actionhead {
+  text-align: right;
+}
+.shift-mgr__when {
+  color: var(--shift-text-faint);
+  font-size: 11.5px;
+  font-family: var(--shift-mono);
+  white-space: nowrap;
+}
+.shift-mgr__by {
+  margin-top: 2px;
+  color: var(--shift-text-faint);
+}
+.shift-mgr__muted {
+  color: var(--shift-text-faint);
+}
+/* Rows needing a decision carry an ink rail; settled rows recede. This is what
+   replaces colour-coding as the scanning cue. */
+.shift-mgr__row--todo td:first-child {
+  box-shadow: inset 3px 0 0 var(--shift-text);
+}
+.shift-mgr__row--done .shift-mgr__nm,
+.shift-mgr__row--done .shift-mgr__num {
+  color: var(--shift-text-mute);
+}
+.shift-mgr__short {
+  color: var(--shift-red);
+}
+
+/* =========================================================
+   Person cell
+   ========================================================= */
+.shift-mgr__person {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.shift-mgr__avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--shift-divider);
+  color: var(--shift-text-mute);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--shift-mono);
+  font-size: 10px;
+  font-weight: 700;
+  flex: none;
+}
+.shift-mgr__personname {
+  min-width: 0;
+}
+.shift-mgr__nm {
+  display: block;
+  font-weight: 600;
+}
+.shift-mgr__id {
+  display: block;
+  color: var(--shift-text-faint);
+  font-size: 11px;
+  font-family: var(--shift-mono);
+}
+
+/* =========================================================
+   Catalogue chips — solid fill, white mono text
+   ========================================================= */
+.shift-mgr__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  align-items: center;
+}
+.shift-mgr__chipset {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.shift-mgr__chip {
+  font-family: var(--shift-mono);
+  font-weight: 700;
+  font-size: 10px;
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 3px;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  flex: none;
+}
+.shift-mgr__chipn {
+  font-family: var(--shift-mono);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* =========================================================
+   Status pills — monochrome on purpose
+   ========================================================= */
+.shift-mgr__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: var(--shift-radius-pill);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+  border: 1px solid var(--shift-border-2);
+  background: var(--shift-surface);
+  color: var(--shift-text-mute);
+}
+.shift-mgr__pillglyph {
+  font-size: 9px;
+}
+.shift-mgr__pill--pending {
+  background: var(--shift-text);
+  border-color: var(--shift-text);
+  color: #fff;
+}
+.shift-mgr__pill--approved {
+  background: var(--shift-surface);
+  border-color: var(--shift-border-2);
+  color: var(--shift-text-mute);
+}
+.shift-mgr__pill--rejected {
+  background: var(--shift-divider);
+  border-color: var(--shift-text);
+  color: var(--shift-text);
+}
+.shift-mgr__pill--idle {
+  background: var(--shift-surface);
+  border-style: dashed;
+  border-color: var(--shift-border-2);
+  color: var(--shift-text-faint);
+}
+.shift-mgr__reason {
+  margin-top: 5px;
+  font-size: 11.5px;
+  color: var(--shift-text-mute);
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* =========================================================
+   Buttons
+   ========================================================= */
+.shift-mgr__acts {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+  align-items: center;
+}
+.shift-mgr__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid var(--shift-border-2);
+  background: var(--shift-surface);
+  color: var(--shift-text);
+  cursor: pointer;
+}
+.shift-mgr__btn:hover:not(:disabled) {
+  border-color: var(--shift-text-mute);
+}
+.shift-mgr__btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.shift-mgr__btn--pri {
+  background: var(--shift-text);
+  border-color: var(--shift-text);
+  color: #fff;
+}
+.shift-mgr__btn--pri:hover:not(:disabled) {
+  background: #1E293B;
+  border-color: #1E293B;
+}
+.shift-mgr__btn--danger {
+  background: var(--shift-surface);
+  border-color: var(--shift-red-border);
+  color: var(--shift-red);
+}
+.shift-mgr__btn--danger:hover:not(:disabled) {
+  background: var(--shift-red-bg);
+}
+.shift-mgr__btn--ghost {
+  border-style: dashed;
+  border-color: var(--shift-border);
+  color: var(--shift-text-faint);
+  cursor: default;
+}
+
+/* =========================================================
+   Footer
+   ========================================================= */
+.shift-mgr__footer {
+  padding: 12px 24px;
+  background: var(--shift-bg-footer);
+  border-top: 1px solid var(--shift-border);
+  color: var(--shift-text-faint);
+  font-size: 11.5px;
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+/* =========================================================
+   Reject dialog
+   ========================================================= */
+.shift-mgr__backdrop {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: rgba(15, 23, 42, 0.35);
+  z-index: 1040;
+}
+.shift-mgr__modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: calc(100% - 32px);
+  max-width: 420px;
+  background: var(--shift-surface);
+  border: 1px solid var(--shift-border);
+  border-radius: var(--shift-radius);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.16), 0 2px 4px rgba(15, 23, 42, 0.06);
+  z-index: 1050;
+  overflow: hidden;
+}
+.shift-mgr__modalhead {
+  padding: 16px 18px 0;
+}
+.shift-mgr__modaltitle {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+.shift-mgr__modalsub {
+  margin: 5px 0 0;
+  color: var(--shift-text-mute);
+  font-size: 12px;
+}
+.shift-mgr__modalbody {
+  padding: 14px 18px;
+}
+.shift-mgr__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--shift-mono);
+  font-size: 10px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--shift-text-mute);
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+.shift-mgr__req {
+  color: var(--shift-red);
+}
+.shift-mgr__textarea {
+  width: 100%;
+  border: 1px solid var(--shift-border-2);
+  border-radius: 6px;
+  padding: 9px 11px;
+  font: inherit;
+  font-size: 13px;
+  resize: vertical;
+  background: var(--shift-bg-input);
+  color: var(--shift-text);
+}
+.shift-mgr__textarea--err {
+  border-color: var(--shift-red-border);
+  background: var(--shift-red-bg);
+}
+.shift-mgr__helper {
+  margin-top: 5px;
+  font-size: 11.5px;
+  color: var(--shift-text-faint);
+}
+.shift-mgr__helper--err {
+  color: var(--shift-red);
+}
+.shift-mgr__note {
+  margin-top: 12px;
+  padding: 9px 11px;
+  border-radius: 6px;
+  background: var(--shift-bg-subtle);
+  border: 1px solid var(--shift-border);
+  color: var(--shift-text-body);
+  font-size: 12px;
+  display: flex;
+  gap: 8px;
+}
+.shift-mgr__modalfoot {
+  padding: 12px 18px;
+  background: var(--shift-bg-footer);
+  border-top: 1px solid var(--shift-border);
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* =========================================================
+   Responsive
+   ========================================================= */
+@media (max-width: 767px) {
+  .shift-mgr__header {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .shift-mgr__headeractions {
+    width: 100%;
+  }
+  .shift-mgr__monthnav {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .shift-mgr__stat {
+    min-width: 50%;
+    flex: 1 1 50%;
+  }
+  .shift-mgr__search {
+    max-width: none;
+  }
+  .shift-mgr__footer {
+    gap: 6px;
+    flex-direction: column;
+  }
+}
