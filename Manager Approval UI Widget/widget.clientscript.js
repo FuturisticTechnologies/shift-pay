@@ -30,6 +30,8 @@ api.controller = function ($scope) {
   c.rejecting     = null;   // the row being rejected, or null
   c.rejectComment = '';
   c.rejectError   = '';
+  c.detailCells   = [];     // month grid for the open detail panel
+  c.weekdayNames  = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   c.tabs = [
     { key: 'submitted',    label: 'Awaiting me',   count: 'submitted' },
@@ -87,9 +89,30 @@ api.controller = function ($scope) {
     loadMonth(y, m);
   };
 
+  /** Drill into one reportee's month. The detail is fetched, never derived. */
+  c.openDetail = function (row) {
+    if (!row || c.saving) return;
+    c.saving = true;
+    c.server.get({ action: 'loadDetail', userId: row.userId, year: c.data.year, month: c.data.month })
+      .then(function (r) {
+        c.data   = r.data;
+        c.saving = false;
+        c.recalc();
+        c.detailCells = c.data.detail ? buildDetailCells(c.data.detail) : [];
+      }, function () { c.saving = false; });
+  };
+
+  c.closeDetail = function () {
+    c.data.detail = null;
+    c.detailCells = [];
+  };
+
   c.approve = function (row) {
     if (!row || !row.canAction || c.saving) return;
-    send({ action: 'approve', userId: row.userId, year: c.data.year, month: c.data.month });
+    // Approving from inside the detail view returns to the queue: the row is
+    // no longer actionable, so leaving the panel open invites a second click.
+    send({ action: 'approve', userId: row.userId, year: c.data.year, month: c.data.month },
+         function () { c.closeDetail(); });
   };
 
   c.openReject = function (row) {
@@ -115,7 +138,7 @@ api.controller = function ($scope) {
     }
     var row = c.rejecting;
     send({ action: 'reject', userId: row.userId, year: c.data.year, month: c.data.month, comment: comment },
-         function () { c.cancelReject(); });
+         function () { c.cancelReject(); c.closeDetail(); });
   };
 
   // ───── View helpers ───────────────────────────────────────────────────────
@@ -180,6 +203,42 @@ api.controller = function ($scope) {
    * toLocaleString('en-IN') is not dependable across the browsers Service Portal
    * has to support, so this is done explicitly.
    */
+  /**
+   * Lay the month out Monday-first, padded to whole weeks.
+   *
+   * Mirrors the employee calendar's grid so a manager reading this recognises
+   * what the employee filled in — same week start, same leading/trailing blanks.
+   */
+  function buildDetailCells(detail) {
+    var y = detail.year, m = detail.month;
+    var firstDow = (new Date(y, m, 1).getDay() + 6) % 7;   // Mon = 0
+    var dim      = new Date(y, m + 1, 0).getDate();
+    var cells = [];
+
+    for (var lead = 0; lead < firstDow; lead++) {
+      cells.push({ inMonth: false, key: 'lead-' + lead });
+    }
+    for (var d = 1; d <= dim; d++) {
+      var key = y + '-' + pad2(m + 1) + '-' + pad2(d);
+      var dow = new Date(y, m, d).getDay();
+      var entry = detail.days[key] || null;
+      cells.push({
+        inMonth: true,
+        key:     key,
+        day:     d,
+        weekend: dow === 0 || dow === 6,
+        shift:   entry,
+        comment: entry ? entry.comment : ''
+      });
+    }
+    while (cells.length % 7 !== 0) {
+      cells.push({ inMonth: false, key: 'trail-' + cells.length });
+    }
+    return cells;
+  }
+
+  function pad2(n) { return n < 10 ? '0' + n : '' + n; }
+
   function groupDigits(n) {
     var neg = n < 0;
     var s = Math.abs(n).toString();

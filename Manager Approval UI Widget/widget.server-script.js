@@ -70,6 +70,7 @@
 
   // ── Actions run before the re-read, so the response is already fresh ─────
   data.actionError = '';
+  data.detail = null;   // populated only by the loadDetail action
   if (input && input.action) handleAction(input);
 
   // ── Build the queue ──────────────────────────────────────────────────────
@@ -83,6 +84,14 @@
   function handleAction(inp) {
     var action = inp.action;
     if (action === 'loadQueue') return;
+
+    if (action === 'loadDetail') {
+      // Read-only drill-in. Still gated: a manager may not read a
+      // non-reportee's day-by-day detail any more than they may action it.
+      if (!assertReportee(inp.userId)) return;
+      data.detail = readDetail(inp.userId, data.year, data.month);
+      return;
+    }
 
     if (action === 'approve') {
       actionOne(inp.userId, data.year, data.month, 'approved', inp.comment || '');
@@ -348,6 +357,134 @@
       if (!isWeekend(gr.getValue('u_date'))) map[uid].weekdaysLogged++;
     }
     return map;
+  }
+
+  /**
+   * Everything behind the Review button for one reportee-month.
+   *
+   * Read-only. The money here is the same snapshot the queue shows — weekly
+   * rows come from the summary table too, so the weekly split and the monthly
+   * total cannot disagree with each other or with what gets exported.
+   */
+  function readDetail(userId, y, m) {
+    var rep = null;
+    for (var i = 0; i < reportees.length; i++) {
+      if (reportees[i].userId === userId) { rep = reportees[i]; break; }
+    }
+    if (!rep) return null;
+
+    var ts = readTimesheets(userId, y, m)[userId] || null;
+    var status = ts ? ts.status : '';
+
+    var detail = {
+      userId:         rep.userId,
+      name:           rep.name,
+      initials:       rep.initials,
+      employeeId:     rep.employeeId,
+      year:           y,
+      month:          m,
+      monthLabel:     monthLabel(y, m),
+      status:         status,
+      statusLabel:    statusLabel(status),
+      submittedOn:    ts ? ts.submittedOn : '',
+      approver:       ts ? ts.approver : '',
+      actionedOn:     ts ? ts.actionedOn : '',
+      managerComment: ts ? ts.managerComment : '',
+      canAction:      status === 'submitted',
+      weekdaysInMonth: weekdaysIn(y, m),
+      weekdaysLogged:  0,
+      days:     {},
+      comments: [],
+      ledger:   [],
+      weeks:    [],
+      changes:  []
+    };
+
+    // ── day entries + the employee's own comments ──
+    var from = y + '-' + pad(m + 1) + '-01';
+    var to   = y + '-' + pad(m + 1) + '-' + pad(daysInMonth(y, m));
+    var gr = new GlideRecord(TABLE_DAY);
+    gr.addQuery('u_user', userId);
+    gr.addQuery('u_date', '>=', from);
+    gr.addQuery('u_date', '<=', to);
+    gr.orderBy('u_date');
+    gr.query();
+    while (gr.next()) {
+      var dk      = gr.getValue('u_date');
+      var shiftId = gr.getValue('u_shift_type');
+      var cat     = catalogById[shiftId] || {};
+      detail.days[dk] = {
+        shiftId:   shiftId,
+        name:      cat.name || '(removed)',
+        color_hex: cat.color_hex || '',
+        comment:   gr.getValue('u_comment') || ''
+      };
+      if (!isWeekend(dk)) detail.weekdaysLogged++;
+      var cmt = gr.getValue('u_comment');
+      if (cmt) detail.comments.push({ date: dk, text: cmt });
+    }
+
+    // ── monthly ledger: count x snapshot rate = amount, per shift type ──
+    var monthly = readSummaries(userId, y, m)[userId];
+    if (monthly) {
+      detail.ledger      = monthly.mix;
+      detail.totalShifts = monthly.totalShifts;
+      if (SHOW_PAY) {
+        detail.totalAmount = monthly.totalAmount;
+        detail.currency    = monthly.currency;
+      }
+    } else {
+      detail.totalShifts = 0;
+      if (SHOW_PAY) { detail.totalAmount = 0; detail.currency = 'INR'; }
+    }
+
+    // ── weekly split, from the same snapshotted summary rows ──
+    var wk = new GlideRecord(TABLE_SUM);
+    wk.addQuery('u_user', userId);
+    wk.addQuery('u_period_type', 'week');
+    wk.addQuery('u_year',  y);
+    wk.addQuery('u_month', m + 1);
+    wk.orderBy('u_period_start');
+    wk.query();
+    var weekMap = {}, weekOrder = [];
+    while (wk.next()) {
+      var ps = wk.getValue('u_period_start');
+      if (!weekMap[ps]) {
+        weekMap[ps] = { periodStart: ps, count: 0, amount: 0 };
+        weekOrder.push(ps);
+      }
+      weekMap[ps].count += parseInt(wk.getValue('u_count'), 10) || 0;
+      if (SHOW_PAY) weekMap[ps].amount += parseFloat(wk.getValue('u_amount')) || 0;
+    }
+    for (var w = 0; w < weekOrder.length; w++) {
+      var row = weekMap[weekOrder[w]];
+      if (!SHOW_PAY) row.amount = null;
+      detail.weeks.push(row);
+    }
+
+    // ── manager corrections already made to this month ──
+    var au = new GlideRecord(TABLE_AUDIT);
+    au.addQuery('user', userId);
+    au.addQuery('date', '>=', from);
+    au.addQuery('date', '<=', to);
+    au.orderByDesc('changed_on');
+    au.query();
+    while (au.next()) {
+      var pv = catalogById[au.getValue('previous_shift')] || {};
+      var nv = catalogById[au.getValue('new_shift')]      || {};
+      detail.changes.push({
+        date:      au.getValue('date'),
+        fromName:  pv.name || '(empty)',
+        fromColor: pv.color_hex || '',
+        toName:    nv.name || '(cleared)',
+        toColor:   nv.color_hex || '',
+        reason:    au.getValue('reason') || '',
+        changedBy: au.getDisplayValue('changed_by') || '',
+        changedOn: au.getDisplayValue('changed_on') || ''
+      });
+    }
+
+    return detail;
   }
 
   function byCatalogueOrder(a, b) {
