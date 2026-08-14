@@ -1,3 +1,72 @@
 [
-  
+  {
+    "name": "title",
+    "label": "Widget title",
+    "type": "string",
+    "default": "Team Timesheet Approvals",
+    "section": "Presentation"
+  },
+  {
+    "name": "subtitle",
+    "label": "Subtitle / context line",
+    "type": "string",
+    "default": "Review and approve your team's monthly shift submissions",
+    "section": "Presentation"
+  },
+  {
+    "name": "show_pay_amounts",
+    "label": "Show pay amounts to managers",
+    "type": "boolean",
+    "default": true,
+    "hint": "When off, no monetary value is sent to the browser at all — managers see shift counts only. Enforced server-side, not just hidden in the template. Use where pay is confidential from line managers.",
+    "section": "Behaviour"
+  },
+  {
+    "name": "manager_field",
+    "label": "Manager field on sys_user",
+    "type": "string",
+    "default": "manager",
+    "hint": "Field on sys_user holding the approving manager. Change only if your org routes approval by something other than the standard manager field.",
+    "section": "Behaviour"
+  },
+  {
+    "name": "shift_table",
+    "label": "Day-entry table",
+    "type": "string",
+    "default": "x_1995110_shift_0_u_shift_submission",
+    "hint": "Table name. Must have columns u_user, u_date, u_shift_type, u_comment.",
+    "section": "Data"
+  },
+  {
+    "name": "lock_table",
+    "label": "Monthly timesheet table",
+    "type": "string",
+    "default": "x_1995110_shift_0_monthly_timesheet",
+    "hint": "Table name. Must have u_user, u_year, u_month, u_submitted_on plus the approval columns status, approver, actioned_on, manager_comment.",
+    "section": "Data"
+  },
+  {
+    "name": "catalog_table",
+    "label": "Shift catalogue table",
+    "type": "string",
+    "default": "x_1995110_shift_0_shift_type",
+    "hint": "Table name. Active rows supply chip colours (color_hex), names and rates.",
+    "section": "Data"
+  },
+  {
+    "name": "summary_table",
+    "label": "Aggregate summary table",
+    "type": "string",
+    "default": "x_1995110_shift_0_shift_submission_summary",
+    "hint": "Table name. Monthly rows (u_period_type = month) are the source of the shift mix and cost shown in the queue, including the rate snapshot.",
+    "section": "Data"
+  },
+  {
+    "name": "audit_table",
+    "label": "Day-change audit table",
+    "type": "string",
+    "default": "x_1995110_shift_0_shift_day_change",
+    "hint": "Table name. One row per manager correction to a day: user, date, previous_shift, new_shift, reason, changed_by, changed_on.",
+    "section": "Data"
+  }
 ]
