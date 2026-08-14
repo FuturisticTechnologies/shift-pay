@@ -84,8 +84,12 @@ api.controller = function ($scope, $element, $timeout) {
   //   data.todayKey         'YYYY-MM-DD'
   //   data.entries          { 'YYYY-MM-DD': sys_id }
   //   data.comments         { 'YYYY-MM-DD': string }
-  //   data.locked           boolean
+  //   data.locked           boolean — true when the month cannot be edited
   //   data.submittedOn      display date for lock note
+  //   data.status           '' | 'submitted' | 'approved' | 'rejected'
+  //   data.managerComment   manager's reason — always set when status is rejected
+  //   data.approver         display name of the manager who actioned it
+  //   data.actionedOn       display date of that decision
   //   data.shiftCatalogue   [{sys_id, name, description, rate, currency, color_hex,
   //                            oc_role, allow_weekday, allow_weekend_holiday, day_category}]
   //   data.allowedShifts    { 'YYYY-MM-DD': [sys_id, ...] }
@@ -98,6 +102,7 @@ api.controller = function ($scope, $element, $timeout) {
   c.year          = c.data.year;
   c.month         = c.data.month;
   c.allowedShifts = c.data.allowedShifts || {};
+  applyApprovalState(c.data);
 
   // ───── UI state ───────────────────────────────────────────────────────────
   c.bulkMode            = false;
@@ -160,6 +165,7 @@ api.controller = function ($scope, $element, $timeout) {
       c.comments     = r.data.comments || {};
       c.locked       = !!r.data.locked;
       c.submittedOn  = r.data.submittedOn || '';
+      applyApprovalState(r.data);
       buildShiftTypes(r.data.shiftCatalogue);
       c.allowedShifts = r.data.allowedShifts || {};
       c.refresh();
@@ -272,8 +278,13 @@ api.controller = function ($scope, $element, $timeout) {
     if (!c.canSubmit) return;
     c.saving = true;
     c.server.get({ action: 'submitMonth', year: c.year, month: c.month }).then(function (r) {
-      c.locked      = true;
+      // Trust the server's own view of the lock rather than assuming success —
+      // a rejected submission (e.g. a weekday went missing between render and
+      // click) must not leave the calendar locked on screen.
+      c.locked      = !!r.data.locked;
       c.submittedOn = r.data.submittedOn || '';
+      applyApprovalState(r.data);
+      c.recalc();
       c.saving      = false;
     });
   };
@@ -351,6 +362,10 @@ api.controller = function ($scope, $element, $timeout) {
         ? 'Submit opens ' + shortDate(openKey)
         : 'Submission window closed ' + shortDate(closeKey);
     }
+    // A rejected month is editable again, so the button reads "Resubmit".
+    c.submitLabel = c.locked
+      ? 'Submitted'
+      : (c.wasRejected ? 'Resubmit month' : 'Submit month');
 
     // 7. re-stamp current shift + comment on cells (entries/comments may have changed)
     c.cells.forEach(function (cell) {
@@ -363,6 +378,23 @@ api.controller = function ($scope, $element, $timeout) {
   };
 
   // ───── Internals ──────────────────────────────────────────────────────────
+
+  /**
+   * Copy the month's approval state onto the controller.
+   *
+   * Called on bootstrap and after every action that can change it, so the
+   * banner and the submit-button label never lag behind the server. Only one
+   * of wasApproved / wasRejected is ever true; both are false for a month that
+   * has not been actioned.
+   */
+  function applyApprovalState(d) {
+    c.status         = d.status || '';
+    c.managerComment = d.managerComment || '';
+    c.approver       = d.approver || '';
+    c.actionedOn     = d.actionedOn || '';
+    c.wasApproved    = c.status === 'approved';
+    c.wasRejected    = c.status === 'rejected';
+  }
 
   function buildCells() {
     var first = new Date(c.year, c.month, 1);

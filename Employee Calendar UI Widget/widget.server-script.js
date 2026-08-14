@@ -320,11 +320,17 @@
   // ============================================================ //
 
   function loadMonthInto(out, y, m) {
-    out.entries      = readMonthEntries(y, m);
-    out.comments     = readMonthComments(y, m);
-    out.locked       = isMonthLocked(y, m);
-    out.submittedOn  = out.locked ? readSubmittedOn(y, m) : '';
-    out.allowedShifts = computeAllowedShifts(y, m);
+    var ts = readTimesheet(y, m);
+    out.entries        = readMonthEntries(y, m);
+    out.comments       = readMonthComments(y, m);
+    out.locked         = ts.locked;
+    out.submittedOn    = ts.submittedOn;
+    // Approval state, for the banner. status is '' when nothing was ever submitted.
+    out.status         = ts.status;
+    out.managerComment = ts.managerComment;
+    out.approver       = ts.approver;
+    out.actionedOn     = ts.actionedOn;
+    out.allowedShifts  = computeAllowedShifts(y, m);
   }
 
   function readMonthEntries(y, m) {
@@ -355,24 +361,50 @@
     return gr;
   }
 
-  function readSubmittedOn(y, m) {
+  /**
+   * The whole approval state of one month, in a single read.
+   *
+   * A month is LOCKED when a timesheet row exists and it has not been rejected.
+   * Rejection deliberately reopens the month so the employee can fix and
+   * resubmit — before the approval flow existed, the mere presence of this row
+   * meant "locked forever" and there was no way back.
+   */
+  function readTimesheet(y, m) {
     var gr = new GlideRecord(TABLE_LOCK);
     gr.addQuery('u_user',  USER_ID);
     gr.addQuery('u_year',  y);
     gr.addQuery('u_month', m + 1);
     gr.setLimit(1);
     gr.query();
-    return gr.next() ? gr.getDisplayValue('u_submitted_on') : '';
+
+    if (!gr.next()) {
+      return {
+        exists: false, sysId: '', status: '', submittedOn: '',
+        managerComment: '', approver: '', actionedOn: '', locked: false
+      };
+    }
+
+    // Rows written before the status column existed read as empty; treat those
+    // as submitted, which is what their presence used to mean.
+    var status = gr.getValue('status') || 'submitted';
+    return {
+      exists:         true,
+      sysId:          gr.getUniqueValue(),
+      status:         status,
+      submittedOn:    gr.getDisplayValue('u_submitted_on') || '',
+      managerComment: gr.getValue('manager_comment') || '',
+      approver:       gr.getDisplayValue('approver') || '',
+      actionedOn:     gr.getDisplayValue('actioned_on') || '',
+      locked:         status !== 'rejected'
+    };
+  }
+
+  function readSubmittedOn(y, m) {
+    return readTimesheet(y, m).submittedOn;
   }
 
   function isMonthLocked(y, m) {
-    var gr = new GlideRecord(TABLE_LOCK);
-    gr.addQuery('u_user',  USER_ID);
-    gr.addQuery('u_year',  y);
-    gr.addQuery('u_month', m + 1);
-    gr.setLimit(1);
-    gr.query();
-    return gr.hasNext();
+    return readTimesheet(y, m).locked;
   }
 
   function getPrevShift(date) {
@@ -421,7 +453,10 @@
   }
 
   function submitMonth(y, m) {
-    if (isMonthLocked(y, m)) return;
+    var ts = readTimesheet(y, m);
+    // Already with the manager, or already approved — nothing to do.
+    if (ts.exists && ts.status !== 'rejected') return;
+
     var entries = readMonthEntries(y, m);
     var missing = 0, dim = daysInMonth(y, m);
     for (var d = 1; d <= dim; d++) {
@@ -433,14 +468,30 @@
       gs.addErrorMessage('Cannot submit: ' + missing + ' weekday(s) still unlogged.');
       return;
     }
+
     var gr = new GlideRecord(TABLE_LOCK);
-    gr.initialize();
-    gr.setValue('u_user',        USER_ID);
-    gr.setValue('u_year',        y);
-    gr.setValue('u_month',       m + 1);
-    gr.setValue('u_submitted_on', new GlideDateTime());
-    gr.insert();
-    gs.addInfoMessage('Shift submissions for ' + y + '-' + pad(m + 1) + ' locked.');
+    if (ts.exists) {
+      // Resubmitting after a rejection: reuse the row and clear the old
+      // decision, so one month never has two timesheet rows. The manager must
+      // act again — a resubmission restarts the approval step.
+      if (!gr.get(ts.sysId)) return;
+      gr.setValue('status',          'submitted');
+      gr.setValue('approver',        '');
+      gr.setValue('actioned_on',     '');
+      gr.setValue('manager_comment', '');
+      gr.setValue('u_submitted_on',  new GlideDateTime());
+      gr.update();
+      gs.addInfoMessage('Shift submissions for ' + y + '-' + pad(m + 1) + ' resubmitted for approval.');
+    } else {
+      gr.initialize();
+      gr.setValue('u_user',         USER_ID);
+      gr.setValue('u_year',         y);
+      gr.setValue('u_month',        m + 1);
+      gr.setValue('status',         'submitted');
+      gr.setValue('u_submitted_on', new GlideDateTime());
+      gr.insert();
+      gs.addInfoMessage('Shift submissions for ' + y + '-' + pad(m + 1) + ' submitted for approval.');
+    }
   }
 
 
@@ -519,95 +570,16 @@
   // Aggregate helpers                                             //
   // ============================================================ //
 
+  // Weekly/monthly aggregation lives in the ShiftPayAggregator Script Include so
+  // the manager approval widget can run the identical logic against a reportee's
+  // data. Everything it needs is passed in; it hard-wires nothing about "me".
   function recomputeAggregates(dates) {
-    var rateMap = loadRateMap();
-    var monthsMap = {}, weeksMap = {};
-
-    for (var i = 0; i < dates.length; i++) {
-      var dk = dates[i];
-      var p = dk.split('-');
-      var y = parseInt(p[0], 10), m = parseInt(p[1], 10) - 1; // 0-indexed
-
-      var mKey = y + '-' + m;
-      if (!monthsMap[mKey]) monthsMap[mKey] = { y: y, m: m };
-
-      var wStart = mondayOf(dk);
-      var wKey   = wStart + '|' + mKey;
-      if (!weeksMap[wKey]) {
-        var fom    = firstOfMonthKey(y, m);
-        var lom    = lastOfMonthKey(y, m);
-        var wEnd   = addDays(wStart, 6);
-        weeksMap[wKey] = {
-          periodStart: wStart, y: y, m: m,
-          winStart: maxDate(wStart, fom),
-          winEnd:   minDate(wEnd,   lom)
-        };
-      }
-    }
-
-    for (var mk in monthsMap) {
-      var mo = monthsMap[mk];
-      var fom2 = firstOfMonthKey(mo.y, mo.m);
-      var lom2 = lastOfMonthKey(mo.y, mo.m);
-      writeSummary('month', fom2, mo.y, mo.m, fom2, lom2, rateMap);
-    }
-    for (var wk in weeksMap) {
-      var we = weeksMap[wk];
-      writeSummary('week', we.periodStart, we.y, we.m, we.winStart, we.winEnd, rateMap);
-    }
-  }
-
-  function writeSummary(type, periodStart, year, month, winStart, winEnd, rateMap) {
-    // Delete existing rows for this (user, type, period_start, year, month)
-    var del = new GlideRecord(TABLE_SUM);
-    del.addQuery('u_user',         USER_ID);
-    del.addQuery('u_period_type',  type);
-    del.addQuery('u_period_start', periodStart);
-    del.addQuery('u_year',         year);
-    del.addQuery('u_month',        month + 1);
-    del.deleteMultiple();
-
-    // Aggregate submission rows within the window
-    var gr = new GlideRecord(TABLE_DAY);
-    gr.addQuery('u_user', USER_ID);
-    gr.addQuery('u_date', '>=', winStart);
-    gr.addQuery('u_date', '<=', winEnd);
-    gr.query();
-    var counts = {};
-    while (gr.next()) {
-      var st = gr.getValue('u_shift_type');
-      if (st) counts[st] = (counts[st] || 0) + 1;
-    }
-
-    // Insert one row per non-zero shift
-    for (var st in counts) {
-      var cnt = counts[st];
-      if (!cnt) continue;
-      var rm = rateMap[st] || { rate: '0', currency: 'INR' };
-      var amount = cnt * parseFloat(rm.rate || 0);
-      var ins = new GlideRecord(TABLE_SUM);
-      ins.initialize();
-      ins.setValue('u_user',           USER_ID);
-      ins.setValue('u_period_type',    type);
-      ins.setValue('u_period_start',   periodStart);
-      ins.setValue('u_year',           year);
-      ins.setValue('u_month',          month + 1);
-      ins.setValue('u_shift_type',     st);
-      ins.setValue('u_count',          cnt);
-      ins.setValue('u_rate_snapshot',  rm.rate || 0);
-      ins.setValue('u_amount',         amount);
-      ins.setValue('u_currency',       rm.currency || 'INR');
-      ins.insert();
-    }
-  }
-
-  function loadRateMap() {
-    var map = {};
-    for (var i = 0; i < catalogue.length; i++) {
-      var row = catalogue[i];
-      map[row.sys_id] = { rate: row.rate, currency: row.currency };
-    }
-    return map;
+    new ShiftPayAggregator({
+      userId:       USER_ID,
+      dayTable:     TABLE_DAY,
+      summaryTable: TABLE_SUM,
+      catalogTable: TABLE_CAT
+    }).recompute(dates);
   }
 
 
@@ -615,29 +587,9 @@
   // Date utilities                                                //
   // ============================================================ //
 
-  function mondayOf(dateKey) {
-    var p = dateKey.split('-');
-    var d = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
-    var dow = d.getDay(); // 0=Sun
-    d.setDate(d.getDate() - (dow === 0 ? 6 : dow - 1));
-    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
-  }
-
-  function firstOfMonthKey(y, m) { return y + '-' + pad(m + 1) + '-01'; }
-
-  function lastOfMonthKey(y, m) {
-    return y + '-' + pad(m + 1) + '-' + pad(daysInMonth(y, m));
-  }
-
-  function addDays(dateKey, n) {
-    var p = dateKey.split('-');
-    var d = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
-    d.setDate(d.getDate() + n);
-    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
-  }
-
-  function maxDate(a, b) { return a > b ? a : b; }
-  function minDate(a, b) { return a < b ? a : b; }
+  // mondayOf / firstOfMonthKey / lastOfMonthKey / addDays / maxDate / minDate
+  // moved to the ShiftPayAggregator Script Include — they were used only by the
+  // aggregate code. pad() and daysInMonth() stay: the rest of this script uses them.
 
   function nthWeekdayAfter(dateKey, n) {
     var p = dateKey.split('-');

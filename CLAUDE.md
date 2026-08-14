@@ -15,7 +15,9 @@ A **ServiceNow scoped application** (scope `x_1995110_shift_0`, portal `/shiftpa
   - `widget.server-script.js` — server-side IIFE (SSJS / Rhino), reads `input`/`options`, writes `data`
   - `widget.styles.scss` — styles; all custom classes namespaced `shift-`
   - `option-schema.json` — instance options (titles + the five configurable table names)
-- `Manager Approval UI Widget/` — **stub only**; all files are empty. This widget is not yet built.
+- `Manager Approval UI Widget/` — in progress. Team approval queue: pending timesheets with approve/reject, past decisions, per-day correction with a mandatory reason, and per-shift-type cost. Schema and shared logic are deployed; the widget files themselves are still being written.
+- `Script Includes/` — server-side classes shared by more than one widget. Not widget source, so it deploys to `sys_script_include` rather than `sp_widget`.
+  - `ShiftPayAggregator.js` — weekly/monthly aggregation with the rate snapshot, **parameterised by user**. Both the calendar (own user) and the manager widget (a reportee) call it. This logic used to live inline in the calendar server script hard-wired to `gs.getUserID()`, which is precisely what made it unusable from the manager side. Never fork it — a second copy of payroll maths that drifts is a pay bug.
 
 ## Architecture essentials (read before editing the calendar widget)
 
@@ -36,7 +38,11 @@ A **ServiceNow scoped application** (scope `x_1995110_shift_0`, portal `/shiftpa
 
 **Allowed-shifts are computed server-side, enforced client-side.** `data.allowedShifts` is `{ 'YYYY-MM-DD': [sys_id,...] }`; the client's `c.isAllowed` filters dropdowns. Weekend/holiday detection on the server uses a `cmn_schedule` whose sys_id is in system property `x_shiftpay.holiday_schedule` (read via `cmn_schedule_span`).
 
-**Aggregates are recomputed, not incremented.** After any day change, `recomputeAggregates(dates)` deletes and rewrites the affected month row and each affected week row (`writeSummary` does delete-then-insert per shift type), snapshotting the current rate.
+**Aggregates are recomputed, not incremented.** After any day change, `new ShiftPayAggregator({...}).recompute(dates)` deletes and rewrites the affected month row and each affected week row (delete-then-insert per shift type), snapshotting the current rate. The widget's `recomputeAggregates` is a thin delegation to it. Known wart, preserved deliberately so the extraction stayed behaviour-neutral: the rate map reads **active catalogue rows only**, so a shift type deactivated after being logged re-aggregates at ₹0.
+
+**Approval state lives on the monthly-timesheet row**, not a separate table: `status` (submitted/approved/rejected), `approver`, `actioned_on`, `manager_comment`. A month is locked when a row exists **and** `status != 'rejected'` — rejection reopens it for editing, and `submitMonth` reuses the existing row on resubmission rather than inserting a second one. Manager per-day corrections are audited in `x_1995110_shift_0_shift_day_change`.
+
+**Deploying to the instance.** Writes go through `cnit put sp_widget -SysId <id>` (fields `template`, `script`, `client_script`, `css`) and `cnit post/put sys_script_include`. Two traps, both hit for real: `Get-Content -Raw` returns a string carrying ETS note properties that `ConvertTo-Json` serialises into the payload, and PowerShell 5.1's `ConvertTo-Json` does not escape non-ASCII while cnit reads body files with no `-Encoding`. Read with `[IO.File]::ReadAllText`, escape every char above 127 to `\uXXXX`, write ASCII — then **read the field back and compare it to the local file**. A push can return HTTP 200 and store garbage.
 
 ## Conventions
 

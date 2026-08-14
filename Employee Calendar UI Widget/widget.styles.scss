@@ -71,6 +71,50 @@
   color: #B91C1C;
   font-size: 13px;
 }
+/* =========================================================
+   Approval outcome banners
+   Rejected is assertive (there is something to do); approved is
+   quiet (there is not). Both sit directly under the header so the
+   outcome is read before the calendar.
+   ========================================================= */
+.shift-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 24px 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--shift-border);
+  border-radius: 6px;
+  font-size: 13px;
+}
+.shift-banner__body {
+  min-width: 0;
+}
+.shift-banner__title {
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+.shift-banner__reason {
+  margin: 4px 0 0;
+  font-style: italic;
+  overflow-wrap: break-word;
+}
+.shift-banner__hint {
+  margin: 4px 0 0;
+  font-size: 12px;
+  opacity: 0.85;
+}
+.shift-banner--rejected {
+  border-color: #FCA5A5;
+  background: #FEF2F2;
+  color: #B91C1C;
+}
+.shift-banner--approved {
+  border-color: #BBF7D0;
+  background: #F0FDF4;
+  color: #15803D;
+}
+
 .shift-widget__title {
   margin: 0;
   font-size: 18px;
