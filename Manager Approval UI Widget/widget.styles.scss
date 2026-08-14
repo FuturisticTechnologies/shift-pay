@@ -549,6 +549,212 @@
 }
 
 /* =========================================================
+   Review detail panel
+   ========================================================= */
+.shift-mgr__panel {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: calc(100% - 40px);
+  max-width: 1000px;
+  max-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+  background: var(--shift-surface);
+  border: 1px solid var(--shift-border);
+  border-radius: var(--shift-radius);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.16), 0 2px 4px rgba(15, 23, 42, 0.06);
+  z-index: 1050;
+  overflow: hidden;
+}
+.shift-mgr__panelhead {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--shift-border);
+}
+.shift-mgr__panelheadright {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.shift-mgr__panelbody {
+  display: flex;
+  min-height: 0;
+  overflow-y: auto;
+}
+.shift-mgr__panelleft {
+  flex: 1 1 56%;
+  min-width: 0;
+  padding: 16px 20px 20px;
+  border-right: 1px solid var(--shift-border);
+}
+.shift-mgr__panelright {
+  flex: 1 1 44%;
+  min-width: 0;
+  padding: 16px 20px 20px;
+  background: var(--shift-bg-subtle);
+}
+.shift-mgr__h4 {
+  margin: 0 0 10px;
+  font-family: var(--shift-mono);
+  font-size: 10px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--shift-text-faint);
+  font-weight: 700;
+}
+.shift-mgr__panelleft .shift-mgr__h4 {
+  margin-top: 18px;
+}
+.shift-mgr__panelleft .shift-mgr__h4:first-child {
+  margin-top: 0;
+}
+.shift-mgr__panelfoot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--shift-border);
+  background: var(--shift-bg-footer);
+  font-size: 12px;
+}
+.shift-mgr__spacer {
+  margin-left: auto;
+}
+
+/* Month grid — mirrors the employee calendar's 7-column layout */
+.shift-mgr__cal {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+.shift-mgr__dow {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--shift-text-mute);
+  padding: 0 0 2px 2px;
+}
+.shift-mgr__dow--we {
+  color: var(--shift-text-faint);
+}
+.shift-mgr__day {
+  border: 1px solid var(--shift-border);
+  border-radius: var(--shift-radius);
+  background: var(--shift-surface);
+  min-height: 54px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 4px;
+}
+.shift-mgr__day--out {
+  background: transparent;
+  border-color: var(--shift-divider);
+}
+.shift-mgr__daynum {
+  font-family: var(--shift-mono);
+  font-size: 12px;
+  font-weight: 600;
+}
+.shift-mgr__day--we .shift-mgr__daynum {
+  color: var(--shift-text-faint);
+}
+.shift-mgr__dayshift {
+  display: block;
+  padding: 3px 4px;
+  border-radius: var(--shift-radius-sm);
+  font-family: var(--shift-mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #fff;
+  text-align: center;
+  letter-spacing: 0.2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.shift-mgr__coverage {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--shift-text-mute);
+}
+
+/* Employee comments + manager corrections */
+.shift-mgr__comment {
+  display: flex;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--shift-text-body);
+  padding: 8px 10px;
+  background: var(--shift-bg-subtle);
+  border-radius: 6px;
+  border-left: 2px solid var(--shift-border-2);
+  margin-bottom: 6px;
+}
+.shift-mgr__commentdate {
+  font-family: var(--shift-mono);
+  font-size: 11px;
+  color: var(--shift-text-faint);
+  flex: none;
+}
+.shift-mgr__change {
+  padding: 8px 10px;
+  background: var(--shift-bg-subtle);
+  border-radius: 6px;
+  border-left: 2px solid var(--shift-text);
+  margin-bottom: 6px;
+}
+.shift-mgr__changetop {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  font-size: 12px;
+}
+.shift-mgr__changereason {
+  margin-top: 4px;
+  font-size: 11.5px;
+  color: var(--shift-text-mute);
+}
+
+/* Ledger */
+.shift-mgr__ledger {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+.shift-mgr__ledger th {
+  font-family: var(--shift-mono);
+  font-size: 10px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--shift-text-faint);
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--shift-border-2);
+  font-weight: 700;
+}
+.shift-mgr__ledger td {
+  padding: 7px 8px;
+  border-bottom: 1px solid var(--shift-border);
+  color: var(--shift-text-body);
+}
+.shift-mgr__ledgertotal td {
+  border-bottom: 0;
+  border-top: 1.5px solid var(--shift-text);
+  font-weight: 700;
+  color: var(--shift-text);
+  padding-top: 9px;
+}
+
+/* =========================================================
    Reject dialog
    ========================================================= */
 .shift-mgr__backdrop {
@@ -560,6 +766,14 @@
   background: rgba(15, 23, 42, 0.35);
   z-index: 1040;
 }
+/* Used when a second layer opens over the detail panel: it has to sit above the
+   panel (1050), or clicking it would reach the panel underneath instead. */
+.shift-mgr__backdrop--top {
+  z-index: 1060;
+  background: rgba(15, 23, 42, 0.2);
+}
+/* The reject dialog can be opened from inside the detail panel, so it and its
+   backdrop must sit above it — otherwise the panel covers the dialog. */
 .shift-mgr__modal {
   position: fixed;
   top: 50%;
@@ -571,7 +785,7 @@
   border: 1px solid var(--shift-border);
   border-radius: var(--shift-radius);
   box-shadow: 0 12px 32px rgba(15, 23, 42, 0.16), 0 2px 4px rgba(15, 23, 42, 0.06);
-  z-index: 1050;
+  z-index: 1070;
   overflow: hidden;
 }
 .shift-mgr__modalhead {
@@ -673,5 +887,28 @@
   .shift-mgr__footer {
     gap: 6px;
     flex-direction: column;
+  }
+  /* Ledger below days rather than beside them; the panel fills the screen. */
+  .shift-mgr__panel {
+    width: calc(100% - 16px);
+    max-height: calc(100vh - 24px);
+  }
+  .shift-mgr__panelbody {
+    flex-direction: column;
+  }
+  .shift-mgr__panelleft {
+    border-right: 0;
+    border-bottom: 1px solid var(--shift-border);
+  }
+  .shift-mgr__panelhead {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .shift-mgr__panelheadright {
+    margin-left: 0;
+    width: 100%;
+  }
+  .shift-mgr__panelfoot {
+    flex-wrap: wrap;
   }
 }
