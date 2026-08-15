@@ -54,6 +54,31 @@
     <span>Shift catalogue is misconfigured — contact an administrator. ({{c.data.configError}})</span>
   </div>
 
+  <!-- Approval outcome banner ==================================== -->
+  <!-- Rejected: the month is editable again and the reason is the whole point,
+       so it is announced assertively and carries the manager's words verbatim. -->
+  <div class="shift-banner shift-banner--rejected" ng-if="c.wasRejected" role="alert">
+    <i class="fa fa-reply" aria-hidden="true"></i>
+    <div class="shift-banner__body">
+      <div class="shift-banner__title">
+        Sent back by {{c.approver || 'your manager'}}<span ng-if="c.actionedOn"> on {{c.actionedOn}}</span>
+      </div>
+      <p class="shift-banner__reason" ng-if="c.managerComment">“{{c.managerComment}}”</p>
+      <p class="shift-banner__hint">Make the changes and resubmit — this month is open for editing again.</p>
+    </div>
+  </div>
+
+  <!-- Approved: read-only and final. Quiet by design; nothing to act on. -->
+  <div class="shift-banner shift-banner--approved" ng-if="c.wasApproved" role="status">
+    <i class="fa fa-check-circle" aria-hidden="true"></i>
+    <div class="shift-banner__body">
+      <div class="shift-banner__title">
+        Approved by {{c.approver || 'your manager'}}<span ng-if="c.actionedOn"> on {{c.actionedOn}}</span>
+      </div>
+      <p class="shift-banner__hint" ng-if="c.managerComment">“{{c.managerComment}}”</p>
+    </div>
+  </div>
+
   <!-- Legend ===================================================== -->
   <div class="shift-widget__legend">
 
@@ -88,7 +113,9 @@
     </div>
 
     <span class="shift-widget__locked" ng-if="c.locked">
-      <i class="fa fa-lock"></i> Locked — submitted {{c.submittedOn}}
+      <i class="fa fa-lock"></i>
+      <span ng-if="c.wasApproved">Approved — locked</span>
+      <span ng-if="!c.wasApproved">Awaiting approval — submitted {{c.submittedOn}}</span>
     </span>
   </div>
 
@@ -281,7 +308,8 @@
 
       <div class="shift-summary__mini">
         <div class="shift-summary__miniheader">
-          <span ng-repeat="d in ['M','T','W','T','F','S','S']" ng-bind="d"></span>
+          <span ng-repeat="d in ['M','T','W','T','F','S','S'] track by $index"
+                ng-bind="d"></span>
         </div>
         <div class="shift-summary__minigrid">
           <div ng-repeat="cell in c.lastMonthCells track by $index"
@@ -323,7 +351,7 @@
       <button type="button" class="btn btn-primary shift-widget__submit"
               ng-click="c.submitMonth()"
               ng-disabled="!c.canSubmit || c.saving">
-        <span ng-bind="c.locked ? 'Submitted' : 'Submit month'"></span>
+        <span ng-bind="c.submitLabel"></span>
       </button>
       <div class="shift-widget__submithint"
            ng-if="c.submitHint"

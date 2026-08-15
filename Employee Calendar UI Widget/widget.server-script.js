@@ -35,28 +35,28 @@
                    : (options.enable_co_entitlement === true ||
                       options.enable_co_entitlement === 'true');
 
-  // ── Load catalogue (needed by validation + client rendering) ────────────
-  var catalogue = loadCatalogue();
-  data.shiftCatalogue = catalogue;
+  // Every shift rule this widget applies now lives in Script Includes, so the
+  // manager approval widget can apply the identical rules to a *reportee*:
+  //   ShiftPayCalendarRules   catalogue, holidays, weekend/holiday role,
+  //                           allow_* flags, the allowed-shift list
+  //   ShiftPayEntitlements    the CO entitlement lifecycle (built by, and
+  //                           shared with, the rules object above)
+  // Both are parameterised by user and read the catalogue exactly once between
+  // them. Never fork either: two copies of these rules drift into a pay bug.
+  var RULES = new ShiftPayCalendarRules({
+    userId:           USER_ID,
+    catalogTable:     TABLE_CAT,
+    entitlementTable: TABLE_ENT,
+    holidayProperty:  HOLIDAY_PROP,
+    coEnabled:        CO_ENABLED
+  });
 
-  // Lookup maps derived from catalogue.
-  // Semantics are driven by catalogue columns (oc_role etc.), never by the
-  // display `name`, so renaming a shift type never changes behaviour.
-  var catalogById   = {};   // sys_id → row
-  var compoundOcIds = {};   // sys_id → true for shifts whose oc_role grants a CO
-  var coSysId       = null; // sys_id of the shift whose oc_role consumes a CO
-  for (var ci = 0; ci < catalogue.length; ci++) {
-    var crow = catalogue[ci];
-    catalogById[crow.sys_id] = crow;
-    if (crow.oc_role === 'consumes_co') coSysId = crow.sys_id;
-    if (crow.oc_role === 'grants_co')   compoundOcIds[crow.sys_id] = true;
-  }
+  var ENTITLEMENTS = RULES.entitlements();
 
-  // ── Validate catalogue configuration (fail loudly, not silently) ─────────
-  validateCatalogue();
-
-  // ── Load holidays ────────────────────────────────────────────────────────
-  var holidaySet = loadHolidays();
+  // ── Catalogue for client rendering + its configuration check ─────────────
+  data.shiftCatalogue = RULES.catalogue();
+  // Fail loudly, not silently: a catalogue that cannot drive the rules says so.
+  data.configError    = RULES.configError();
 
   // ── Determine which month we are showing ─────────────────────────────────
   var now = new GlideDateTime();
@@ -82,138 +82,11 @@
   data.lastMonthSubmitted = readSubmittedOn(lmY, lmM);
 
 
-  // ============================================================ //
-  // Helpers — catalogue & holidays                               //
-  // ============================================================ //
-
-  function loadCatalogue() {
-    var result = [];
-    var gr = new GlideRecord(TABLE_CAT);
-    gr.addQuery('active', true);
-    gr.orderBy('name');
-    gr.query();
-    while (gr.next()) {
-      result.push({
-        sys_id:       gr.getUniqueValue(),
-        name:         gr.getValue('name')         || '',
-        description:  gr.getValue('description')  || '',
-        rate:         gr.getValue('rate')          || '0',
-        currency:     gr.getValue('currency')      || 'INR',
-        effective_date: gr.getValue('effective_date') || '',
-        color_hex:    gr.getValue('color_hex')   || '',
-        // Semantic columns — the contract the code branches on.
-        oc_role:                gr.getValue('oc_role')                  || 'none',
-        allow_weekday:          isTrue(gr.getValue('allow_weekday')),
-        allow_weekend_holiday:  isTrue(gr.getValue('allow_weekend_holiday')),
-        day_category:           gr.getValue('day_category')             || ''
-      });
-    }
-    return result;
-  }
-
-  function validateCatalogue() {
-    var problems = [];
-    var hasConsumer = false;
-    for (var i = 0; i < catalogue.length; i++) {
-      var row = catalogue[i];
-      if (!row.day_category) {
-        problems.push('Shift type "' + row.name + '" is missing a day category.');
-      }
-      if (row.oc_role === 'consumes_co') hasConsumer = true;
-    }
-    if (CO_ENABLED && !hasConsumer) {
-      problems.push('CO entitlement is enabled but no shift type has the "consumes_co" role.');
-    }
-    data.configError = problems.length ? problems.join(' ') : '';
-  }
-
-  function loadHolidays() {
-    var set = {};
-    var schedSysId = gs.getProperty(HOLIDAY_PROP, '');
-    if (!schedSysId) return set;
-    var gr = new GlideRecord('cmn_schedule_span');
-    gr.addQuery('schedule', schedSysId);
-    gr.query();
-    while (gr.next()) {
-      var startStr = gr.getValue('start_date_time');
-      if (startStr) {
-        var gdt = new GlideDateTime(startStr);
-        set[isoDate(gdt)] = true;
-      }
-    }
-    return set;
-  }
-
-  function isHoliday(dateKey) { return !!holidaySet[dateKey]; }
-
-  function isWeekend(dateKey) {
-    var p = dateKey.split('-');
-    var dow = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10)).getDay();
-    return dow === 0 || dow === 6;
-  }
-
-  function isCompoundOc(sysId) { return !!compoundOcIds[sysId]; }
-
-
-  // ============================================================ //
-  // Helpers — allowed-shifts computation                         //
-  // ============================================================ //
-
-  function baseAllowedSysIds(dateKey) {
-    // Returns sys_ids allowed by calendar role alone. When CO is enabled the
-    // consumes_co row is excluded here and added separately by entitlement
-    // window; when CO is disabled it is treated as an ordinary shift.
-    var weekendOrHoliday = isWeekend(dateKey) || isHoliday(dateKey);
-    var ids = [];
-    for (var i = 0; i < catalogue.length; i++) {
-      var row = catalogue[i];
-      if (CO_ENABLED && row.oc_role === 'consumes_co') continue;
-      var allowed = weekendOrHoliday ? row.allow_weekend_holiday : row.allow_weekday;
-      if (allowed) ids.push(row.sys_id);
-    }
-    return ids;
-  }
-
-  function computeAllowedShifts(y, m) {
-    var result = {};
-    var dim = daysInMonth(y, m);
-    // Load all unconsumed entitlements for this user once, bucket for fast lookup
-    var unconsumed = CO_ENABLED ? loadUnconsumedEntitlements() : [];
-    for (var d = 1; d <= dim; d++) {
-      var dk = y + '-' + pad(m + 1) + '-' + pad(d);
-      var allowed = baseAllowedSysIds(dk);
-      // CO available on plain weekdays when an unconsumed entitlement window covers dk
-      if (CO_ENABLED && coSysId && !isWeekend(dk) && !isHoliday(dk)) {
-        if (hasUnconsumedEntitlementFor(unconsumed, dk)) allowed.push(coSysId);
-      }
-      result[dk] = allowed;
-    }
-    return result;
-  }
-
-  function loadUnconsumedEntitlements() {
-    var rows = [];
-    var gr = new GlideRecord(TABLE_ENT);
-    gr.addQuery('u_user', USER_ID);
-    gr.addNullQuery('u_co_entry');
-    gr.query();
-    while (gr.next()) {
-      rows.push({
-        sysid:      gr.getUniqueValue(),
-        oc_date:    gr.getValue('oc_date'),
-        window_end: gr.getValue('u_oc_window_end')
-      });
-    }
-    return rows;
-  }
-
-  function hasUnconsumedEntitlementFor(unconsumed, dateKey) {
-    for (var i = 0; i < unconsumed.length; i++) {
-      var e = unconsumed[i];
-      if (e.oc_date < dateKey && e.window_end >= dateKey) return true;
-    }
-    return false;
-  }
+  // Catalogue, holidays, weekend/holiday classification and the allowed-shift
+  // computation all moved to the ShiftPayCalendarRules Script Include. The
+  // manager approval widget needs the same allowed list for a reportee before
+  // it may correct one of their days, and half the rule living here is what
+  // stopped it having one.
 
 
   // ============================================================ //
@@ -236,39 +109,24 @@
       var prevShift = getPrevShift(date);
 
       // --- Entitlement side-effects for removing prevShift ---
-      if (CO_ENABLED && prevShift && prevShift !== newShift) {
-        if (isCompoundOc(prevShift)) {
-          var oldEnt = findEntitlementByOcDate(date);
-          if (oldEnt && oldEnt.co_entry) {
-            gs.addErrorMessage('Cannot change this entry — a CO on ' + oldEnt.co_date + ' depends on it.');
-            return;
-          }
-          if (oldEnt) deleteEntitlementRow(oldEnt.sysid);
-        }
-        if (prevShift === coSysId) {
-          var oldCoEnt = findEntitlementConsumedByCoDate(date);
-          if (oldCoEnt) releaseEntitlement(oldCoEnt.sysid);
-        }
+      var released = ENTITLEMENTS.releasePrevious(date, prevShift, newShift);
+      if (!released.ok) {
+        gs.addErrorMessage(released.error);
+        return;
       }
 
       // --- Pre-check CO entitlement before writing ---
-      var eligibleEnt = null;
-      if (CO_ENABLED && newShift !== prevShift && newShift === coSysId) {
-        eligibleEnt = findEarliestUnconsumedEntitlementFor(date);
-        if (!eligibleEnt) {
-          gs.addErrorMessage('CO not available for ' + date + ' — log an OC+CO shift on a prior holiday first.');
-          return;
-        }
+      var reserved = ENTITLEMENTS.reserveForNew(date, newShift, prevShift);
+      if (!reserved.ok) {
+        gs.addErrorMessage(reserved.error);
+        return;
       }
 
       // --- Write the submission row ---
       var newEntrySysId = upsertDay(date, newShift, inp.comment);
 
       // --- Entitlement side-effects for adding newShift ---
-      if (CO_ENABLED && newShift !== prevShift) {
-        if (isCompoundOc(newShift)) insertEntitlementRow(date, newEntrySysId);
-        if (newShift === coSysId && eligibleEnt) consumeEntitlement(eligibleEnt.sysid, date, newEntrySysId);
-      }
+      ENTITLEMENTS.commitForNew(date, newShift, prevShift, newEntrySysId, reserved.entitlementId);
 
       recomputeAggregates([date]);
     }
@@ -277,19 +135,11 @@
       var clDate = inp.date;
       if (!clDate) return;
       var clPrev = getPrevShift(clDate);
-      if (CO_ENABLED && clPrev) {
-        if (isCompoundOc(clPrev)) {
-          var clEnt = findEntitlementByOcDate(clDate);
-          if (clEnt && clEnt.co_entry) {
-            gs.addErrorMessage('Cannot clear — CO on ' + clEnt.co_date + ' depends on this entry.');
-            return;
-          }
-          if (clEnt) deleteEntitlementRow(clEnt.sysid);
-        }
-        if (clPrev === coSysId) {
-          var clCoEnt = findEntitlementConsumedByCoDate(clDate);
-          if (clCoEnt) releaseEntitlement(clCoEnt.sysid);
-        }
+      // No new shift: passing null selects the "cannot clear" wording.
+      var clReleased = ENTITLEMENTS.releasePrevious(clDate, clPrev, null);
+      if (!clReleased.ok) {
+        gs.addErrorMessage(clReleased.error);
+        return;
       }
       deleteDay(clDate);
       recomputeAggregates([clDate]);
@@ -300,7 +150,7 @@
       if (!isValidShift(bShift)) return;
       // CO and compound-OC must be logged individually (entitlement validation too complex for bulk).
       // Only relevant while CO entitlement is enabled; otherwise they are ordinary shifts.
-      if (CO_ENABLED && (bShift === coSysId || isCompoundOc(bShift))) {
+      if (ENTITLEMENTS.blocksBulk(bShift)) {
         gs.addErrorMessage('This shift type cannot be applied in bulk — please log it on each date individually.');
         return;
       }
@@ -320,11 +170,17 @@
   // ============================================================ //
 
   function loadMonthInto(out, y, m) {
-    out.entries      = readMonthEntries(y, m);
-    out.comments     = readMonthComments(y, m);
-    out.locked       = isMonthLocked(y, m);
-    out.submittedOn  = out.locked ? readSubmittedOn(y, m) : '';
-    out.allowedShifts = computeAllowedShifts(y, m);
+    var ts = readTimesheet(y, m);
+    out.entries        = readMonthEntries(y, m);
+    out.comments       = readMonthComments(y, m);
+    out.locked         = ts.locked;
+    out.submittedOn    = ts.submittedOn;
+    // Approval state, for the banner. status is '' when nothing was ever submitted.
+    out.status         = ts.status;
+    out.managerComment = ts.managerComment;
+    out.approver       = ts.approver;
+    out.actionedOn     = ts.actionedOn;
+    out.allowedShifts  = RULES.allowedForMonth(y, m);
   }
 
   function readMonthEntries(y, m) {
@@ -355,24 +211,50 @@
     return gr;
   }
 
-  function readSubmittedOn(y, m) {
+  /**
+   * The whole approval state of one month, in a single read.
+   *
+   * A month is LOCKED when a timesheet row exists and it has not been rejected.
+   * Rejection deliberately reopens the month so the employee can fix and
+   * resubmit — before the approval flow existed, the mere presence of this row
+   * meant "locked forever" and there was no way back.
+   */
+  function readTimesheet(y, m) {
     var gr = new GlideRecord(TABLE_LOCK);
     gr.addQuery('u_user',  USER_ID);
     gr.addQuery('u_year',  y);
     gr.addQuery('u_month', m + 1);
     gr.setLimit(1);
     gr.query();
-    return gr.next() ? gr.getDisplayValue('u_submitted_on') : '';
+
+    if (!gr.next()) {
+      return {
+        exists: false, sysId: '', status: '', submittedOn: '',
+        managerComment: '', approver: '', actionedOn: '', locked: false
+      };
+    }
+
+    // Rows written before the status column existed read as empty; treat those
+    // as submitted, which is what their presence used to mean.
+    var status = gr.getValue('status') || 'submitted';
+    return {
+      exists:         true,
+      sysId:          gr.getUniqueValue(),
+      status:         status,
+      submittedOn:    gr.getDisplayValue('u_submitted_on') || '',
+      managerComment: gr.getValue('manager_comment') || '',
+      approver:       gr.getDisplayValue('approver') || '',
+      actionedOn:     gr.getDisplayValue('actioned_on') || '',
+      locked:         status !== 'rejected'
+    };
+  }
+
+  function readSubmittedOn(y, m) {
+    return readTimesheet(y, m).submittedOn;
   }
 
   function isMonthLocked(y, m) {
-    var gr = new GlideRecord(TABLE_LOCK);
-    gr.addQuery('u_user',  USER_ID);
-    gr.addQuery('u_year',  y);
-    gr.addQuery('u_month', m + 1);
-    gr.setLimit(1);
-    gr.query();
-    return gr.hasNext();
+    return readTimesheet(y, m).locked;
   }
 
   function getPrevShift(date) {
@@ -421,7 +303,10 @@
   }
 
   function submitMonth(y, m) {
-    if (isMonthLocked(y, m)) return;
+    var ts = readTimesheet(y, m);
+    // Already with the manager, or already approved — nothing to do.
+    if (ts.exists && ts.status !== 'rejected') return;
+
     var entries = readMonthEntries(y, m);
     var missing = 0, dim = daysInMonth(y, m);
     for (var d = 1; d <= dim; d++) {
@@ -433,181 +318,52 @@
       gs.addErrorMessage('Cannot submit: ' + missing + ' weekday(s) still unlogged.');
       return;
     }
+
     var gr = new GlideRecord(TABLE_LOCK);
-    gr.initialize();
-    gr.setValue('u_user',        USER_ID);
-    gr.setValue('u_year',        y);
-    gr.setValue('u_month',       m + 1);
-    gr.setValue('u_submitted_on', new GlideDateTime());
-    gr.insert();
-    gs.addInfoMessage('Shift submissions for ' + y + '-' + pad(m + 1) + ' locked.');
+    if (ts.exists) {
+      // Resubmitting after a rejection: reuse the row and clear the old
+      // decision, so one month never has two timesheet rows. The manager must
+      // act again — a resubmission restarts the approval step.
+      if (!gr.get(ts.sysId)) return;
+      gr.setValue('status',          'submitted');
+      gr.setValue('approver',        '');
+      gr.setValue('actioned_on',     '');
+      gr.setValue('manager_comment', '');
+      gr.setValue('u_submitted_on',  new GlideDateTime());
+      gr.update();
+      gs.addInfoMessage('Shift submissions for ' + y + '-' + pad(m + 1) + ' resubmitted for approval.');
+    } else {
+      gr.initialize();
+      gr.setValue('u_user',         USER_ID);
+      gr.setValue('u_year',         y);
+      gr.setValue('u_month',        m + 1);
+      gr.setValue('status',         'submitted');
+      gr.setValue('u_submitted_on', new GlideDateTime());
+      gr.insert();
+      gs.addInfoMessage('Shift submissions for ' + y + '-' + pad(m + 1) + ' submitted for approval.');
+    }
   }
 
 
-  // ============================================================ //
-  // Entitlement helpers                                           //
-  // ============================================================ //
-
-  function findEntitlementByOcDate(date) {
-    var gr = new GlideRecord(TABLE_ENT);
-    gr.addQuery('u_user',    USER_ID);
-    gr.addQuery('oc_date', date);
-    gr.setLimit(1);
-    gr.query();
-    if (!gr.next()) return null;
-    return { sysid: gr.getUniqueValue(), co_entry: gr.getValue('u_co_entry'), co_date: gr.getValue('u_co_date') };
-  }
-
-  function findEntitlementConsumedByCoDate(date) {
-    var gr = new GlideRecord(TABLE_ENT);
-    gr.addQuery('u_user',    USER_ID);
-    gr.addQuery('u_co_date', date);
-    gr.setLimit(1);
-    gr.query();
-    if (!gr.next()) return null;
-    return { sysid: gr.getUniqueValue(), oc_date: gr.getValue('oc_date') };
-  }
-
-  function findEarliestUnconsumedEntitlementFor(date) {
-    var gr = new GlideRecord(TABLE_ENT);
-    gr.addQuery('u_user',          USER_ID);
-    gr.addNullQuery('u_co_entry');
-    gr.addQuery('oc_date',       '<',  date);
-    gr.addQuery('u_oc_window_end', '>=', date);
-    gr.orderBy('oc_date');
-    gr.setLimit(1);
-    gr.query();
-    if (!gr.next()) return null;
-    return { sysid: gr.getUniqueValue() };
-  }
-
-  function insertEntitlementRow(date, entrySysId) {
-    var windowEnd = nthWeekdayAfter(date, 7);
-    var gr = new GlideRecord(TABLE_ENT);
-    gr.initialize();
-    gr.setValue('u_user',          USER_ID);
-    gr.setValue('u_oc_entry',      entrySysId);
-    gr.setValue('oc_date',       date);
-    gr.setValue('u_oc_window_end', windowEnd);
-    gr.insert();
-  }
-
-  function consumeEntitlement(entSysId, coDate, coEntrySysId) {
-    var gr = new GlideRecord(TABLE_ENT);
-    if (!gr.get(entSysId)) return;
-    gr.setValue('u_co_entry', coEntrySysId);
-    gr.setValue('u_co_date',  coDate);
-    gr.update();
-  }
-
-  function releaseEntitlement(entSysId) {
-    var gr = new GlideRecord(TABLE_ENT);
-    if (!gr.get(entSysId)) return;
-    gr.setValue('u_co_entry', null);
-    gr.setValue('u_co_date',  null);
-    gr.update();
-  }
-
-  function deleteEntitlementRow(entSysId) {
-    var gr = new GlideRecord(TABLE_ENT);
-    if (!gr.get(entSysId)) return;
-    gr.deleteRecord();
-  }
+  // Entitlement helpers moved to the ShiftPayEntitlements Script Include —
+  // find/insert/consume/release/delete and the weekday window arithmetic all
+  // live there now, parameterised by user so the manager widget shares them.
 
 
   // ============================================================ //
   // Aggregate helpers                                             //
   // ============================================================ //
 
+  // Weekly/monthly aggregation lives in the ShiftPayAggregator Script Include so
+  // the manager approval widget can run the identical logic against a reportee's
+  // data. Everything it needs is passed in; it hard-wires nothing about "me".
   function recomputeAggregates(dates) {
-    var rateMap = loadRateMap();
-    var monthsMap = {}, weeksMap = {};
-
-    for (var i = 0; i < dates.length; i++) {
-      var dk = dates[i];
-      var p = dk.split('-');
-      var y = parseInt(p[0], 10), m = parseInt(p[1], 10) - 1; // 0-indexed
-
-      var mKey = y + '-' + m;
-      if (!monthsMap[mKey]) monthsMap[mKey] = { y: y, m: m };
-
-      var wStart = mondayOf(dk);
-      var wKey   = wStart + '|' + mKey;
-      if (!weeksMap[wKey]) {
-        var fom    = firstOfMonthKey(y, m);
-        var lom    = lastOfMonthKey(y, m);
-        var wEnd   = addDays(wStart, 6);
-        weeksMap[wKey] = {
-          periodStart: wStart, y: y, m: m,
-          winStart: maxDate(wStart, fom),
-          winEnd:   minDate(wEnd,   lom)
-        };
-      }
-    }
-
-    for (var mk in monthsMap) {
-      var mo = monthsMap[mk];
-      var fom2 = firstOfMonthKey(mo.y, mo.m);
-      var lom2 = lastOfMonthKey(mo.y, mo.m);
-      writeSummary('month', fom2, mo.y, mo.m, fom2, lom2, rateMap);
-    }
-    for (var wk in weeksMap) {
-      var we = weeksMap[wk];
-      writeSummary('week', we.periodStart, we.y, we.m, we.winStart, we.winEnd, rateMap);
-    }
-  }
-
-  function writeSummary(type, periodStart, year, month, winStart, winEnd, rateMap) {
-    // Delete existing rows for this (user, type, period_start, year, month)
-    var del = new GlideRecord(TABLE_SUM);
-    del.addQuery('u_user',         USER_ID);
-    del.addQuery('u_period_type',  type);
-    del.addQuery('u_period_start', periodStart);
-    del.addQuery('u_year',         year);
-    del.addQuery('u_month',        month + 1);
-    del.deleteMultiple();
-
-    // Aggregate submission rows within the window
-    var gr = new GlideRecord(TABLE_DAY);
-    gr.addQuery('u_user', USER_ID);
-    gr.addQuery('u_date', '>=', winStart);
-    gr.addQuery('u_date', '<=', winEnd);
-    gr.query();
-    var counts = {};
-    while (gr.next()) {
-      var st = gr.getValue('u_shift_type');
-      if (st) counts[st] = (counts[st] || 0) + 1;
-    }
-
-    // Insert one row per non-zero shift
-    for (var st in counts) {
-      var cnt = counts[st];
-      if (!cnt) continue;
-      var rm = rateMap[st] || { rate: '0', currency: 'INR' };
-      var amount = cnt * parseFloat(rm.rate || 0);
-      var ins = new GlideRecord(TABLE_SUM);
-      ins.initialize();
-      ins.setValue('u_user',           USER_ID);
-      ins.setValue('u_period_type',    type);
-      ins.setValue('u_period_start',   periodStart);
-      ins.setValue('u_year',           year);
-      ins.setValue('u_month',          month + 1);
-      ins.setValue('u_shift_type',     st);
-      ins.setValue('u_count',          cnt);
-      ins.setValue('u_rate_snapshot',  rm.rate || 0);
-      ins.setValue('u_amount',         amount);
-      ins.setValue('u_currency',       rm.currency || 'INR');
-      ins.insert();
-    }
-  }
-
-  function loadRateMap() {
-    var map = {};
-    for (var i = 0; i < catalogue.length; i++) {
-      var row = catalogue[i];
-      map[row.sys_id] = { rate: row.rate, currency: row.currency };
-    }
-    return map;
+    new ShiftPayAggregator({
+      userId:       USER_ID,
+      dayTable:     TABLE_DAY,
+      summaryTable: TABLE_SUM,
+      catalogTable: TABLE_CAT
+    }).recompute(dates);
   }
 
 
@@ -615,46 +371,11 @@
   // Date utilities                                                //
   // ============================================================ //
 
-  function mondayOf(dateKey) {
-    var p = dateKey.split('-');
-    var d = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
-    var dow = d.getDay(); // 0=Sun
-    d.setDate(d.getDate() - (dow === 0 ? 6 : dow - 1));
-    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
-  }
+  // mondayOf / firstOfMonthKey / lastOfMonthKey / addDays / maxDate / minDate
+  // moved to the ShiftPayAggregator Script Include — they were used only by the
+  // aggregate code. pad() and daysInMonth() stay: the rest of this script uses them.
 
-  function firstOfMonthKey(y, m) { return y + '-' + pad(m + 1) + '-01'; }
-
-  function lastOfMonthKey(y, m) {
-    return y + '-' + pad(m + 1) + '-' + pad(daysInMonth(y, m));
-  }
-
-  function addDays(dateKey, n) {
-    var p = dateKey.split('-');
-    var d = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
-    d.setDate(d.getDate() + n);
-    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
-  }
-
-  function maxDate(a, b) { return a > b ? a : b; }
-  function minDate(a, b) { return a < b ? a : b; }
-
-  function nthWeekdayAfter(dateKey, n) {
-    var p = dateKey.split('-');
-    var d = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
-    var count = 0;
-    while (count < n) {
-      d.setDate(d.getDate() + 1);
-      var dow = d.getDay();
-      if (dow !== 0 && dow !== 6) count++;
-    }
-    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
-  }
-
-  function isValidShift(sysId) { return !!catalogById[sysId]; }
-
-  // glide_boolean getValue() yields '1'/'0'; tolerate 'true' too.
-  function isTrue(v) { return v === '1' || v === 'true' || v === true; }
+  function isValidShift(sysId) { return RULES.isValidShift(sysId); }
 
   function isoDate(gdt) { return gdt.getDate().getValue(); }
 
