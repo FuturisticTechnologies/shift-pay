@@ -308,7 +308,8 @@
 
       <div class="shift-summary__mini">
         <div class="shift-summary__miniheader">
-          <span ng-repeat="d in ['M','T','W','T','F','S','S']" ng-bind="d"></span>
+          <span ng-repeat="d in ['M','T','W','T','F','S','S'] track by $index"
+                ng-bind="d"></span>
         </div>
         <div class="shift-summary__minigrid">
           <div ng-repeat="cell in c.lastMonthCells track by $index"
