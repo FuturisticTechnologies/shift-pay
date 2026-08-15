@@ -259,6 +259,25 @@
   border-bottom: 1px solid var(--shift-border);
   flex-wrap: wrap;
 }
+/* Bulk action bar — present only while something is selected, so the resting
+   screen is not carrying a permanently greyed-out toolbar. */
+.shift-mgr__bulkbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 24px;
+  border-bottom: 1px solid var(--shift-border);
+  background: var(--shift-surface-alt, rgba(0, 0, 0, 0.035));
+  flex-wrap: wrap;
+}
+.shift-mgr__bulkcount {
+  font-size: 12.5px;
+  color: var(--shift-text-mute);
+}
+.shift-mgr__bulkcount strong {
+  font-family: var(--shift-mono);
+  color: var(--shift-text);
+}
 .shift-mgr__search {
   display: inline-flex;
   align-items: center;
@@ -354,6 +373,27 @@
 .shift-mgr__row--done .shift-mgr__nm,
 .shift-mgr__row--done .shift-mgr__num {
   color: var(--shift-text-mute);
+}
+/* Bulk selection.
+   A tint, not a hue: the nine catalogue chips already own the colour wheel on
+   this row, so selection reads as weight instead. Same reasoning as the
+   monochrome status pills. */
+.shift-mgr__row--sel td {
+  background: var(--shift-surface-alt, rgba(0, 0, 0, 0.035));
+}
+.shift-mgr__selcell {
+  width: 34px;
+  padding-left: 14px !important;
+  padding-right: 0 !important;
+  vertical-align: middle;
+  text-align: left;
+}
+.shift-mgr__selcell input[type="checkbox"] {
+  margin: 0;
+  cursor: pointer;
+  /* Ink, not the browser's blue: on this screen colour means shift type, and a
+     blue tick sitting next to nine catalogue chips reads as a tenth one. */
+  accent-color: var(--shift-text);
 }
 .shift-mgr__short {
   color: var(--shift-red);

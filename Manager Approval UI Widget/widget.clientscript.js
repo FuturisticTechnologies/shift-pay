@@ -32,6 +32,10 @@ api.controller = function ($scope) {
   c.rejectError   = '';
   c.detailCells   = [];     // month grid for the open detail panel
   c.correcting    = null;   // the day being corrected, or null
+  c.selected      = {};     // userId → true, for the bulk actions
+  c.bulkRejecting = false;  // the bulk reject dialog is open
+  c.bulkComment   = '';
+  c.bulkError     = '';
   c.weekdayNames  = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   c.tabs = [
@@ -54,7 +58,99 @@ api.controller = function ($scope) {
 
   c.setFilter = function (key) {
     c.filter = key;
+    // Selection is per view. Carrying it across tabs would let a manager
+    // bulk-action rows they can no longer see, which is how accidents happen.
+    c.clearSelection();
     c.recalc();
+  };
+
+  // ───── Bulk selection ─────────────────────────────────────────────────────
+  // Only actionable (submitted) rows are ever selectable — the server enforces
+  // the same rule per row, so a stale screen is refused rather than forced.
+
+  c.clearSelection = function () {
+    c.selected      = {};
+    c.bulkRejecting = false;
+    c.bulkComment   = '';
+    c.bulkError     = '';
+  };
+
+  c.toggleRow = function (row) {
+    if (!row || !row.canAction) return;
+    if (c.selected[row.userId]) delete c.selected[row.userId];
+    else c.selected[row.userId] = true;
+  };
+
+  c.selectedIds = function () {
+    var ids = [], visible = c.visible || [];
+    // Derived from what is on screen, so a row filtered out of view can never
+    // be swept into a bulk action by a stale entry in the map.
+    for (var i = 0; i < visible.length; i++) {
+      if (visible[i].canAction && c.selected[visible[i].userId]) ids.push(visible[i].userId);
+    }
+    return ids;
+  };
+
+  c.selectedCount = function () { return c.selectedIds().length; };
+
+  c.actionableCount = function () {
+    var n = 0, visible = c.visible || [];
+    for (var i = 0; i < visible.length; i++) if (visible[i].canAction) n++;
+    return n;
+  };
+
+  c.allSelected = function () {
+    var total = c.actionableCount();
+    return total > 0 && c.selectedCount() === total;
+  };
+
+  c.toggleAll = function () {
+    var select = !c.allSelected();
+    var visible = c.visible || [];
+    c.selected = {};
+    if (select) {
+      for (var i = 0; i < visible.length; i++) {
+        if (visible[i].canAction) c.selected[visible[i].userId] = true;
+      }
+    }
+  };
+
+  c.bulkApprove = function () {
+    var ids = c.selectedIds();
+    if (!ids.length || c.saving) return;
+    send({ action: 'bulkApprove', userIds: ids, year: c.data.year, month: c.data.month },
+         function () { c.clearSelection(); });
+  };
+
+  c.openBulkReject = function () {
+    if (!c.selectedCount()) return;
+    c.bulkRejecting = true;
+    c.bulkComment   = '';
+    c.bulkError     = '';
+  };
+
+  c.cancelBulkReject = function () {
+    c.bulkRejecting = false;
+    c.bulkComment   = '';
+    c.bulkError     = '';
+  };
+
+  c.confirmBulkReject = function () {
+    if (!c.bulkRejecting || c.saving) return;
+    var comment = (c.bulkComment || '').replace(/^\s+|\s+$/g, '');
+    if (!comment) {
+      c.bulkError = 'A reason is required to reject a timesheet.';
+      return;
+    }
+    var ids = c.selectedIds();
+    if (!ids.length) {
+      c.bulkError = 'Nothing selected.';
+      return;
+    }
+    // One comment applied to every rejected timesheet — FR-M7.
+    send({ action: 'bulkReject', userIds: ids, comment: comment,
+           year: c.data.year, month: c.data.month },
+         function () { c.clearSelection(); });
   };
 
   /**
@@ -274,6 +370,7 @@ api.controller = function ($scope) {
     c.saving = true;
     c.cancelReject();
     c.cancelCorrect();
+    c.clearSelection();
     c.server.get({ action: 'loadQueue', year: y, month: m }).then(function (r) {
       c.data   = r.data;
       c.saving = false;

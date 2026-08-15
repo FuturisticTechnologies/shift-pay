@@ -109,11 +109,40 @@
       </span>
     </div>
 
+    <!-- Bulk action bar ========================================== -->
+    <!-- Appears only with a selection, so the default screen is not carrying a
+         permanently disabled toolbar. Counts come from the visible rows, so it
+         can never claim to be actioning something filtered out of sight. -->
+    <div class="shift-mgr__bulkbar" ng-if="c.selectedCount()">
+      <span class="shift-mgr__bulkcount">
+        <strong>{{c.selectedCount()}}</strong>
+        timesheet<span ng-if="c.selectedCount() !== 1">s</span> selected
+      </span>
+      <button type="button" class="shift-mgr__btn shift-mgr__btn--ghost"
+              ng-click="c.clearSelection()">Clear</button>
+      <span class="shift-mgr__spacer"></span>
+      <button type="button" class="shift-mgr__btn shift-mgr__btn--danger"
+              ng-click="c.openBulkReject()" ng-disabled="c.saving">
+        <i class="fa fa-times" aria-hidden="true"></i> Reject selected…
+      </button>
+      <button type="button" class="shift-mgr__btn shift-mgr__btn--pri"
+              ng-click="c.bulkApprove()" ng-disabled="c.saving">
+        <i class="fa fa-check" aria-hidden="true"></i> Approve selected
+      </button>
+    </div>
+
     <!-- Table =================================================== -->
     <div class="shift-mgr__tablewrap">
       <table class="shift-mgr__table">
         <thead>
           <tr>
+            <th class="shift-mgr__selcell">
+              <input type="checkbox"
+                     ng-if="c.actionableCount()"
+                     ng-checked="c.allSelected()"
+                     ng-click="c.toggleAll()"
+                     aria-label="Select all timesheets awaiting action">
+            </th>
             <th>Employee</th>
             <th>Shift mix</th>
             <th class="shift-mgr__num">Weekdays</th>
@@ -125,7 +154,17 @@
         </thead>
         <tbody>
           <tr ng-repeat="row in c.visible track by row.userId"
-              ng-class="{'shift-mgr__row--todo': row.canAction, 'shift-mgr__row--done': !row.canAction}">
+              ng-class="{'shift-mgr__row--todo': row.canAction,
+                         'shift-mgr__row--done': !row.canAction,
+                         'shift-mgr__row--sel':  c.selected[row.userId] && row.canAction}">
+
+            <td class="shift-mgr__selcell">
+              <input type="checkbox"
+                     ng-if="row.canAction"
+                     ng-checked="c.selected[row.userId]"
+                     ng-click="c.toggleRow(row)"
+                     aria-label="Select {{row.name}}'s timesheet">
+            </td>
 
             <td>
               <div class="shift-mgr__person">
@@ -204,7 +243,7 @@
           </tr>
 
           <tr ng-if="!c.visible.length">
-            <td colspan="7" class="shift-mgr__norows">
+            <td colspan="8" class="shift-mgr__norows">
               Nothing here for {{c.data.monthLabel}}<span ng-if="c.search"> matching “{{c.search}}”</span>.
             </td>
           </tr>
@@ -423,6 +462,52 @@
               ng-click="c.confirmReject()"
               ng-disabled="c.saving || !c.rejectComment.trim()">
         Reject timesheet
+      </button>
+    </div>
+  </div>
+
+  <!-- Bulk reject dialog ======================================== -->
+  <!-- FR-M7: one reason is captured for the action and applied to every
+       timesheet rejected by it. Each employee sees it on their own month. -->
+  <div class="shift-mgr__backdrop shift-mgr__backdrop--top" ng-if="c.bulkRejecting" ng-click="c.cancelBulkReject()"></div>
+  <div class="shift-mgr__modal" ng-if="c.bulkRejecting" role="dialog" aria-modal="true"
+       aria-labelledby="shift-mgr-bulkreject-title">
+    <div class="shift-mgr__modalhead">
+      <h3 id="shift-mgr-bulkreject-title" class="shift-mgr__modaltitle">
+        Reject {{c.selectedCount()}} timesheet<span ng-if="c.selectedCount() !== 1">s</span>
+        for {{c.data.monthLabel}}
+      </h3>
+      <p class="shift-mgr__modalsub">
+        The same reason goes to every one of them, and each employee can edit
+        and resubmit their month.
+      </p>
+    </div>
+    <div class="shift-mgr__modalbody">
+      <label class="shift-mgr__label" for="shift-mgr-bulkreason">
+        Reason <span class="shift-mgr__req">required</span>
+      </label>
+      <textarea id="shift-mgr-bulkreason" class="shift-mgr__textarea"
+                ng-class="{'shift-mgr__textarea--err': c.bulkError}"
+                ng-model="c.bulkComment"
+                ng-change="c.bulkError = ''"
+                rows="3"
+                placeholder="Tell them what to fix…"></textarea>
+      <div class="shift-mgr__helper" ng-class="{'shift-mgr__helper--err': c.bulkError}">
+        <span ng-if="!c.bulkError">Written to each rejected timesheet.</span>
+        <span ng-if="c.bulkError">{{c.bulkError}}</span>
+      </div>
+      <div class="shift-mgr__note">
+        <i class="fa fa-reply" aria-hidden="true"></i>
+        <span>Anything that has already been actioned since this screen loaded
+        is skipped, not overwritten — you will be told how many.</span>
+      </div>
+    </div>
+    <div class="shift-mgr__modalfoot">
+      <button type="button" class="shift-mgr__btn" ng-click="c.cancelBulkReject()">Cancel</button>
+      <button type="button" class="shift-mgr__btn shift-mgr__btn--danger"
+              ng-click="c.confirmBulkReject()"
+              ng-disabled="c.saving || !c.bulkComment.trim()">
+        Reject {{c.selectedCount()}} timesheet<span ng-if="c.selectedCount() !== 1">s</span>
       </button>
     </div>
   </div>
