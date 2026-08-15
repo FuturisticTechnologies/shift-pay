@@ -20,6 +20,14 @@
    * before any write, because `c.server.get({...})` is callable from the
    * browser with any payload the user cares to type.
    *
+   * Shared logic. Nothing about shift rules or pay is reimplemented here:
+   *   ShiftPayCalendarRules  what a reportee may legally log on a date
+   *   ShiftPayEntitlements   the CO lifecycle (obtained via the rules object)
+   *   ShiftPayAggregator     weekly/monthly totals with the rate snapshot
+   * All three are parameterised by user, which is what makes a manager able to
+   * act on a reportee at all. Forking any of them would let the two screens
+   * disagree about someone's pay.
+   *
    * Scoped app → ES5 only (Rhino): no let/const, arrow functions or template
    * literals in this file.
    */
@@ -29,9 +37,21 @@
   var TABLE_CAT   = options.catalog_table    || 'x_1995110_shift_0_shift_type';
   var TABLE_DAY   = options.shift_table      || 'x_1995110_shift_0_u_shift_submission';
   var TABLE_AUDIT = options.audit_table      || 'x_1995110_shift_0_shift_day_change';
+  var TABLE_ENT   = options.entitlement_table || 'x_1995110_shift_0_shift_co_entitlement';
   var MANAGER_FIELD = options.manager_field  || 'manager';
 
   var USER_ID = gs.getUserID();
+
+  // Must match the employee calendar's option of the same name: a correction
+  // applies the identical entitlement rules the employee was held to, and the
+  // two screens disagreeing about whether CO exists would be worse than either
+  // setting on its own.
+  var CO_ENABLED = (options.enable_co_entitlement === undefined ||
+                    options.enable_co_entitlement === '' ||
+                    options.enable_co_entitlement === null)
+                   ? true
+                   : (options.enable_co_entitlement === true ||
+                      options.enable_co_entitlement === 'true');
 
   // Whether this manager may see money at all. Enforced server-side: when off,
   // amounts are never put on `data`, rather than merely hidden by the template.
@@ -63,10 +83,18 @@
   data.reporteeCount  = reportees.length;
 
   // ── Catalogue (chip colours, names, order) ───────────────────────────────
-  var catalogue   = loadCatalogue();
-  var catalogById = {};
-  for (var ci = 0; ci < catalogue.length; ci++) catalogById[catalogue[ci].sys_id] = catalogue[ci];
-  data.shiftCatalogue = catalogue;
+  // Read through ShiftPayCalendarRules, the same class the employee calendar
+  // uses, so a correction is judged against exactly the rules the employee was
+  // offered. The catalogue is user-independent, so it is read once here and
+  // handed to each per-reportee rules object below.
+  var CATALOGUE_RULES = new ShiftPayCalendarRules({
+    catalogTable: TABLE_CAT,
+    coEnabled:    CO_ENABLED
+  });
+  var catalogue   = CATALOGUE_RULES.catalogue();
+  var catalogById = CATALOGUE_RULES.catalogById();
+  data.shiftCatalogue = projectCatalogue(catalogue);
+  data.configError    = CATALOGUE_RULES.configError();
 
   // ── Actions run before the re-read, so the response is already fresh ─────
   data.actionError = '';
@@ -106,6 +134,134 @@
       }
       actionOne(inp.userId, data.year, data.month, 'rejected', trim(inp.comment));
     }
+
+    else if (action === 'correctDay') {
+      correctDay(inp);
+      // Re-read the panel the manager is looking at, whether or not the write
+      // succeeded: on success it shows the new day and the new totals, on
+      // failure it shows that nothing moved.
+      if (reporteeMap[inp.userId]) {
+        data.detail = readDetail(inp.userId, data.year, data.month);
+      }
+    }
+  }
+
+  /**
+   * Change or clear one day of a reportee's submitted timesheet.
+   *
+   * The manager's most dangerous action: it rewrites someone else's pay. Every
+   * guard below is server-side because `c.server.get({...})` is callable from
+   * the browser with any payload, and the client's dropdown filtering is a
+   * convenience, not a control.
+   *
+   * Passing an empty `shift` clears the day.
+   */
+  function correctDay(inp) {
+    var userId = inp.userId;
+    var date   = trim(inp.date);
+    var reason = trim(inp.reason);
+    // '' means clear. Normalised to null so the entitlement class picks the
+    // "Cannot clear" wording rather than "Cannot change this entry".
+    var newShift = trim(inp.shift) || null;
+
+    if (!assertReportee(userId)) return false;
+
+    // A correction to someone else's pay without a stated reason is unauditable.
+    if (!reason) {
+      fail('A reason is required to correct a day.');
+      return false;
+    }
+
+    // The date must belong to the month on screen. Without this a hand-made
+    // payload could edit a month whose status was never checked.
+    if (!isDateInMonth(date, data.year, data.month)) {
+      fail('That date is not in ' + data.monthLabel + '.');
+      return false;
+    }
+
+    // BR-M12 / design decision 3: only a submitted month is the manager's to
+    // correct. Approved is final, rejected is back with the employee, and a
+    // month never submitted has nothing to correct.
+    var ts = readTimesheets(userId, data.year, data.month)[userId] || null;
+    var status = ts ? ts.status : '';
+    if (status !== 'submitted') {
+      fail(status === 'approved'
+        ? 'That timesheet is already approved and can no longer be corrected.'
+        : (status === 'rejected'
+            ? 'That timesheet was rejected and is back with the employee to fix.'
+            : 'That timesheet has not been submitted yet.'));
+      return false;
+    }
+
+    // The reportee's own rule set — their entitlements, not the manager's.
+    var rules = rulesFor(userId);
+    var ent   = rules.entitlements();
+
+    if (newShift && !rules.isValidShift(newShift)) {
+      fail('That is not an active shift type.');
+      return false;
+    }
+
+    // The correction must be a shift the employee could legally have logged
+    // themselves: weekday/weekend role, the allow_* flags, and for CO an open
+    // entitlement window. A manager may fix a mistake, not mint an exception.
+    if (newShift && !rules.isAllowedOn(date, newShift)) {
+      fail('That shift type is not allowed on ' + date + ' for this employee.');
+      return false;
+    }
+
+    var prevShift = getDayShift(userId, date);
+    if (prevShift === newShift || (!prevShift && !newShift)) {
+      fail('That day already reads as requested — nothing to correct.');
+      return false;
+    }
+
+    // ── The three-phase day change, bracketing the write ──
+    // The entitlement decision has to be made before the row exists and
+    // recorded after it does, so these three calls cannot be collapsed.
+    var released = ent.releasePrevious(date, prevShift, newShift);
+    if (!released.ok) {
+      fail(released.error);
+      return false;
+    }
+
+    var reserved = ent.reserveForNew(date, newShift, prevShift);
+    if (!reserved.ok) {
+      fail(reserved.error);
+      return false;
+    }
+
+    var entrySysId = newShift ? upsertDay(userId, date, newShift) : null;
+    if (!newShift) deleteDay(userId, date);
+
+    ent.commitForNew(date, newShift, prevShift, entrySysId, reserved.entitlementId);
+
+    // Audit before aggregating: if the recompute were to fail, the record of
+    // who changed what still exists.
+    writeAudit(userId, date, prevShift, newShift, reason);
+
+    // Aggregates are recomputed, never incremented — and for the reportee, which
+    // is the whole reason ShiftPayAggregator is parameterised by user.
+    new ShiftPayAggregator({
+      userId:       userId,
+      dayTable:     TABLE_DAY,
+      summaryTable: TABLE_SUM,
+      catalogTable: TABLE_CAT
+    }).recompute([date]);
+
+    gs.addInfoMessage('Corrected ' + date + '.');
+    return true;
+  }
+
+  /** A rules object scoped to one reportee, reusing the single catalogue read. */
+  function rulesFor(userId) {
+    return new ShiftPayCalendarRules({
+      userId:           userId,
+      catalogue:        catalogue,
+      catalogTable:     TABLE_CAT,
+      entitlementTable: TABLE_ENT,
+      coEnabled:        CO_ENABLED
+    });
   }
 
   /**
@@ -163,6 +319,71 @@
 
 
   // ============================================================ //
+  // Writes                                                       //
+  // ============================================================ //
+
+  function getDayShift(userId, date) {
+    var gr = new GlideRecord(TABLE_DAY);
+    gr.addQuery('u_user', userId);
+    gr.addQuery('u_date', date);
+    gr.setLimit(1);
+    gr.query();
+    return gr.next() ? gr.getValue('u_shift_type') : null;
+  }
+
+  /**
+   * Set the shift on one day, leaving u_comment alone.
+   *
+   * The comment is the employee's own note. A manager correcting the shift type
+   * has no business rewriting it, and the reason for the correction is captured
+   * in the audit row instead.
+   */
+  function upsertDay(userId, date, shift) {
+    var gr = new GlideRecord(TABLE_DAY);
+    gr.addQuery('u_user', userId);
+    gr.addQuery('u_date', date);
+    gr.setLimit(1);
+    gr.query();
+    if (gr.next()) {
+      gr.setValue('u_shift_type', shift);
+      gr.update();
+      return gr.getUniqueValue();
+    }
+    gr.initialize();
+    gr.setValue('u_user',       userId);
+    gr.setValue('u_date',       date);
+    gr.setValue('u_shift_type', shift);
+    return gr.insert();
+  }
+
+  function deleteDay(userId, date) {
+    var gr = new GlideRecord(TABLE_DAY);
+    gr.addQuery('u_user', userId);
+    gr.addQuery('u_date', date);
+    gr.query();
+    while (gr.next()) gr.deleteRecord();
+  }
+
+  /**
+   * One audit row per correction: who changed which day, from what to what, and
+   * why. The employee sees this on their calendar and the manager sees it in the
+   * review panel — a silent edit to someone's pay is the thing this prevents.
+   */
+  function writeAudit(userId, date, prevShift, newShift, reason) {
+    var gr = new GlideRecord(TABLE_AUDIT);
+    gr.initialize();
+    gr.setValue('user',           userId);
+    gr.setValue('date',           date);
+    gr.setValue('previous_shift', prevShift || '');
+    gr.setValue('new_shift',      newShift  || '');
+    gr.setValue('reason',         reason);
+    gr.setValue('changed_by',     USER_ID);
+    gr.setValue('changed_on',     new GlideDateTime());
+    gr.insert();
+  }
+
+
+  // ============================================================ //
   // Reads                                                        //
   // ============================================================ //
 
@@ -186,24 +407,27 @@
     return rows;
   }
 
-  function loadCatalogue() {
-    var result = [];
-    var gr = new GlideRecord(TABLE_CAT);
-    gr.addQuery('active', true);
-    gr.orderBy('name');
-    gr.query();
-    while (gr.next()) {
-      result.push({
-        sys_id:       gr.getUniqueValue(),
-        name:         gr.getValue('name')         || '',
-        description:  gr.getValue('description')  || '',
-        color_hex:    gr.getValue('color_hex')    || '',
-        day_category: gr.getValue('day_category') || '',
-        rate:         SHOW_PAY ? (gr.getValue('rate') || '0') : null,
-        currency:     gr.getValue('currency')     || 'INR'
+  /**
+   * The catalogue as the client needs it — chip colours, names, grouping.
+   *
+   * Rates are stripped rather than hidden when show_pay_amounts is off: a
+   * manager who may not see money must not receive it on `data` either.
+   */
+  function projectCatalogue(rows) {
+    var out = [];
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i];
+      out.push({
+        sys_id:       r.sys_id,
+        name:         r.name,
+        description:  r.description,
+        color_hex:    r.color_hex,
+        day_category: r.day_category,
+        rate:         SHOW_PAY ? r.rate : null,
+        currency:     r.currency
       });
     }
-    return result;
+    return out;
   }
 
   function loadQueueInto(out, y, m) {
@@ -391,13 +615,19 @@
       actionedOn:     ts ? ts.actionedOn : '',
       managerComment: ts ? ts.managerComment : '',
       canAction:      status === 'submitted',
+      // Day corrections are limited to a submitted month, same rule as actioning.
+      canEditDays:    status === 'submitted',
       weekdaysInMonth: weekdaysIn(y, m),
       weekdaysLogged:  0,
       days:     {},
       comments: [],
       ledger:   [],
       weeks:    [],
-      changes:  []
+      changes:  [],
+      // What this employee could legally log on each day of the month — the
+      // reportee's own entitlement windows, not the manager's. The correction
+      // dropdown filters on this; the server re-checks it on the write.
+      allowedShifts: rulesFor(userId).allowedForMonth(y, m)
     };
 
     // ── day entries + the employee's own comments ──
@@ -520,6 +750,21 @@
     var p = dateKey.split('-');
     var dow = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10)).getDay();
     return dow === 0 || dow === 6;
+  }
+
+  /**
+   * Is 'YYYY-MM-DD' a real date inside the given month?
+   *
+   * Parsed rather than string-prefixed so '2026-08-99' cannot pass. Dates are
+   * compared as strings everywhere else in ShiftPay; this is the one place the
+   * value arrives from the browser and has to be proved well-formed first.
+   */
+  function isDateInMonth(dateKey, y, m) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey || '')) return false;
+    var p = dateKey.split('-');
+    var yy = parseInt(p[0], 10), mm = parseInt(p[1], 10), dd = parseInt(p[2], 10);
+    if (yy !== y || mm !== m + 1) return false;
+    return dd >= 1 && dd <= daysInMonth(y, m);
   }
 
   function weekdaysIn(y, m) {

@@ -251,15 +251,29 @@
     <div class="shift-mgr__panelbody">
 
       <!-- Left: the month as submitted -->
+      <!-- While the month is submitted, each day is a button that opens the
+           correction dialog. Once approved or rejected the grid is inert: an
+           approved month is final and a rejected one is back with the employee. -->
       <div class="shift-mgr__panelleft">
-        <h4 class="shift-mgr__h4">Days as submitted</h4>
+        <h4 class="shift-mgr__h4">
+          Days as submitted
+          <span class="shift-mgr__hint" ng-if="c.data.detail.canEditDays">— click a day to correct it</span>
+        </h4>
         <div class="shift-mgr__cal">
           <div class="shift-mgr__dow" ng-repeat="d in c.weekdayNames track by $index"
                ng-class="{'shift-mgr__dow--we': $index > 4}">{{d}}</div>
           <div class="shift-mgr__day"
                ng-repeat="cell in c.detailCells track by cell.key"
-               ng-class="{'shift-mgr__day--out': !cell.inMonth,
-                          'shift-mgr__day--we': cell.weekend}">
+               ng-class="{'shift-mgr__day--out':  !cell.inMonth,
+                          'shift-mgr__day--we':   cell.weekend,
+                          'shift-mgr__day--edit': cell.inMonth && c.data.detail.canEditDays}"
+               ng-click="c.openCorrect(cell)"
+               ng-attr-role="{{cell.inMonth && c.data.detail.canEditDays ? 'button' : undefined}}"
+               ng-attr-tabindex="{{cell.inMonth && c.data.detail.canEditDays ? 0 : undefined}}"
+               ng-keydown="($event.key === 'Enter' || $event.key === ' ') && c.openCorrect(cell)"
+               ng-attr-aria-label="{{cell.inMonth && c.data.detail.canEditDays
+                    ? 'Correct ' + cell.key + (cell.shift ? ', currently ' + cell.shift.name : ', currently empty')
+                    : undefined}}">
             <span class="shift-mgr__daynum" ng-if="cell.inMonth">{{cell.day}}</span>
             <span class="shift-mgr__dayshift" ng-if="cell.shift"
                   ng-style="c.chipStyle(cell.shift.color_hex)"
@@ -409,6 +423,73 @@
               ng-click="c.confirmReject()"
               ng-disabled="c.saving || !c.rejectComment.trim()">
         Reject timesheet
+      </button>
+    </div>
+  </div>
+
+  <!-- Correct-a-day dialog ====================================== -->
+  <!-- The options are what THIS employee could legally have logged on THIS
+       date — their own entitlement windows, computed server-side. A manager
+       may fix a mistake, not mint an exception, so the server re-checks the
+       same rule on the write and refuses anything the list would not have
+       offered. The reason is mandatory for the same purpose as a rejection's:
+       this changes someone else's pay and must say why. -->
+  <div class="shift-mgr__backdrop shift-mgr__backdrop--top" ng-if="c.correcting" ng-click="c.cancelCorrect()"></div>
+  <div class="shift-mgr__modal" ng-if="c.correcting" role="dialog" aria-modal="true"
+       aria-labelledby="shift-mgr-correct-title">
+    <div class="shift-mgr__modalhead">
+      <h3 id="shift-mgr-correct-title" class="shift-mgr__modaltitle">
+        Correct {{c.data.detail.name}}'s {{c.correcting.key}}
+      </h3>
+      <p class="shift-mgr__modalsub">
+        <span ng-if="c.correcting.current">
+          Currently
+          <span class="shift-mgr__chip" ng-style="c.chipStyle(c.correcting.current.color_hex)">{{c.correcting.current.name}}</span>
+        </span>
+        <span ng-if="!c.correcting.current">Currently empty.</span>
+        <span ng-if="c.correcting.weekend"> · weekend</span>
+      </p>
+    </div>
+    <div class="shift-mgr__modalbody">
+      <label class="shift-mgr__label" for="shift-mgr-correct-shift">Shift type</label>
+      <select id="shift-mgr-correct-shift" class="shift-mgr__select"
+              ng-model="c.correcting.choice"
+              ng-change="c.correcting.error = ''">
+        <option value="">— Clear the day —</option>
+        <option ng-repeat="o in c.correcting.options track by o.sys_id" value="{{o.sys_id}}">
+          {{o.name}}<span ng-if="o.description"> · {{o.description}}</span>
+        </option>
+      </select>
+      <div class="shift-mgr__helper">
+        Only shift types this employee could legally log on {{c.correcting.key}} are listed.
+      </div>
+
+      <label class="shift-mgr__label" for="shift-mgr-correct-reason">
+        Reason <span class="shift-mgr__req">required</span>
+      </label>
+      <textarea id="shift-mgr-correct-reason" class="shift-mgr__textarea"
+                ng-class="{'shift-mgr__textarea--err': c.correcting.error}"
+                ng-model="c.correcting.reason"
+                ng-change="c.correcting.error = ''"
+                rows="3"
+                placeholder="Why is this day being changed?"></textarea>
+      <div class="shift-mgr__helper" ng-class="{'shift-mgr__helper--err': c.correcting.error}">
+        <span ng-if="!c.correcting.error">Recorded against the day and visible to the employee.</span>
+        <span ng-if="c.correcting.error">{{c.correcting.error}}</span>
+      </div>
+
+      <div class="shift-mgr__note">
+        <i class="fa fa-calculator" aria-hidden="true"></i>
+        <span>Saving recomputes {{c.data.detail.name}}'s weekly and monthly totals
+        at today's rates, and writes an audit row.</span>
+      </div>
+    </div>
+    <div class="shift-mgr__modalfoot">
+      <button type="button" class="shift-mgr__btn" ng-click="c.cancelCorrect()">Cancel</button>
+      <button type="button" class="shift-mgr__btn shift-mgr__btn--pri"
+              ng-click="c.confirmCorrect()"
+              ng-disabled="c.saving || !c.correcting.reason.trim() || !c.correctChanged()">
+        Save correction
       </button>
     </div>
   </div>
