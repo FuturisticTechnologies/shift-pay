@@ -1,0 +1,97 @@
+[
+  {
+    "name": "title",
+    "label": "Widget title",
+    "type": "string",
+    "default": "ShiftPay Reporting",
+    "section": "Presentation"
+  },
+  {
+    "name": "chart_lib_url",
+    "label": "Chart.js URL",
+    "type": "string",
+    "default": "https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js",
+    "hint": "Loaded by the widget only if window.Chart is not already defined. The preferred route is an sp_js_include on an sp_dependency attached to this widget, which makes this fallback a no-op. Point it at a local UI Script if the portal cannot reach a CDN — no code change is needed, only this value.",
+    "section": "Presentation"
+  },
+  {
+    "name": "trend_months",
+    "label": "Months in the trend",
+    "type": "integer",
+    "default": 12,
+    "hint": "How many months the trend covers, ending at the selected month. Clamped server-side to 1–36; the user can change it within that range from the chart's span picker.",
+    "section": "Behaviour"
+  },
+  {
+    "name": "team_limit",
+    "label": "People in the comparison chart",
+    "type": "integer",
+    "default": 25,
+    "hint": "Maximum bars in the per-person comparison, ranked by cost (or by shift count when pay amounts are hidden). Clamped server-side to 1–100 — a bar chart of every employee is not a report.",
+    "section": "Behaviour"
+  },
+  {
+    "name": "show_pay_amounts",
+    "label": "Show pay amounts",
+    "type": "boolean",
+    "default": true,
+    "hint": "When off, no monetary value is sent to the browser at all — the charts and tables show shift counts only, and the team ranking switches to count so the ordering cannot leak the withheld amounts. Enforced server-side, not just hidden in the template.",
+    "section": "Behaviour"
+  },
+  {
+    "name": "enable_co_entitlement",
+    "label": "Enable CO entitlement rules",
+    "type": "boolean",
+    "default": true,
+    "hint": "Must match the same option on the employee calendar and the approval widget. When off, the CO health tab is not offered and the entitlement table is never read.",
+    "section": "Behaviour"
+  },
+  {
+    "name": "manager_field",
+    "label": "Manager field on sys_user",
+    "type": "string",
+    "default": "manager",
+    "hint": "Field on sys_user holding the line manager. Decides who may select the 'My team' scope and whose data it covers. Keep in step with the same option on the approval widget.",
+    "section": "Behaviour"
+  },
+  {
+    "name": "org_role",
+    "label": "Role required for organisation scope",
+    "type": "string",
+    "default": "x_1995110_shift_0.admin",
+    "hint": "Only holders of this role are offered the 'Organisation' scope, which reads every user's data with no user filter. Checked server-side on every request — the scope selector is a convenience, not the control.",
+    "section": "Behaviour"
+  },
+  {
+    "name": "summary_table",
+    "label": "Aggregate summary table",
+    "type": "string",
+    "default": "x_1995110_shift_0_shift_submission_summary",
+    "hint": "Table name. Monthly rows (u_period_type = month) are the source of every figure on this widget, including the rate snapshot in u_amount.",
+    "section": "Data"
+  },
+  {
+    "name": "catalog_table",
+    "label": "Shift catalogue table",
+    "type": "string",
+    "default": "x_1995110_shift_0_shift_type",
+    "hint": "Table name. Active rows supply chart colours (color_hex), names, and the allow_weekday / allow_weekend_holiday flags that define which shift types count as on-call load.",
+    "section": "Data"
+  },
+  {
+    "name": "entitlement_table",
+    "label": "CO entitlement table",
+    "type": "string",
+    "default": "x_1995110_shift_0_shift_co_entitlement",
+    "hint": "Table name. Read only by the CO health tab, and only when CO entitlement rules are enabled.",
+    "section": "Data"
+  },
+  {
+    "name": "lock_table",
+    "label": "Monthly timesheet table",
+    "type": "string",
+    "default": "x_1995110_shift_0_monthly_timesheet",
+    "hint": "Table name. Supplies the submitted / approved / rejected counts in the stat strip, which is what stops an unsubmitted current month reading as a drop in cost.",
+    "section": "Data"
+  }
+]
