@@ -1,0 +1,64 @@
+<!--
+  Service Portal Widget: ShiftPay Home
+  ====================================
+  A simple landing page that routes users to the employee calendar or the
+  manager approval experience. Both destinations are intentionally visible;
+  each destination widget remains responsible for its own authorization.
+-->
+<section class="shift-home" aria-labelledby="shift-home-title">
+  <div class="shift-home__inner">
+
+    <header class="shift-home__intro">
+      <h1 id="shift-home-title" class="shift-home__title">
+        Welcome back, {{::c.data.firstName}}
+      </h1>
+      <p class="shift-home__subtitle">{{::c.data.introText}}</p>
+    </header>
+
+    <nav class="shift-home__cards" aria-label="ShiftPay destinations">
+      <a class="shift-home-card"
+         ng-href="{{::c.data.calendarUrl}}"
+         aria-label="{{::c.data.calendarLinkLabel}}: {{::c.data.calendarTitle}}">
+        <div class="shift-home-card__content">
+          <div class="shift-home-card__icon" aria-hidden="true">
+            <i class="fa fa-calendar-o"></i>
+          </div>
+          <div class="shift-home-card__copy">
+            <h2 class="shift-home-card__title">{{::c.data.calendarTitle}}</h2>
+            <p class="shift-home-card__description">{{::c.data.calendarDescription}}</p>
+          </div>
+        </div>
+        <div class="shift-home-card__divider" aria-hidden="true"></div>
+        <div class="shift-home-card__action">
+          <span>{{::c.data.calendarLinkLabel}}</span>
+          <span class="shift-home-card__arrow" aria-hidden="true">
+            <i class="fa fa-arrow-right"></i>
+          </span>
+        </div>
+      </a>
+
+      <a class="shift-home-card"
+         ng-href="{{::c.data.managerUrl}}"
+         aria-label="{{::c.data.managerLinkLabel}}: {{::c.data.managerTitle}}">
+        <div class="shift-home-card__content">
+          <div class="shift-home-card__icon shift-home-card__icon--manager" aria-hidden="true">
+            <i class="fa fa-users"></i>
+            <i class="fa fa-check-circle shift-home-card__check"></i>
+          </div>
+          <div class="shift-home-card__copy">
+            <h2 class="shift-home-card__title">{{::c.data.managerTitle}}</h2>
+            <p class="shift-home-card__description">{{::c.data.managerDescription}}</p>
+          </div>
+        </div>
+        <div class="shift-home-card__divider" aria-hidden="true"></div>
+        <div class="shift-home-card__action">
+          <span>{{::c.data.managerLinkLabel}}</span>
+          <span class="shift-home-card__arrow" aria-hidden="true">
+            <i class="fa fa-arrow-right"></i>
+          </span>
+        </div>
+      </a>
+    </nav>
+
+  </div>
+</section>

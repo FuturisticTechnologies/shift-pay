@@ -161,7 +161,30 @@ Tracks per-month submission and lock status.
 | `u_user` | Reference → `sys_user` | The employee |
 | `u_year` | Integer | Calendar year |
 | `u_month` | Integer | Month (1 = January) |
-| `u_submitted_on` | DateTime | Timestamp of submission |
+| `u_submitted_on` | DateTime | Timestamp of submission (updated on resubmission) |
+| `status` | Choice | `submitted` / `approved` / `rejected`. Defaults to `submitted`. |
+| `approver` | Reference → `sys_user` | Manager who approved or rejected |
+| `actioned_on` | DateTime | When that decision was made |
+| `manager_comment` | String (1000) | Mandatory on rejection, optional on approval |
+
+> **The lock is now conditional.** A month is locked when a row exists **and**
+> `status != 'rejected'`. Rejecting reopens the month so the employee can fix and
+> resubmit; resubmission reuses the same row and clears the previous decision, so one
+> employee-month never has two rows.
+
+### Shift Day Change (`x_1995110_shift_0_shift_day_change`)
+
+Audit trail for manager corrections to individual days. One row per change, never updated.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `user` | Reference → `sys_user` | Whose day was changed |
+| `date` | Date | The day |
+| `previous_shift` | Reference → `shift_type` | Empty when the manager filled a blank day |
+| `new_shift` | Reference → `shift_type` | Empty when the manager cleared a day |
+| `reason` | String (1000) | Mandatory, enforced server-side |
+| `changed_by` | Reference → `sys_user` | The manager |
+| `changed_on` | DateTime | Timestamp |
 
 ### Shift Submission Summary (`x_1995110_shift_0_shift_submission_summary`)
 

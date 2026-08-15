@@ -1,0 +1,67 @@
+[
+  {
+    "name": "intro_text",
+    "label": "Introductory text",
+    "type": "string",
+    "default": "Choose where you'd like to continue.",
+    "section": "Presentation"
+  },
+  {
+    "name": "calendar_title",
+    "label": "Calendar card title",
+    "type": "string",
+    "default": "My Shift Calendar",
+    "section": "Calendar card"
+  },
+  {
+    "name": "calendar_description",
+    "label": "Calendar card description",
+    "type": "string",
+    "default": "Log and submit your monthly shifts.",
+    "section": "Calendar card"
+  },
+  {
+    "name": "calendar_link_label",
+    "label": "Calendar link label",
+    "type": "string",
+    "default": "Open calendar",
+    "section": "Calendar card"
+  },
+  {
+    "name": "calendar_page_id",
+    "label": "Calendar page ID",
+    "type": "string",
+    "default": "fill_shift",
+    "hint": "Service Portal page ID opened by the calendar card.",
+    "section": "Calendar card"
+  },
+  {
+    "name": "manager_title",
+    "label": "Manager card title",
+    "type": "string",
+    "default": "Manager Approvals",
+    "section": "Manager card"
+  },
+  {
+    "name": "manager_description",
+    "label": "Manager card description",
+    "type": "string",
+    "default": "Review and action your team's submitted timesheets.",
+    "section": "Manager card"
+  },
+  {
+    "name": "manager_link_label",
+    "label": "Manager link label",
+    "type": "string",
+    "default": "Open approvals",
+    "section": "Manager card"
+  },
+  {
+    "name": "manager_page_id",
+    "label": "Manager page ID",
+    "type": "string",
+    "default": "manager_approval",
+    "hint": "Service Portal page ID opened by the manager approvals card.",
+    "section": "Manager card"
+  }
+]
