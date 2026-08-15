@@ -58,6 +58,27 @@
           </span>
         </div>
       </a>
+
+      <a class="shift-home-card"
+         ng-href="{{::c.data.reportsUrl}}"
+         aria-label="{{::c.data.reportsLinkLabel}}: {{::c.data.reportsTitle}}">
+        <div class="shift-home-card__content">
+          <div class="shift-home-card__icon" aria-hidden="true">
+            <i class="fa fa-bar-chart"></i>
+          </div>
+          <div class="shift-home-card__copy">
+            <h2 class="shift-home-card__title">{{::c.data.reportsTitle}}</h2>
+            <p class="shift-home-card__description">{{::c.data.reportsDescription}}</p>
+          </div>
+        </div>
+        <div class="shift-home-card__divider" aria-hidden="true"></div>
+        <div class="shift-home-card__action">
+          <span>{{::c.data.reportsLinkLabel}}</span>
+          <span class="shift-home-card__arrow" aria-hidden="true">
+            <i class="fa fa-arrow-right"></i>
+          </span>
+        </div>
+      </a>
     </nav>
 
   </div>

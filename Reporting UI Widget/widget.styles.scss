@@ -1,0 +1,559 @@
+/*
+  ShiftPay Reporting — widget styles
+  ==================================
+  Conventions match the Employee Calendar and Team Approvals widgets:
+   - BEM-light, every selector namespaced (`shift-rep-`) so nothing leaks
+   - tokens as CSS custom properties on .shift-rep for per-instance reskinning
+
+  Service Portal note: written as FLAT plain CSS — no `&__suffix`, no nested
+  selectors, no `@media` nested inside a selector. Service Portal's bundled
+  LibSass build does not support Sass 3.3+ parent-selector concatenation, and a
+  single `&__x` silently fails the whole compile, dropping the widget back to
+  unstyled. Block comments only.
+
+  COLOUR RULE: ink is the only emphasis colour and hue means shift type. The
+  charts obey it — the mix donut carries the catalogue's colours and every other
+  chart is ink plus slate. Red appears in exactly two places, both real failure
+  states: the error banner and an expired-unused CO entitlement.
+
+  CANVAS SIZING: Chart.js with maintainAspectRatio:false sizes itself to its
+  parent, and a canvas inside a flex/grid child with no explicit height collapses
+  to zero. Every .shift-rep__chart therefore carries a fixed height and
+  position:relative — remove either and the charts vanish without an error.
+*/
+
+.shift-rep {
+  --shift-text:       #0F172A;
+  --shift-text-mute:  #64748B;
+  --shift-text-faint: #94A3B8;
+  --shift-text-body:  #334155;
+  --shift-border:     #E5E7EB;
+  --shift-border-2:   #CBD5E1;
+  --shift-divider:    #F1F5F9;
+  --shift-surface:    #FFFFFF;
+  --shift-bg-subtle:  #F8FAFC;
+  --shift-bg-footer:  #FAFBFC;
+
+  --shift-red:        #B91C1C;
+  --shift-red-bg:     #FEF2F2;
+  --shift-red-border: #FCA5A5;
+
+  --shift-radius:      8px;
+  --shift-radius-sm:   4px;
+  --shift-radius-pill: 999px;
+
+  --shift-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  background: var(--shift-surface);
+  color: var(--shift-text);
+  border: 1px solid var(--shift-border);
+  border-radius: var(--shift-radius);
+  max-width: 1180px;
+  margin: 0 auto;
+  overflow: hidden;
+  position: relative;
+}
+.shift-rep--busy {
+  cursor: progress;
+}
+
+/* =========================================================
+   Header
+   ========================================================= */
+.shift-rep__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 20px 24px 14px;
+}
+.shift-rep__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+}
+.shift-rep__subtitle {
+  margin: 4px 0 0;
+  color: var(--shift-text-mute);
+  font-size: 12px;
+}
+.shift-rep__headeractions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* Segmented control — scope, and the month-span picker */
+.shift-rep__seg {
+  display: inline-flex;
+  border: 1px solid var(--shift-border);
+  border-radius: 6px;
+  padding: 2px;
+  background: var(--shift-bg-subtle);
+}
+.shift-rep__segbtn {
+  border: 0;
+  background: transparent;
+  color: var(--shift-text-mute);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 11px;
+  border-radius: var(--shift-radius-sm);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.shift-rep__segbtn:hover:not(:disabled) {
+  color: var(--shift-text);
+}
+.shift-rep__segbtn--on {
+  background: var(--shift-surface);
+  color: var(--shift-text);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+.shift-rep__segbtn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.shift-rep__seg--sm .shift-rep__segbtn {
+  padding: 3px 9px;
+  font-size: 11px;
+}
+
+.shift-rep__monthnav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--shift-border);
+  border-radius: 6px;
+  padding: 2px;
+}
+.shift-rep__navbtn {
+  border: 0;
+  background: transparent;
+  color: var(--shift-text-mute);
+  padding: 4px 9px;
+  border-radius: var(--shift-radius-sm);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
+.shift-rep__navbtn:hover:not(:disabled) {
+  background: var(--shift-bg-subtle);
+  color: var(--shift-text);
+}
+.shift-rep__navbtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.shift-rep__monthlabel {
+  font-size: 13px;
+  font-weight: 600;
+  min-width: 108px;
+  text-align: center;
+}
+
+/* =========================================================
+   Banners
+   ========================================================= */
+.shift-rep__banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 24px 12px;
+  padding: 9px 12px;
+  border: 1px solid var(--shift-border);
+  border-radius: 6px;
+  background: var(--shift-bg-subtle);
+  color: var(--shift-text-body);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.shift-rep__banner--bad {
+  background: var(--shift-red-bg);
+  border-color: var(--shift-red-border);
+  color: var(--shift-red);
+}
+.shift-rep__linkbtn {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  margin-left: auto;
+  color: var(--shift-text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* =========================================================
+   Stat strip
+   ========================================================= */
+.shift-rep__strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  border-top: 1px solid var(--shift-divider);
+  border-bottom: 1px solid var(--shift-divider);
+  background: var(--shift-bg-footer);
+}
+.shift-rep__stat {
+  flex: 1 1 150px;
+  padding: 12px 20px;
+  border-left: 1px solid var(--shift-divider);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.shift-rep__stat:first-child {
+  border-left: 0;
+}
+.shift-rep__statk {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--shift-text-faint);
+}
+.shift-rep__statv {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  line-height: 1.15;
+}
+.shift-rep__stat--lead .shift-rep__statv {
+  font-size: 24px;
+}
+.shift-rep__statv--quiet {
+  color: var(--shift-text-mute);
+  font-weight: 600;
+}
+.shift-rep__statv--bad {
+  color: var(--shift-red);
+}
+.shift-rep__statv em {
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--shift-text-faint);
+  margin-left: 4px;
+}
+.shift-rep__statn {
+  font-size: 11px;
+  color: var(--shift-text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* =========================================================
+   Tabs
+   ========================================================= */
+.shift-rep__tabs {
+  display: flex;
+  gap: 2px;
+  padding: 12px 24px 0;
+  border-bottom: 1px solid var(--shift-divider);
+  overflow-x: auto;
+}
+.shift-rep__tab {
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--shift-text-mute);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 14px 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+.shift-rep__tab:hover {
+  color: var(--shift-text);
+}
+.shift-rep__tab--on {
+  color: var(--shift-text);
+  font-weight: 600;
+  border-bottom-color: var(--shift-text);
+}
+.shift-rep__tab i {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+/* =========================================================
+   Panels
+   ========================================================= */
+.shift-rep__panel {
+  padding: 18px 24px 24px;
+}
+.shift-rep__panelhead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+.shift-rep__panelt {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.1px;
+}
+.shift-rep__panels {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--shift-text-mute);
+  max-width: 62ch;
+}
+.shift-rep__subhead {
+  margin: 20px 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--shift-text-faint);
+}
+
+/*
+  Chart frames. The explicit height is load-bearing — see the CANVAS SIZING
+  note at the top of this file.
+*/
+.shift-rep__chart {
+  position: relative;
+  height: 280px;
+  margin-bottom: 18px;
+}
+.shift-rep__chart--tall {
+  height: 420px;
+}
+.shift-rep__chart--half {
+  height: 260px;
+  flex: 1 1 320px;
+  min-width: 260px;
+  margin-bottom: 0;
+}
+.shift-rep__canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.shift-rep__split {
+  display: flex;
+  gap: 28px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+/* =========================================================
+   Tables — the numbers behind every chart
+   ========================================================= */
+.shift-rep__tablewrap {
+  overflow-x: auto;
+}
+.shift-rep__tablewrap--half {
+  flex: 1 1 360px;
+  min-width: 300px;
+}
+.shift-rep__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.shift-rep__table th {
+  text-align: left;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--shift-text-faint);
+  padding: 0 10px 7px;
+  border-bottom: 1px solid var(--shift-border);
+  white-space: nowrap;
+}
+.shift-rep__table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--shift-divider);
+  color: var(--shift-text-body);
+  vertical-align: middle;
+}
+.shift-rep__table tr:last-child td {
+  border-bottom: 0;
+}
+.shift-rep__num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.shift-rep__num--quiet {
+  color: var(--shift-text-mute);
+}
+.shift-rep__num--bad {
+  color: var(--shift-red);
+  font-weight: 600;
+}
+.shift-rep__mono {
+  font-family: var(--shift-mono);
+  font-size: 11px;
+  color: var(--shift-text-mute);
+  white-space: nowrap;
+}
+.shift-rep__cellk {
+  color: var(--shift-text);
+  font-weight: 600;
+}
+.shift-rep__cellsub {
+  color: var(--shift-text-faint);
+  margin-left: 6px;
+  font-size: 11px;
+}
+.shift-rep__row--zero td {
+  color: var(--shift-text-faint);
+}
+
+.shift-rep__chip {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  margin-right: 8px;
+  vertical-align: -1px;
+  background: var(--shift-border-2);
+}
+.shift-rep__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--shift-radius-pill);
+  margin-right: 8px;
+  vertical-align: middle;
+  background: var(--shift-divider);
+  color: var(--shift-text-mute);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+/* =========================================================
+   CO figures
+   ========================================================= */
+.shift-rep__cofigs {
+  flex: 1 1 300px;
+  min-width: 240px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--shift-divider);
+  border: 1px solid var(--shift-divider);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.shift-rep__cofig {
+  background: var(--shift-surface);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+/* =========================================================
+   Notes + empty state
+   ========================================================= */
+.shift-rep__note {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  margin: 14px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--shift-text-mute);
+}
+.shift-rep__empty {
+  text-align: center;
+  padding: 56px 24px 64px;
+  color: var(--shift-text-mute);
+}
+.shift-rep__empty i {
+  font-size: 26px;
+  color: var(--shift-border-2);
+}
+.shift-rep__empty-title {
+  margin-top: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--shift-text);
+}
+.shift-rep__empty-body {
+  margin: 6px auto 0;
+  max-width: 46ch;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* =========================================================
+   Busy veil
+   ========================================================= */
+.shift-rep__veil {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.55);
+  z-index: 5;
+}
+
+/* =========================================================
+   Responsive
+   ========================================================= */
+@media (max-width: 767px) {
+  .shift-rep__header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .shift-rep__headeractions {
+    justify-content: space-between;
+  }
+  .shift-rep__panel {
+    padding: 16px 14px 20px;
+  }
+  .shift-rep__banner {
+    margin-left: 14px;
+    margin-right: 14px;
+  }
+  .shift-rep__tabs {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+  .shift-rep__stat {
+    flex-basis: 50%;
+    border-left: 0;
+    border-top: 1px solid var(--shift-divider);
+    padding: 10px 14px;
+  }
+  .shift-rep__chart {
+    height: 240px;
+  }
+  .shift-rep__chart--tall {
+    height: 340px;
+  }
+  .shift-rep__panelhead {
+    flex-direction: column;
+    gap: 10px;
+  }
+}
