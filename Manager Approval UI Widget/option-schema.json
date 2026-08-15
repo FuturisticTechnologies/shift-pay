@@ -30,6 +30,14 @@
     "section": "Behaviour"
   },
   {
+    "name": "history_limit",
+    "label": "Decisions shown in History",
+    "type": "integer",
+    "default": 100,
+    "hint": "How many past approve/reject decisions the History tab loads, newest first. Bounded on purpose — it is a recent-activity log, not a payroll export.",
+    "section": "Behaviour"
+  },
+  {
     "name": "enable_co_entitlement",
     "label": "Enable CO entitlement rules",
     "type": "boolean",

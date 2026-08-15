@@ -22,14 +22,17 @@
       <p class="shift-mgr__subtitle">
         <span ng-if="c.data.canManage">
           {{c.data.reporteeCount}} direct {{c.data.reporteeCount === 1 ? 'reportee' : 'reportees'}}
-          · showing {{c.data.monthLabel}}
+          <span ng-if="c.filter !== 'history'">· showing {{c.data.monthLabel}}</span>
+          <span ng-if="c.filter === 'history'">· your past decisions, all months</span>
         </span>
         <span ng-if="!c.data.canManage">{{::c.options.subtitle}}</span>
       </p>
     </div>
 
     <div class="shift-mgr__headeractions" ng-if="c.data.canManage">
-      <div class="shift-mgr__monthnav">
+      <!-- Hidden on History: that tab spans every month, so a month picker
+           beside it would only invite the question of which month it applies to. -->
+      <div class="shift-mgr__monthnav" ng-if="c.filter !== 'history'">
         <button type="button" class="shift-mgr__navbtn" ng-click="c.prevMonth()"
                 ng-disabled="c.saving" aria-label="Previous month">
           <i class="fa fa-chevron-left" aria-hidden="true"></i>
@@ -40,6 +43,10 @@
           <i class="fa fa-chevron-right" aria-hidden="true"></i>
         </button>
       </div>
+      <button type="button" class="shift-mgr__btn" ng-if="c.filter === 'history'"
+              ng-click="c.refreshHistory()" ng-disabled="c.saving">
+        <i class="fa fa-refresh" aria-hidden="true"></i> Refresh
+      </button>
     </div>
   </div>
 
@@ -69,12 +76,13 @@
               ng-click="c.setFilter(t.key)"
               role="tab" aria-selected="{{c.filter === t.key}}">
         <span>{{t.label}}</span>
-        <span class="shift-mgr__tabcount">{{c.data.counts[t.count]}}</span>
+        <span class="shift-mgr__tabcount" ng-if="t.count">{{c.data.counts[t.count]}}</span>
       </button>
     </div>
 
     <!-- Stat strip ============================================== -->
-    <div class="shift-mgr__strip">
+    <!-- Month figures, so it is hidden on History, which spans every month. -->
+    <div class="shift-mgr__strip" ng-if="c.filter !== 'history'">
       <div class="shift-mgr__stat shift-mgr__stat--lead">
         <span class="shift-mgr__statk">Awaiting action</span>
         <span class="shift-mgr__statv">{{c.data.counts.submitted}}</span>
@@ -132,7 +140,7 @@
     </div>
 
     <!-- Table =================================================== -->
-    <div class="shift-mgr__tablewrap">
+    <div class="shift-mgr__tablewrap" ng-if="c.filter !== 'history'">
       <table class="shift-mgr__table">
         <thead>
           <tr>
@@ -251,9 +259,75 @@
       </table>
     </div>
 
+    <!-- History ================================================= -->
+    <!-- Every decision this manager has made, newest first, across all months.
+         Read-only by design: it is a record of what was done, and re-opening a
+         month from here would make it a control surface instead of a log. -->
+    <div class="shift-mgr__tablewrap" ng-if="c.filter === 'history'">
+      <table class="shift-mgr__table">
+        <thead>
+          <tr>
+            <th>Employee</th>
+            <th>Month</th>
+            <th>Decision</th>
+            <th class="shift-mgr__num">Shifts</th>
+            <th class="shift-mgr__num" ng-if="c.data.showPay">Total pay</th>
+            <th>Reason given</th>
+            <th>Actioned</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr ng-repeat="h in c.historyVisible track by (h.userId + h.year + h.month)"
+              class="shift-mgr__row--done">
+            <td>
+              <div class="shift-mgr__person">
+                <span class="shift-mgr__avatar">{{h.initials}}</span>
+                <span class="shift-mgr__personname">
+                  <span class="shift-mgr__nm">{{h.name}}</span>
+                  <span class="shift-mgr__id" ng-if="h.employeeId">{{h.employeeId}}</span>
+                </span>
+              </div>
+            </td>
+            <td>{{h.monthLabel}}</td>
+            <td>
+              <span class="shift-mgr__pill" ng-class="c.pillClass(h.status)">
+                <span class="shift-mgr__pillglyph" aria-hidden="true">{{c.pillGlyph(h.status)}}</span>
+                {{h.statusLabel}}
+              </span>
+            </td>
+            <td class="shift-mgr__num">{{h.totalShifts}}</td>
+            <td class="shift-mgr__num" ng-if="c.data.showPay">{{c.money(h.totalAmount, h.currency)}}</td>
+            <td>
+              <span class="shift-mgr__reason" ng-if="h.managerComment"
+                    title="{{h.managerComment}}">{{h.managerComment}}</span>
+              <span class="shift-mgr__muted" ng-if="!h.managerComment">—</span>
+            </td>
+            <td class="shift-mgr__when">
+              <span>{{h.actionedOn}}</span>
+              <div class="shift-mgr__by" ng-if="h.submittedOn">submitted {{h.submittedOn}}</div>
+            </td>
+          </tr>
+
+          <tr ng-if="!c.historyVisible.length && !c.saving">
+            <td colspan="7" class="shift-mgr__norows">
+              <span ng-if="!c.search">You have not approved or rejected anything yet.</span>
+              <span ng-if="c.search">No past decision matches “{{c.search}}”.</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
     <div class="shift-mgr__footer">
-      <span>Chip colours and rates come from the shift catalogue.</span>
-      <span ng-if="c.data.showPay">Amounts use the rate snapshot taken when the month was aggregated.</span>
+      <span ng-if="c.filter !== 'history'">Chip colours and rates come from the shift catalogue.</span>
+      <span ng-if="c.filter !== 'history' && c.data.showPay">Amounts use the rate snapshot taken when the month was aggregated.</span>
+      <!-- Stated rather than hidden: approval state lives on the timesheet row,
+           so a resubmission after a rejection clears that decision. The log shows
+           what still stands, which is not the same as everything ever done. -->
+      <span ng-if="c.filter === 'history'">
+        Decisions that still stand. A rejection the employee has since fixed and
+        resubmitted is no longer listed.
+      </span>
     </div>
   </div>
 
