@@ -1,8 +1,9 @@
 <!--
   Service Portal Widget: ShiftPay Reporting
   =========================================
-  Four reports over the summary and entitlement tables, on tabs: cost & volume
-  trend, shift-type mix, per-person comparison, CO entitlement health.
+  Six reports over the summary, timesheet and entitlement tables, on tabs:
+  cost & volume trend, shift-type mix, per-person comparison, a person-by-month
+  activity heatmap, submission/approval timeliness, CO entitlement health.
 
   Design notes (inherited from the calendar and approval widgets):
    - Ink (#0F172A) is the only emphasis colour. There is no brand accent.
@@ -275,6 +276,145 @@
         <i class="fa fa-info-circle" aria-hidden="true"></i>
         Showing the top {{c.data.teamLimit}} people only. Narrow the scope or the month
         range to see the rest.
+      </p>
+    </div>
+
+    <!-- ============================== Activity =================== -->
+    <!--
+      A CSS grid, not a canvas. Chart.js has no native matrix chart and the
+      plugin that adds one is a second CDN dependency; a grid of divs is crisper
+      at this size, selectable, and needs no library at all.
+    -->
+    <div class="shift-rep__panel" ng-if="c.tab === 'activity'">
+      <div class="shift-rep__panelhead">
+        <div>
+          <h3 class="shift-rep__panelt">Who worked when</h3>
+          <p class="shift-rep__panels">
+            One row per person, one cell per month, darkest where most shifts were
+            worked. Ranked by total over {{c.data.periodLabel}} — the trend chart
+            flattens people and the team chart flattens months; this keeps both.
+          </p>
+        </div>
+        <div class="shift-rep__seg shift-rep__seg--sm" role="group" aria-label="Months shown">
+          <button type="button" class="shift-rep__segbtn"
+                  ng-repeat="n in c.data.spanOptions"
+                  ng-class="{'shift-rep__segbtn--on': c.data.trendMonths === n}"
+                  ng-click="c.setSpan(n)" ng-disabled="c.loading">{{n}}m</button>
+        </div>
+      </div>
+
+      <div class="shift-rep__heatwrap">
+        <table class="shift-rep__heat">
+          <thead>
+            <tr>
+              <th class="shift-rep__heatname">Person</th>
+              <th class="shift-rep__heatm" ng-repeat="m in c.data.activity.months">{{m.label}}</th>
+              <th class="shift-rep__num">Total</th>
+              <th class="shift-rep__num">On-call</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr ng-repeat="p in c.data.activity.rows">
+              <td class="shift-rep__heatname">
+                <span class="shift-rep__avatar">{{p.initials}}</span>
+                <span class="shift-rep__cellk">{{p.name}}</span>
+              </td>
+              <td class="shift-rep__heatcell" ng-repeat="h in p.heat">
+                <span class="shift-rep__heatbox"
+                      ng-class="{'shift-rep__heatbox--strong': h.strong}"
+                      ng-style="h.style"
+                      title="{{p.name}} · {{c.data.activity.months[$index].label}} · {{h.v}} shifts">
+                  {{h.v || ''}}
+                </span>
+              </td>
+              <td class="shift-rep__num shift-rep__num--total">{{p.total}}</td>
+              <td class="shift-rep__num shift-rep__num--quiet">{{p.onCall}}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="shift-rep__heatlegend">
+        <span class="shift-rep__statk">Fewer</span>
+        <span class="shift-rep__heatkey shift-rep__heatkey--0"></span>
+        <span class="shift-rep__heatkey shift-rep__heatkey--1"></span>
+        <span class="shift-rep__heatkey shift-rep__heatkey--2"></span>
+        <span class="shift-rep__heatkey shift-rep__heatkey--3"></span>
+        <span class="shift-rep__heatkey shift-rep__heatkey--4"></span>
+        <span class="shift-rep__statk">More ({{c.data.activity.max}} busiest month)</span>
+      </div>
+      <p class="shift-rep__note" ng-if="c.data.teamTruncated">
+        <i class="fa fa-info-circle" aria-hidden="true"></i>
+        Showing the top {{c.data.teamLimit}} people by shifts worked.
+      </p>
+    </div>
+
+    <!-- ============================== Timeliness ================= -->
+    <div class="shift-rep__panel" ng-if="c.tab === 'timeliness'">
+      <div class="shift-rep__panelhead">
+        <div>
+          <h3 class="shift-rep__panelt">Submission and approval turnaround</h3>
+          <p class="shift-rep__panels">
+            How long after each month closed the timesheets arrived, and how long
+            managers then took to action them. The one chart here where a taller
+            bar is worse.
+          </p>
+        </div>
+      </div>
+
+      <div class="shift-rep__strip shift-rep__strip--inline">
+        <div class="shift-rep__stat shift-rep__stat--lead">
+          <span class="shift-rep__statk">Avg days to submit</span>
+          <span class="shift-rep__statv">{{c.lagLabel(c.data.approval.avgSubmitLag)}}</span>
+          <span class="shift-rep__statn">after the month closes</span>
+        </div>
+        <div class="shift-rep__stat">
+          <span class="shift-rep__statk">Avg days to decide</span>
+          <span class="shift-rep__statv shift-rep__statv--quiet">{{c.lagLabel(c.data.approval.avgDecisionLag)}}</span>
+          <span class="shift-rep__statn">from submission to approve/reject</span>
+        </div>
+        <div class="shift-rep__stat">
+          <span class="shift-rep__statk">Still awaiting action</span>
+          <span class="shift-rep__statv"
+                ng-class="{'shift-rep__statv--quiet': !c.data.approval.submitted}">{{c.data.approval.submitted}}</span>
+          <span class="shift-rep__statn">across {{c.data.periodLabel}}</span>
+        </div>
+      </div>
+
+      <div class="shift-rep__chart">
+        <canvas class="shift-rep__canvas shift-rep__canvas--timeliness"></canvas>
+      </div>
+
+      <div class="shift-rep__tablewrap">
+        <table class="shift-rep__table">
+          <thead>
+            <tr>
+              <th>Month</th>
+              <th class="shift-rep__num">To submit</th>
+              <th class="shift-rep__num">To decide</th>
+              <th class="shift-rep__num">Submitted</th>
+              <th class="shift-rep__num">Approved</th>
+              <th class="shift-rep__num">Rejected</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr ng-repeat="m in c.data.approval.months"
+                ng-class="{'shift-rep__row--zero': !m.submitted && !m.approved && !m.rejected}">
+              <td class="shift-rep__cellk">{{m.label}}</td>
+              <td class="shift-rep__num">{{c.lagLabel(m.submitLag)}}</td>
+              <td class="shift-rep__num shift-rep__num--quiet">{{c.lagLabel(m.decisionLag)}}</td>
+              <td class="shift-rep__num shift-rep__num--quiet">{{m.submitted}}</td>
+              <td class="shift-rep__num shift-rep__num--quiet">{{m.approved}}</td>
+              <td class="shift-rep__num"
+                  ng-class="{'shift-rep__num--bad': m.rejected > 0, 'shift-rep__num--quiet': !m.rejected}">{{m.rejected}}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="shift-rep__note">
+        <i class="fa fa-info-circle" aria-hidden="true"></i>
+        A dash means there was nothing to measure that month. Negative days mean the
+        timesheet arrived before the month closed, which the submission window allows.
       </p>
     </div>
 
