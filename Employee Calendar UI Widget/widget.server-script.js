@@ -35,41 +35,28 @@
                    : (options.enable_co_entitlement === true ||
                       options.enable_co_entitlement === 'true');
 
-  // ── Load catalogue (needed by validation + client rendering) ────────────
-  var catalogue = loadCatalogue();
-  data.shiftCatalogue = catalogue;
-
-  // Lookup maps derived from catalogue.
-  // Semantics are driven by catalogue columns (oc_role etc.), never by the
-  // display `name`, so renaming a shift type never changes behaviour.
-  var catalogById   = {};   // sys_id → row
-  var compoundOcIds = {};   // sys_id → true for shifts whose oc_role grants a CO
-  var coSysId       = null; // sys_id of the shift whose oc_role consumes a CO
-  for (var ci = 0; ci < catalogue.length; ci++) {
-    var crow = catalogue[ci];
-    catalogById[crow.sys_id] = crow;
-    if (crow.oc_role === 'consumes_co') coSysId = crow.sys_id;
-    if (crow.oc_role === 'grants_co')   compoundOcIds[crow.sys_id] = true;
-  }
-
-  // The CO entitlement lifecycle lives in the ShiftPayEntitlements Script
-  // Include so the manager approval widget can run the identical rules against
-  // a reportee's days. The catalogue semantics are handed over rather than
-  // re-derived, so this stays a single catalogue read.
-  var ENTITLEMENTS = new ShiftPayEntitlements({
+  // Every shift rule this widget applies now lives in Script Includes, so the
+  // manager approval widget can apply the identical rules to a *reportee*:
+  //   ShiftPayCalendarRules   catalogue, holidays, weekend/holiday role,
+  //                           allow_* flags, the allowed-shift list
+  //   ShiftPayEntitlements    the CO entitlement lifecycle (built by, and
+  //                           shared with, the rules object above)
+  // Both are parameterised by user and read the catalogue exactly once between
+  // them. Never fork either: two copies of these rules drift into a pay bug.
+  var RULES = new ShiftPayCalendarRules({
     userId:           USER_ID,
-    entitlementTable: TABLE_ENT,
     catalogTable:     TABLE_CAT,
-    enabled:          CO_ENABLED,
-    coSysId:          coSysId,
-    compoundOcIds:    compoundOcIds
+    entitlementTable: TABLE_ENT,
+    holidayProperty:  HOLIDAY_PROP,
+    coEnabled:        CO_ENABLED
   });
 
-  // ── Validate catalogue configuration (fail loudly, not silently) ─────────
-  validateCatalogue();
+  var ENTITLEMENTS = RULES.entitlements();
 
-  // ── Load holidays ────────────────────────────────────────────────────────
-  var holidaySet = loadHolidays();
+  // ── Catalogue for client rendering + its configuration check ─────────────
+  data.shiftCatalogue = RULES.catalogue();
+  // Fail loudly, not silently: a catalogue that cannot drive the rules says so.
+  data.configError    = RULES.configError();
 
   // ── Determine which month we are showing ─────────────────────────────────
   var now = new GlideDateTime();
@@ -95,112 +82,11 @@
   data.lastMonthSubmitted = readSubmittedOn(lmY, lmM);
 
 
-  // ============================================================ //
-  // Helpers — catalogue & holidays                               //
-  // ============================================================ //
-
-  function loadCatalogue() {
-    var result = [];
-    var gr = new GlideRecord(TABLE_CAT);
-    gr.addQuery('active', true);
-    gr.orderBy('name');
-    gr.query();
-    while (gr.next()) {
-      result.push({
-        sys_id:       gr.getUniqueValue(),
-        name:         gr.getValue('name')         || '',
-        description:  gr.getValue('description')  || '',
-        rate:         gr.getValue('rate')          || '0',
-        currency:     gr.getValue('currency')      || 'INR',
-        effective_date: gr.getValue('effective_date') || '',
-        color_hex:    gr.getValue('color_hex')   || '',
-        // Semantic columns — the contract the code branches on.
-        oc_role:                gr.getValue('oc_role')                  || 'none',
-        allow_weekday:          isTrue(gr.getValue('allow_weekday')),
-        allow_weekend_holiday:  isTrue(gr.getValue('allow_weekend_holiday')),
-        day_category:           gr.getValue('day_category')             || ''
-      });
-    }
-    return result;
-  }
-
-  function validateCatalogue() {
-    var problems = [];
-    var hasConsumer = false;
-    for (var i = 0; i < catalogue.length; i++) {
-      var row = catalogue[i];
-      if (!row.day_category) {
-        problems.push('Shift type "' + row.name + '" is missing a day category.');
-      }
-      if (row.oc_role === 'consumes_co') hasConsumer = true;
-    }
-    if (CO_ENABLED && !hasConsumer) {
-      problems.push('CO entitlement is enabled but no shift type has the "consumes_co" role.');
-    }
-    data.configError = problems.length ? problems.join(' ') : '';
-  }
-
-  function loadHolidays() {
-    var set = {};
-    var schedSysId = gs.getProperty(HOLIDAY_PROP, '');
-    if (!schedSysId) return set;
-    var gr = new GlideRecord('cmn_schedule_span');
-    gr.addQuery('schedule', schedSysId);
-    gr.query();
-    while (gr.next()) {
-      var startStr = gr.getValue('start_date_time');
-      if (startStr) {
-        var gdt = new GlideDateTime(startStr);
-        set[isoDate(gdt)] = true;
-      }
-    }
-    return set;
-  }
-
-  function isHoliday(dateKey) { return !!holidaySet[dateKey]; }
-
-  function isWeekend(dateKey) {
-    var p = dateKey.split('-');
-    var dow = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10)).getDay();
-    return dow === 0 || dow === 6;
-  }
-
-
-  // ============================================================ //
-  // Helpers — allowed-shifts computation                         //
-  // ============================================================ //
-
-  function baseAllowedSysIds(dateKey) {
-    // Returns sys_ids allowed by calendar role alone. When CO is enabled the
-    // consumes_co row is excluded here and added separately by entitlement
-    // window; when CO is disabled it is treated as an ordinary shift.
-    var weekendOrHoliday = isWeekend(dateKey) || isHoliday(dateKey);
-    var ids = [];
-    for (var i = 0; i < catalogue.length; i++) {
-      var row = catalogue[i];
-      if (CO_ENABLED && row.oc_role === 'consumes_co') continue;
-      var allowed = weekendOrHoliday ? row.allow_weekend_holiday : row.allow_weekday;
-      if (allowed) ids.push(row.sys_id);
-    }
-    return ids;
-  }
-
-  function computeAllowedShifts(y, m) {
-    var result = {};
-    var dim = daysInMonth(y, m);
-    // Load all unconsumed entitlements for this user once, bucket for fast lookup
-    var unconsumed = ENTITLEMENTS.loadUnconsumed();
-    for (var d = 1; d <= dim; d++) {
-      var dk = y + '-' + pad(m + 1) + '-' + pad(d);
-      var allowed = baseAllowedSysIds(dk);
-      // CO available on plain weekdays when an unconsumed entitlement window covers dk
-      if (CO_ENABLED && coSysId && !isWeekend(dk) && !isHoliday(dk)) {
-        if (ENTITLEMENTS.hasUnconsumedFor(unconsumed, dk)) allowed.push(coSysId);
-      }
-      result[dk] = allowed;
-    }
-    return result;
-  }
+  // Catalogue, holidays, weekend/holiday classification and the allowed-shift
+  // computation all moved to the ShiftPayCalendarRules Script Include. The
+  // manager approval widget needs the same allowed list for a reportee before
+  // it may correct one of their days, and half the rule living here is what
+  // stopped it having one.
 
 
   // ============================================================ //
@@ -294,7 +180,7 @@
     out.managerComment = ts.managerComment;
     out.approver       = ts.approver;
     out.actionedOn     = ts.actionedOn;
-    out.allowedShifts  = computeAllowedShifts(y, m);
+    out.allowedShifts  = RULES.allowedForMonth(y, m);
   }
 
   function readMonthEntries(y, m) {
@@ -489,10 +375,7 @@
   // moved to the ShiftPayAggregator Script Include — they were used only by the
   // aggregate code. pad() and daysInMonth() stay: the rest of this script uses them.
 
-  function isValidShift(sysId) { return !!catalogById[sysId]; }
-
-  // glide_boolean getValue() yields '1'/'0'; tolerate 'true' too.
-  function isTrue(v) { return v === '1' || v === 'true' || v === true; }
+  function isValidShift(sysId) { return RULES.isValidShift(sysId); }
 
   function isoDate(gdt) { return gdt.getDate().getValue(); }
 

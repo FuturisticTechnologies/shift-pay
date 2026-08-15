@@ -23,10 +23,11 @@ var ShiftPayEntitlements = Class.create();
  *
  * WHAT THIS DOES NOT OWN
  *   Weekend/holiday detection and the catalogue allow_weekday /
- *   allow_weekend_holiday flags still live in the widget server script
- *   (baseAllowedSysIds / loadHolidays). A caller computing allowed shifts
- *   combines the two: base calendar role from the widget, plus the CO window
- *   from hasUnconsumedFor() here.
+ *   allow_weekend_holiday flags. Those belong to ShiftPayCalendarRules, which
+ *   composes the two: base calendar role from there, plus the CO window from
+ *   hasUnconsumedFor() here. Callers wanting an allowed-shift list should ask
+ *   ShiftPayCalendarRules.allowedForDate / allowedForMonth rather than
+ *   assembling it themselves — it builds and owns the instance of this class.
  *
  * Scoped-app constraints: ES5 only (Rhino) — no let/const, arrow functions or
  * template literals.
