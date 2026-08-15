@@ -1,9 +1,16 @@
 /**
  * One-time re-attribution of sys_created_by / sys_updated_by.
  *
- * Run from ServiceNow Scripts - Background in the **Global** scope (not the
- * Shift Pay app scope): every table it touches except the timesheet table is a
- * global platform table. Review CONFIG before running.
+ * Run as a **Fix Script (sys_script_fix) whose Application is Global** — not as
+ * a background script. Every table it touches except the timesheet table is a
+ * global platform table, and a fix script records the scope on the record
+ * itself, so what it will run as is a fact you can read rather than a session
+ * setting you have to trust. Review CONFIG before running.
+ *
+ * Running this in the Shift Pay scope by mistake does more than fail: the
+ * platform silently auto-grants the app cross-scope read privileges
+ * (sys_scope_privilege rows) for every platform table touched, which then has
+ * to be cleaned up. That happened once; hence the insistence.
  *
  * Why this exists
  * ---------------
@@ -42,16 +49,35 @@
     fromUser: 'reyantech',   // user_name to replace
     toUser:   'admin',       // user_name to put in its place
 
-    // Deliberately an explicit list. A blanket "everything created by X" sweep
-    // across the instance is not something a one-time script should offer.
+    // ONLY this application's artifacts. sys_dictionary, sys_choice, sp_widget
+    // and sys_script_include are instance-wide, so matching on the user alone
+    // is a blanket sweep dressed up as an explicit list — the first dry run
+    // proved it, offering to rewrite two CAF Compliance widgets, an unrelated
+    // Global widget and a "RP VS Sync test" Script Include, one of them
+    // authored by rp32s1715 and merely *touched* by reyantech. Retiring an
+    // account from ShiftPay is not licence to rewrite authorship on other
+    // people's work.
+    appScope:    'bbd97549938183507f08f2a0ed03d60b',  // Shift Pay Management
+    tablePrefix: 'x_1995110_shift_0',                 // this app's table names
+
+    // The confining key differs by table, and getting it wrong is silent in
+    // both directions:
+    //   'tablePrefix' — the row's `name` IS a table name. Required for
+    //                   sys_dictionary: 36 of its 53 ShiftPay rows carry an
+    //                   EMPTY sys_scope (the auto-generated sys_* columns), so
+    //                   a scope filter drops them and the fix looks done when
+    //                   it is not.
+    //   'scope'       — no table name to key on; sys_scope is the only handle.
+    //   'none'        — the app's own data tables. They ARE the application;
+    //                   there is nothing to confine them to.
     tables: [
-      'sys_dictionary',
-      'sys_choice',
-      'sys_db_object',
-      'sys_script_include',
-      'sp_widget',
-      'x_1995110_shift_0_monthly_timesheet',
-      'x_1995110_shift_0_shift_day_change'
+      { table: 'sys_dictionary',     match: 'tablePrefix' },
+      { table: 'sys_choice',         match: 'tablePrefix' },
+      { table: 'sys_db_object',      match: 'tablePrefix' },
+      { table: 'sys_script_include', match: 'scope' },
+      { table: 'sp_widget',          match: 'scope' },
+      { table: 'x_1995110_shift_0_monthly_timesheet', match: 'none' },
+      { table: 'x_1995110_shift_0_shift_day_change',  match: 'none' }
     ]
   };
 
@@ -60,12 +86,26 @@
   var lines = [];
 
   for (var i = 0; i < CONFIG.tables.length; i++) {
-    var table = CONFIG.tables[i];
+    var spec  = CONFIG.tables[i];
+    var table = spec.table;
     var found = 0, written = 0;
 
     var gr = new GlideRecord(table);
     if (!gr.isValid()) {
       lines.push('SKIP  ' + table + ' — table not found');
+      continue;
+    }
+
+    // Confine to this application FIRST, before the user match. Both clauses
+    // are ANDed, so the order is only readability — but this is the clause that
+    // keeps the sweep out of other people's records, so it reads first.
+    var how = spec.match;
+    if (how === 'tablePrefix') {
+      gr.addQuery('name', 'STARTSWITH', CONFIG.tablePrefix);
+    } else if (how === 'scope') {
+      gr.addQuery('sys_scope', CONFIG.appScope);
+    } else if (how !== 'none') {
+      lines.push('SKIP  ' + table + ' — unknown match mode "' + how + '"');
       continue;
     }
 
@@ -96,17 +136,32 @@
 
     totalFound += found;
     totalWritten += written;
-    lines.push((found ? 'FOUND ' : 'clean ') + table + ' — ' + found + ' row(s)');
+    lines.push((found ? 'FOUND ' : 'clean ') + table + ' — ' + found +
+               ' row(s)  [confined by ' + how + ']');
   }
 
-  gs.info('[ShiftPay reattribute] ' + (CONFIG.dryRun ? 'DRY RUN — nothing written' : 'WROTE ' + totalWritten + ' row(s)'));
-  gs.info('[ShiftPay reattribute] matched ' + totalFound + ' row(s) for ' + CONFIG.fromUser);
-  for (var L = 0; L < lines.length; L++) gs.info('[ShiftPay reattribute] ' + lines[L]);
+  say('[ShiftPay reattribute] ' + (CONFIG.dryRun ? 'DRY RUN — nothing written' : 'WROTE ' + totalWritten + ' row(s)'));
+  say('[ShiftPay reattribute] matched ' + totalFound + ' row(s) for ' + CONFIG.fromUser);
+  for (var L = 0; L < lines.length; L++) say('[ShiftPay reattribute] ' + lines[L]);
 
   if (CONFIG.dryRun) {
-    gs.info('[ShiftPay reattribute] Set CONFIG.dryRun = false and re-run to apply.');
+    say('[ShiftPay reattribute] Set CONFIG.dryRun = false and re-run to apply.');
   } else {
-    gs.info('[ShiftPay reattribute] Done. Re-run to confirm it now reports 0 rows.');
+    say('[ShiftPay reattribute] Done. Re-run to confirm it now reports 0 rows.');
+  }
+
+  /**
+   * Emit to both the results page and the syslog.
+   *
+   * gs.print echoes onto the page, which is the whole point of a dry run you
+   * are meant to read before writing — but it is blocked inside a scoped
+   * application ("Function print is not allowed in scope ..."), so it is
+   * guarded. gs.info always runs, leaving a durable trail that can be read back
+   * with a syslog query even if the page shows nothing.
+   */
+  function say(msg) {
+    try { gs.print(msg); } catch (e) { /* scoped execution: page output unavailable */ }
+    gs.info(msg);
   }
 
   /** A human-readable handle for the row, so the log is reviewable. */
