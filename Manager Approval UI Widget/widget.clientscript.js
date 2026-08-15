@@ -31,6 +31,7 @@ api.controller = function ($scope) {
   c.rejectComment = '';
   c.rejectError   = '';
   c.detailCells   = [];     // month grid for the open detail panel
+  c.historyVisible = [];    // decision log rows, after the search filter
   c.correcting    = null;   // the day being corrected, or null
   c.selected      = {};     // userId → true, for the bulk actions
   c.bulkRejecting = false;  // the bulk reject dialog is open
@@ -38,12 +39,16 @@ api.controller = function ($scope) {
   c.bulkError     = '';
   c.weekdayNames  = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
+  // The first five filter the selected month. History is the odd one out: it
+  // spans every month, so it has no count from data.counts and it ignores the
+  // month picker entirely.
   c.tabs = [
     { key: 'submitted',    label: 'Awaiting me',   count: 'submitted' },
     { key: 'approved',     label: 'Approved',      count: 'approved' },
     { key: 'rejected',     label: 'Rejected',      count: 'rejected' },
     { key: 'notSubmitted', label: 'Not submitted', count: 'notSubmitted' },
-    { key: 'all',          label: 'All',           count: 'all' }
+    { key: 'all',          label: 'All',           count: 'all' },
+    { key: 'history',      label: 'History',       count: null }
   ];
 
   var CURRENCY = { INR: '₹', USD: '$', GBP: '£', EUR: '€' };
@@ -62,6 +67,14 @@ api.controller = function ($scope) {
     // bulk-action rows they can no longer see, which is how accidents happen.
     c.clearSelection();
     c.recalc();
+    // History is a whole-history query, so it is fetched the first time the tab
+    // is opened rather than on every load of the screen.
+    if (key === 'history' && !c.data.history && !c.saving) loadHistory();
+  };
+
+  /** Re-fetch the decision log — it is stale as soon as anything is actioned. */
+  c.refreshHistory = function () {
+    if (!c.saving) loadHistory();
   };
 
   // ───── Bulk selection ─────────────────────────────────────────────────────
@@ -161,16 +174,29 @@ api.controller = function ($scope) {
    * when the tab, the search box or the server data actually change.
    */
   c.recalc = function () {
-    var rows = (c.data && c.data.rows) || [];
     var needle = (c.search || '').toLowerCase().replace(/^\s+|\s+$/g, '');
 
-    c.visible = rows.filter(function (r) {
-      if (c.filter === 'notSubmitted') { if (r.status) return false; }
-      else if (c.filter !== 'all')     { if (r.status !== c.filter) return false; }
-
+    function matches(r) {
       if (!needle) return true;
       return (r.name || '').toLowerCase().indexOf(needle) !== -1 ||
              (r.employeeId || '').toLowerCase().indexOf(needle) !== -1;
+    }
+
+    // History spans every month and has no per-month status filter, so it is
+    // derived separately and the queue list is emptied — nothing selectable,
+    // nothing actionable, no bulk bar.
+    if (c.filter === 'history') {
+      c.visible = [];
+      c.historyVisible = ((c.data && c.data.history) || []).filter(matches);
+      return;
+    }
+
+    c.historyVisible = [];
+    var rows = (c.data && c.data.rows) || [];
+    c.visible = rows.filter(function (r) {
+      if (c.filter === 'notSubmitted') { if (r.status) return false; }
+      else if (c.filter !== 'all')     { if (r.status !== c.filter) return false; }
+      return matches(r);
     });
   };
 
@@ -364,6 +390,23 @@ api.controller = function ($scope) {
     var map = {}, cat = (c.data && c.data.shiftCatalogue) || [];
     for (var i = 0; i < cat.length; i++) map[cat[i].sys_id] = cat[i];
     return map;
+  }
+
+  /**
+   * Fetch the decision log.
+   *
+   * Kept out of `send` because the response carries data.history and we do NOT
+   * want the generic post-write reseed to blow it away — every other action
+   * returns history: null.
+   */
+  function loadHistory() {
+    c.saving = true;
+    c.server.get({ action: 'loadHistory', year: c.data.year, month: c.data.month })
+      .then(function (r) {
+        c.data   = r.data;
+        c.saving = false;
+        c.recalc();
+      }, function () { c.saving = false; });
   }
 
   function loadMonth(y, m) {

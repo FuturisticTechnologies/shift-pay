@@ -40,6 +40,10 @@
   var TABLE_ENT   = options.entitlement_table || 'x_1995110_shift_0_shift_co_entitlement';
   var MANAGER_FIELD = options.manager_field  || 'manager';
 
+  // How many past decisions the History tab loads. Bounded on purpose: it is a
+  // recent-activity log, not an export.
+  var HISTORY_LIMIT = parseInt(options.history_limit, 10) || 100;
+
   var USER_ID = gs.getUserID();
 
   // Must match the employee calendar's option of the same name: a correction
@@ -98,7 +102,8 @@
 
   // ── Actions run before the re-read, so the response is already fresh ─────
   data.actionError = '';
-  data.detail = null;   // populated only by the loadDetail action
+  data.detail  = null;   // populated only by the loadDetail action
+  data.history = null;   // populated only by the loadHistory action
   if (input && input.action) handleAction(input);
 
   // ── Build the queue ──────────────────────────────────────────────────────
@@ -112,6 +117,13 @@
   function handleAction(inp) {
     var action = inp.action;
     if (action === 'loadQueue') return;
+
+    if (action === 'loadHistory') {
+      // Fetched on demand rather than on every load: it is a whole-history
+      // query and most visits to this screen never open the tab.
+      data.history = readHistory();
+      return;
+    }
 
     if (action === 'loadDetail') {
       // Read-only drill-in. Still gated: a manager may not read a
@@ -776,6 +788,129 @@
 
     return detail;
   }
+
+  /**
+   * Every decision THIS manager has made, newest first, across all months.
+   *
+   * Scoped by `approver = me` rather than by the current reportee list, because
+   * this is a log of what I did, not a view of who reports to me today — a
+   * decision does not stop being mine when someone changes team. That also
+   * means it needs no reportee gate: the query cannot return anyone else's
+   * decisions.
+   *
+   * HONEST LIMITATION, inherited from keeping approval state on the timesheet
+   * row: `submitMonth` clears approver/actioned_on/manager_comment when an
+   * employee resubmits after a rejection. So a rejection that has since been
+   * fixed and resubmitted is no longer here — this shows decisions that still
+   * stand, not every decision ever taken. Retaining superseded rounds needs a
+   * separate history table, which was explicitly traded away.
+   */
+  function readHistory() {
+    var rows = [];
+    var gr = new GlideRecord(TABLE_LOCK);
+    gr.addQuery('approver', USER_ID);
+    gr.addQuery('status', 'IN', 'approved,rejected');
+    gr.orderByDesc('actioned_on');
+    gr.setLimit(HISTORY_LIMIT);
+    gr.query();
+
+    var userIds = {};
+    while (gr.next()) {
+      var uid = gr.getValue('u_user');
+      var y   = parseInt(gr.getValue('u_year'), 10);
+      var m   = parseInt(gr.getValue('u_month'), 10) - 1;   // stored 1-indexed
+      userIds[uid] = true;
+      rows.push({
+        userId:         uid,
+        year:           y,
+        month:          m,
+        monthLabel:     monthLabel(y, m),
+        status:         gr.getValue('status'),
+        statusLabel:    statusLabel(gr.getValue('status')),
+        submittedOn:    gr.getDisplayValue('u_submitted_on') || '',
+        actionedOn:     gr.getDisplayValue('actioned_on') || '',
+        managerComment: gr.getValue('manager_comment') || ''
+      });
+    }
+    if (!rows.length) return rows;
+
+    var people  = readPeople(userIds);
+    var totals  = readHistoryTotals(userIds, rows);
+    for (var i = 0; i < rows.length; i++) {
+      var p = people[rows[i].userId] || { name: '(unknown user)', initials: '?', employeeId: '' };
+      rows[i].name       = p.name;
+      rows[i].initials   = p.initials;
+      rows[i].employeeId = p.employeeId;
+      var t = totals[periodKey(rows[i].userId, rows[i].year, rows[i].month)] ||
+              { totalShifts: 0, totalAmount: 0, currency: 'INR' };
+      rows[i].totalShifts = t.totalShifts;
+      if (SHOW_PAY) {
+        rows[i].totalAmount = t.totalAmount;
+        rows[i].currency    = t.currency;
+      }
+    }
+    return rows;
+  }
+
+  /**
+   * Names for the users in the history, in one query.
+   *
+   * Read from sys_user directly rather than from `reportees`: someone actioned
+   * two years ago may not report here any more, and their row should still say
+   * who they are instead of "(unknown user)".
+   */
+  function readPeople(userIdSet) {
+    var ids = [];
+    for (var k in userIdSet) ids.push(k);
+    var map = {};
+    if (!ids.length) return map;
+    var gr = new GlideRecord('sys_user');
+    gr.addQuery('sys_id', 'IN', ids.join(','));
+    gr.query();
+    while (gr.next()) {
+      var nm = gr.getValue('name') || gr.getValue('user_name') || '';
+      map[gr.getUniqueValue()] = {
+        name:       nm,
+        initials:   initialsOf(nm),
+        employeeId: gr.getValue('employee_number') || ''
+      };
+    }
+    return map;
+  }
+
+  /**
+   * Monthly totals for every period in the history, in one query rather than
+   * one per row. Over-fetches a little (all months for those users) and
+   * discards what no history row asked for — cheaper than N queries, and the
+   * history is capped at HISTORY_LIMIT rows anyway.
+   */
+  function readHistoryTotals(userIdSet, rows) {
+    var wanted = {};
+    for (var i = 0; i < rows.length; i++) {
+      wanted[periodKey(rows[i].userId, rows[i].year, rows[i].month)] = true;
+    }
+    var ids = [];
+    for (var k in userIdSet) ids.push(k);
+
+    var map = {};
+    var gr = new GlideRecord(TABLE_SUM);
+    gr.addQuery('u_user', 'IN', ids.join(','));
+    gr.addQuery('u_period_type', 'month');
+    gr.query();
+    while (gr.next()) {
+      var key = periodKey(gr.getValue('u_user'),
+                          parseInt(gr.getValue('u_year'), 10),
+                          parseInt(gr.getValue('u_month'), 10) - 1);
+      if (!wanted[key]) continue;
+      if (!map[key]) map[key] = { totalShifts: 0, totalAmount: 0, currency: 'INR' };
+      map[key].totalShifts += parseInt(gr.getValue('u_count'), 10) || 0;
+      if (SHOW_PAY) map[key].totalAmount += parseFloat(gr.getValue('u_amount')) || 0;
+      map[key].currency = gr.getValue('u_currency') || map[key].currency;
+    }
+    return map;
+  }
+
+  function periodKey(userId, y, m) { return userId + '|' + y + '|' + m; }
 
   function byCatalogueOrder(a, b) {
     var an = (a.name || '').toLowerCase();
