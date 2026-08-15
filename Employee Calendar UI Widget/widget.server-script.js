@@ -52,6 +52,19 @@
     if (crow.oc_role === 'grants_co')   compoundOcIds[crow.sys_id] = true;
   }
 
+  // The CO entitlement lifecycle lives in the ShiftPayEntitlements Script
+  // Include so the manager approval widget can run the identical rules against
+  // a reportee's days. The catalogue semantics are handed over rather than
+  // re-derived, so this stays a single catalogue read.
+  var ENTITLEMENTS = new ShiftPayEntitlements({
+    userId:           USER_ID,
+    entitlementTable: TABLE_ENT,
+    catalogTable:     TABLE_CAT,
+    enabled:          CO_ENABLED,
+    coSysId:          coSysId,
+    compoundOcIds:    compoundOcIds
+  });
+
   // ── Validate catalogue configuration (fail loudly, not silently) ─────────
   validateCatalogue();
 
@@ -152,8 +165,6 @@
     return dow === 0 || dow === 6;
   }
 
-  function isCompoundOc(sysId) { return !!compoundOcIds[sysId]; }
-
 
   // ============================================================ //
   // Helpers — allowed-shifts computation                         //
@@ -178,41 +189,17 @@
     var result = {};
     var dim = daysInMonth(y, m);
     // Load all unconsumed entitlements for this user once, bucket for fast lookup
-    var unconsumed = CO_ENABLED ? loadUnconsumedEntitlements() : [];
+    var unconsumed = ENTITLEMENTS.loadUnconsumed();
     for (var d = 1; d <= dim; d++) {
       var dk = y + '-' + pad(m + 1) + '-' + pad(d);
       var allowed = baseAllowedSysIds(dk);
       // CO available on plain weekdays when an unconsumed entitlement window covers dk
       if (CO_ENABLED && coSysId && !isWeekend(dk) && !isHoliday(dk)) {
-        if (hasUnconsumedEntitlementFor(unconsumed, dk)) allowed.push(coSysId);
+        if (ENTITLEMENTS.hasUnconsumedFor(unconsumed, dk)) allowed.push(coSysId);
       }
       result[dk] = allowed;
     }
     return result;
-  }
-
-  function loadUnconsumedEntitlements() {
-    var rows = [];
-    var gr = new GlideRecord(TABLE_ENT);
-    gr.addQuery('u_user', USER_ID);
-    gr.addNullQuery('u_co_entry');
-    gr.query();
-    while (gr.next()) {
-      rows.push({
-        sysid:      gr.getUniqueValue(),
-        oc_date:    gr.getValue('oc_date'),
-        window_end: gr.getValue('u_oc_window_end')
-      });
-    }
-    return rows;
-  }
-
-  function hasUnconsumedEntitlementFor(unconsumed, dateKey) {
-    for (var i = 0; i < unconsumed.length; i++) {
-      var e = unconsumed[i];
-      if (e.oc_date < dateKey && e.window_end >= dateKey) return true;
-    }
-    return false;
   }
 
 
@@ -236,39 +223,24 @@
       var prevShift = getPrevShift(date);
 
       // --- Entitlement side-effects for removing prevShift ---
-      if (CO_ENABLED && prevShift && prevShift !== newShift) {
-        if (isCompoundOc(prevShift)) {
-          var oldEnt = findEntitlementByOcDate(date);
-          if (oldEnt && oldEnt.co_entry) {
-            gs.addErrorMessage('Cannot change this entry — a CO on ' + oldEnt.co_date + ' depends on it.');
-            return;
-          }
-          if (oldEnt) deleteEntitlementRow(oldEnt.sysid);
-        }
-        if (prevShift === coSysId) {
-          var oldCoEnt = findEntitlementConsumedByCoDate(date);
-          if (oldCoEnt) releaseEntitlement(oldCoEnt.sysid);
-        }
+      var released = ENTITLEMENTS.releasePrevious(date, prevShift, newShift);
+      if (!released.ok) {
+        gs.addErrorMessage(released.error);
+        return;
       }
 
       // --- Pre-check CO entitlement before writing ---
-      var eligibleEnt = null;
-      if (CO_ENABLED && newShift !== prevShift && newShift === coSysId) {
-        eligibleEnt = findEarliestUnconsumedEntitlementFor(date);
-        if (!eligibleEnt) {
-          gs.addErrorMessage('CO not available for ' + date + ' — log an OC+CO shift on a prior holiday first.');
-          return;
-        }
+      var reserved = ENTITLEMENTS.reserveForNew(date, newShift, prevShift);
+      if (!reserved.ok) {
+        gs.addErrorMessage(reserved.error);
+        return;
       }
 
       // --- Write the submission row ---
       var newEntrySysId = upsertDay(date, newShift, inp.comment);
 
       // --- Entitlement side-effects for adding newShift ---
-      if (CO_ENABLED && newShift !== prevShift) {
-        if (isCompoundOc(newShift)) insertEntitlementRow(date, newEntrySysId);
-        if (newShift === coSysId && eligibleEnt) consumeEntitlement(eligibleEnt.sysid, date, newEntrySysId);
-      }
+      ENTITLEMENTS.commitForNew(date, newShift, prevShift, newEntrySysId, reserved.entitlementId);
 
       recomputeAggregates([date]);
     }
@@ -277,19 +249,11 @@
       var clDate = inp.date;
       if (!clDate) return;
       var clPrev = getPrevShift(clDate);
-      if (CO_ENABLED && clPrev) {
-        if (isCompoundOc(clPrev)) {
-          var clEnt = findEntitlementByOcDate(clDate);
-          if (clEnt && clEnt.co_entry) {
-            gs.addErrorMessage('Cannot clear — CO on ' + clEnt.co_date + ' depends on this entry.');
-            return;
-          }
-          if (clEnt) deleteEntitlementRow(clEnt.sysid);
-        }
-        if (clPrev === coSysId) {
-          var clCoEnt = findEntitlementConsumedByCoDate(clDate);
-          if (clCoEnt) releaseEntitlement(clCoEnt.sysid);
-        }
+      // No new shift: passing null selects the "cannot clear" wording.
+      var clReleased = ENTITLEMENTS.releasePrevious(clDate, clPrev, null);
+      if (!clReleased.ok) {
+        gs.addErrorMessage(clReleased.error);
+        return;
       }
       deleteDay(clDate);
       recomputeAggregates([clDate]);
@@ -300,7 +264,7 @@
       if (!isValidShift(bShift)) return;
       // CO and compound-OC must be logged individually (entitlement validation too complex for bulk).
       // Only relevant while CO entitlement is enabled; otherwise they are ordinary shifts.
-      if (CO_ENABLED && (bShift === coSysId || isCompoundOc(bShift))) {
+      if (ENTITLEMENTS.blocksBulk(bShift)) {
         gs.addErrorMessage('This shift type cannot be applied in bulk — please log it on each date individually.');
         return;
       }
@@ -495,75 +459,9 @@
   }
 
 
-  // ============================================================ //
-  // Entitlement helpers                                           //
-  // ============================================================ //
-
-  function findEntitlementByOcDate(date) {
-    var gr = new GlideRecord(TABLE_ENT);
-    gr.addQuery('u_user',    USER_ID);
-    gr.addQuery('oc_date', date);
-    gr.setLimit(1);
-    gr.query();
-    if (!gr.next()) return null;
-    return { sysid: gr.getUniqueValue(), co_entry: gr.getValue('u_co_entry'), co_date: gr.getValue('u_co_date') };
-  }
-
-  function findEntitlementConsumedByCoDate(date) {
-    var gr = new GlideRecord(TABLE_ENT);
-    gr.addQuery('u_user',    USER_ID);
-    gr.addQuery('u_co_date', date);
-    gr.setLimit(1);
-    gr.query();
-    if (!gr.next()) return null;
-    return { sysid: gr.getUniqueValue(), oc_date: gr.getValue('oc_date') };
-  }
-
-  function findEarliestUnconsumedEntitlementFor(date) {
-    var gr = new GlideRecord(TABLE_ENT);
-    gr.addQuery('u_user',          USER_ID);
-    gr.addNullQuery('u_co_entry');
-    gr.addQuery('oc_date',       '<',  date);
-    gr.addQuery('u_oc_window_end', '>=', date);
-    gr.orderBy('oc_date');
-    gr.setLimit(1);
-    gr.query();
-    if (!gr.next()) return null;
-    return { sysid: gr.getUniqueValue() };
-  }
-
-  function insertEntitlementRow(date, entrySysId) {
-    var windowEnd = nthWeekdayAfter(date, 7);
-    var gr = new GlideRecord(TABLE_ENT);
-    gr.initialize();
-    gr.setValue('u_user',          USER_ID);
-    gr.setValue('u_oc_entry',      entrySysId);
-    gr.setValue('oc_date',       date);
-    gr.setValue('u_oc_window_end', windowEnd);
-    gr.insert();
-  }
-
-  function consumeEntitlement(entSysId, coDate, coEntrySysId) {
-    var gr = new GlideRecord(TABLE_ENT);
-    if (!gr.get(entSysId)) return;
-    gr.setValue('u_co_entry', coEntrySysId);
-    gr.setValue('u_co_date',  coDate);
-    gr.update();
-  }
-
-  function releaseEntitlement(entSysId) {
-    var gr = new GlideRecord(TABLE_ENT);
-    if (!gr.get(entSysId)) return;
-    gr.setValue('u_co_entry', null);
-    gr.setValue('u_co_date',  null);
-    gr.update();
-  }
-
-  function deleteEntitlementRow(entSysId) {
-    var gr = new GlideRecord(TABLE_ENT);
-    if (!gr.get(entSysId)) return;
-    gr.deleteRecord();
-  }
+  // Entitlement helpers moved to the ShiftPayEntitlements Script Include —
+  // find/insert/consume/release/delete and the weekday window arithmetic all
+  // live there now, parameterised by user so the manager widget shares them.
 
 
   // ============================================================ //
@@ -590,18 +488,6 @@
   // mondayOf / firstOfMonthKey / lastOfMonthKey / addDays / maxDate / minDate
   // moved to the ShiftPayAggregator Script Include — they were used only by the
   // aggregate code. pad() and daysInMonth() stay: the rest of this script uses them.
-
-  function nthWeekdayAfter(dateKey, n) {
-    var p = dateKey.split('-');
-    var d = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
-    var count = 0;
-    while (count < n) {
-      d.setDate(d.getDate() + 1);
-      var dow = d.getDay();
-      if (dow !== 0 && dow !== 6) count++;
-    }
-    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
-  }
 
   function isValidShift(sysId) { return !!catalogById[sysId]; }
 
