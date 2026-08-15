@@ -53,10 +53,12 @@ api.controller = function ($scope, $element, $timeout) {
   c.libError = '';
 
   c.tabs = [
-    { key: 'trend', label: 'Cost & volume', icon: 'fa-line-chart' },
-    { key: 'mix',   label: 'Shift mix',     icon: 'fa-pie-chart'  },
-    { key: 'team',  label: 'Team',          icon: 'fa-users'      },
-    { key: 'co',    label: 'CO health',     icon: 'fa-exchange'   }
+    { key: 'trend',      label: 'Cost & volume', icon: 'fa-line-chart' },
+    { key: 'mix',        label: 'Shift mix',     icon: 'fa-pie-chart'  },
+    { key: 'team',       label: 'Team',          icon: 'fa-users'      },
+    { key: 'activity',   label: 'Activity',      icon: 'fa-th'         },
+    { key: 'timeliness', label: 'Timeliness',    icon: 'fa-clock-o'    },
+    { key: 'co',         label: 'CO health',     icon: 'fa-exchange'   }
   ];
 
   var CURRENCY = { INR: '₹', USD: '$', GBP: '£', EUR: '€' };
@@ -88,8 +90,10 @@ api.controller = function ($scope, $element, $timeout) {
     var out = [];
     for (var i = 0; i < c.tabs.length; i++) {
       var k = c.tabs[i].key;
-      if (k === 'team' && !c.data.showTeam) continue;   // 'me' scope: nobody to compare with
-      if (k === 'co'   && !c.data.coEnabled) continue;  // CO turned off app-wide
+      // 'me' scope: nobody to compare with, and a one-row heatmap is just the
+      // trend chart drawn as squares.
+      if ((k === 'team' || k === 'activity') && !c.data.showTeam) continue;
+      if (k === 'co' && !c.data.coEnabled) continue;    // CO turned off app-wide
       out.push(c.tabs[i]);
     }
     return out;
@@ -145,6 +149,42 @@ api.controller = function ($scope, $element, $timeout) {
     if (!row || !row.shifts) return 0;
     return Math.round((row.onCall / row.shifts) * 100);
   };
+
+  /**
+   * Decorate the heatmap's numeric cells with the styles that render them.
+   *
+   * Done once per data load, not from the template. ng-style on a function
+   * would rebuild every cell's style object on every digest — with 25 people
+   * across 12 months that is 300 objects a tick, for a grid that only changes
+   * when the server answers.
+   *
+   * Intensity is ink at varying alpha, never a hue: the colour rule inherited
+   * from the calendar reserves hue for shift type. Scaled against the busiest
+   * single person-month in the window, so the darkest cell is always a real
+   * observation rather than an arbitrary ceiling.
+   */
+  function decorateActivity() {
+    var act = c.data.activity;
+    if (!act) return;
+    var max = act.max || 1;
+
+    for (var r = 0; r < act.rows.length; r++) {
+      var row = act.rows[r];
+      var cells = [];
+      for (var i = 0; i < row.cells.length; i++) {
+        var v = row.cells[i];
+        var alpha = v > 0 ? 0.10 + 0.75 * (v / max) : 0;
+        cells.push({
+          v: v,
+          // An empty month gets a hairline tint, not white: it has to read as
+          // "measured and zero" rather than as a gap in the grid.
+          style: { background: v > 0 ? 'rgba(15, 23, 42, ' + alpha.toFixed(3) + ')' : GRID },
+          strong: alpha > 0.5
+        });
+      }
+      row.heat = cells;
+    }
+  }
 
   c.coPercent = function (part) {
     var earned = (c.data.co && c.data.co.earned) || 0;
@@ -204,6 +244,7 @@ api.controller = function ($scope, $element, $timeout) {
       // no longer exists in the new scope, fall back to the first one that does.
       c.visibleTabs = computeTabs();
       if (!tabExists(c.tab)) c.tab = c.visibleTabs[0].key;
+      decorateActivity();
       draw();
     }, function () {
       c.loading = false;
@@ -316,12 +357,16 @@ api.controller = function ($scope, $element, $timeout) {
   function draw() {
     destroyAll();
     if (!c.data.hasData) return;
+    // The activity heatmap is a CSS grid, not a canvas — no library, and no
+    // reason to pay for loading one just because that tab is open.
+    if (c.tab === 'activity') return;
     $timeout(function () {
       withChartLib(function () {
-        if (c.tab === 'trend') buildTrend();
-        else if (c.tab === 'mix')  buildMix();
-        else if (c.tab === 'team') buildTeam();
-        else if (c.tab === 'co')   buildCo();
+        if (c.tab === 'trend')            buildTrend();
+        else if (c.tab === 'mix')         buildMix();
+        else if (c.tab === 'team')        buildTeam();
+        else if (c.tab === 'timeliness')  buildTimeliness();
+        else if (c.tab === 'co')          buildCo();
       });
     });
   }
@@ -519,6 +564,55 @@ api.controller = function ($scope, $element, $timeout) {
   }
 
   /**
+   * How long each stage of the month actually took.
+   *
+   * A process measure, not a pay measure: bars are days, not money, so this is
+   * the one chart where a taller bar is worse. Months with nothing to measure
+   * send null and Chart.js leaves a gap — which is the correct reading, because
+   * a month nobody submitted did not have a zero-day turnaround.
+   */
+  function buildTimeliness() {
+    var labels = [], submitLag = [], decisionLag = [];
+    var months = (c.data.approval && c.data.approval.months) || [];
+    for (var i = 0; i < months.length; i++) {
+      labels.push(months[i].label);
+      submitLag.push(months[i].submitLag);
+      decisionLag.push(months[i].decisionLag);
+    }
+
+    mount('timeliness', {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [
+          { label: 'Days to submit', data: submitLag, backgroundColor: INK,
+            borderRadius: 3, maxBarThickness: 26 },
+          { label: 'Days to decide', data: decisionLag, backgroundColor: INK_SOFT,
+            borderRadius: 3, maxBarThickness: 26 }
+        ]
+      },
+      options: baseOptions({
+        scales: {
+          x: { grid: { display: false }, border: { display: false },
+               ticks: { color: AXIS_TEXT, font: { size: 11 } } },
+          // Not beginAtZero-only: submitting before the month closes is
+          // legitimate and produces a negative bar, which must stay visible.
+          y: { grid: { color: GRID }, border: { display: false },
+               ticks: { color: AXIS_TEXT, font: { size: 11 },
+                        callback: function (v) { return v + 'd'; } } }
+        },
+        plugins: {
+          legend: legend(),
+          tooltip: tooltip(function (ctx) {
+            if (ctx.parsed.y === null) return ctx.dataset.label + ': nothing to measure';
+            return ctx.dataset.label + ': ' + ctx.parsed.y + ' days';
+          })
+        }
+      })
+    });
+  }
+
+  /**
    * CO entitlement health.
    *
    * Red is used here and nowhere else in this widget: an expired unused
@@ -634,8 +728,17 @@ api.controller = function ($scope, $element, $timeout) {
   }
 
 
+  /** Days-lag label. Negative means it arrived before the month closed. */
+  c.lagLabel = function (n) {
+    if (n === null || n === undefined) return '—';
+    if (n < 0) return Math.abs(n) + 'd early';
+    return n + 'd';
+  };
+
+
   // ───── Initial draw ───────────────────────────────────────────────────────
   c.visibleTabs = computeTabs();
   if (c.visibleTabs.length && !tabExists(c.tab)) c.tab = c.visibleTabs[0].key;
+  decorateActivity();
   draw();
 };

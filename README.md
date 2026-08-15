@@ -64,7 +64,7 @@ Shift Pay Management streamlines the process of logging shift work, calculating 
 - Keyboard navigation (Escape to close/exit modes)
 
 ### 📊 Built-in Reporting
-- Four Chart.js reports — cost/volume trend, shift mix, per-person comparison, CO health
+- Six reports — cost/volume trend, shift mix, per-person comparison, activity heatmap, submission timeliness, CO health
 - Role-aware scope: my data / my team / organisation, resolved server-side
 - Independent of ServiceNow's reporting engine; every chart is paired with its numbers
 
@@ -263,7 +263,21 @@ independent of ServiceNow's reporting engine.
 | **Cost & volume** | Cost bars and shift-count line, month by month over the selected window (3/6/12/24 months) | Monthly summary rows |
 | **Shift mix** | Doughnut + table of every shift type logged in the window, with share and cost | Monthly summary rows |
 | **Team** | Stacked horizontal bars per person — weekday work and the on-call part of it | Monthly summary rows |
+| **Activity** | Person × month heatmap — who carried the shifts, and when. Ranked by total | Monthly summary rows |
+| **Timeliness** | Days from month-end to submission, and from submission to a manager's decision | Monthly timesheet rows |
 | **CO health** | Entitlements earned vs used vs open vs **expired unused**, plus the windows closing soonest | CO entitlement table |
+
+The Activity heatmap is a CSS grid rather than a canvas: Chart.js has no native matrix
+chart, the plugin that adds one is a second CDN dependency, and a table of coloured cells is
+crisper at this size, selectable, and keeps the person/month relationship in real table
+headers for screen readers. Cell intensity is ink at varying alpha — never a hue — scaled
+against the busiest single person-month, so the darkest cell is always a real observation.
+
+Timeliness is the one report where a taller bar is worse. Lags are whole days and may be
+**negative**, which is reported rather than clamped: the submission window opens on the last
+weekday of the month, so arriving a day early is legitimate and clamping would quietly turn
+early submitters into on-the-day submitters. A month with nothing to measure sends `null`
+and leaves a gap, because a month nobody submitted did not have a zero-day turnaround.
 
 ### Scope
 

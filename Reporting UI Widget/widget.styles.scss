@@ -449,6 +449,95 @@
 }
 
 /* =========================================================
+   Activity heatmap
+
+   A table, not a grid of divs: the row/column relationship is real tabular
+   data, so screen readers get the person and the month for free from the
+   header cells. The colour swatch is an inner span so the cell keeps normal
+   table padding while the swatch stays a clean square.
+   ========================================================= */
+.shift-rep__heatwrap {
+  overflow-x: auto;
+}
+.shift-rep__heat {
+  border-collapse: separate;
+  border-spacing: 3px;
+  font-size: 12px;
+}
+.shift-rep__heat th {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--shift-text-faint);
+  padding: 0 2px 4px;
+  white-space: nowrap;
+}
+.shift-rep__heatm {
+  text-align: center;
+  min-width: 38px;
+}
+.shift-rep__heatname {
+  text-align: left;
+  white-space: nowrap;
+  padding-right: 12px;
+  position: sticky;
+  left: 0;
+  background: var(--shift-surface);
+  z-index: 1;
+}
+.shift-rep__heatcell {
+  padding: 0;
+}
+.shift-rep__heatbox {
+  display: block;
+  min-width: 38px;
+  height: 30px;
+  line-height: 30px;
+  border-radius: var(--shift-radius-sm);
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--shift-text-mute);
+}
+/* Flipped once the ink behind it is dark enough to swallow slate text. */
+.shift-rep__heatbox--strong {
+  color: #FFFFFF;
+}
+.shift-rep__num--total {
+  font-weight: 700;
+  color: var(--shift-text);
+}
+
+.shift-rep__heatlegend {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 16px;
+}
+.shift-rep__heatkey {
+  display: inline-block;
+  width: 22px;
+  height: 12px;
+  border-radius: 2px;
+}
+.shift-rep__heatkey--0 { background: var(--shift-divider); }
+.shift-rep__heatkey--1 { background: rgba(15, 23, 42, 0.20); }
+.shift-rep__heatkey--2 { background: rgba(15, 23, 42, 0.40); }
+.shift-rep__heatkey--3 { background: rgba(15, 23, 42, 0.62); }
+.shift-rep__heatkey--4 { background: rgba(15, 23, 42, 0.85); }
+
+/* A stat strip used inside a panel rather than under the header. */
+.shift-rep__strip--inline {
+  border-top: 0;
+  border: 1px solid var(--shift-divider);
+  border-radius: 6px;
+  background: var(--shift-surface);
+  margin-bottom: 18px;
+}
+
+/* =========================================================
    CO figures
    ========================================================= */
 .shift-rep__cofigs {

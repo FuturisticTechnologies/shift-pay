@@ -2,8 +2,9 @@
   /**
    * ShiftPay Reporting — Server Script
    * ==================================
-   * Four charts over the data the rest of ShiftPay already writes: cost/shift
-   * trend, shift-type mix, team comparison, and CO entitlement health.
+   * Six reports over the data the rest of ShiftPay already writes: cost/shift
+   * trend, shift-type mix, team comparison, a person-by-month activity
+   * heatmap, submission/approval timeliness, and CO entitlement health.
    *
    * READ-ONLY. There is no action dispatcher here and there must never be one.
    * Every request re-runs this whole script with `input.scope` / `input.year` /
@@ -164,9 +165,25 @@
 
   data.trend   = report.trend;                 // one entry per month in the window
   data.mix     = report.mix;                   // per shift type, over the window
-  data.team    = data.showTeam ? buildTeam(report.perUser) : [];
   data.totals  = report.totals;
-  data.co      = CO_ENABLED ? readCoHealth() : null;
+
+  // Both people-shaped reports are built from one name lookup over the union of
+  // their two capped sets.
+  if (data.showTeam) {
+    var teamRank = rankUsers(report.perUser, SHOW_PAY ? 'amount' : 'shifts');
+    var actRank  = rankUsers(report.perUser, 'shifts');
+    var people   = readPeople(teamRank.rows.concat(actRank.rows), 'userId');
+
+    data.team           = nameRows(teamRank.rows, people);
+    data.activity       = buildActivity(nameRows(actRank.rows, people), report.perUserMonth);
+    data.teamTruncated  = teamRank.truncated;
+    data.teamLimit      = TEAM_LIMIT;
+  } else {
+    data.team     = [];
+    data.activity = null;
+  }
+
+  data.co       = CO_ENABLED ? readCoHealth() : null;
   data.approval = readApproval();
 
   data.hasData = report.totals.shifts > 0;
@@ -261,12 +278,13 @@
   // ============================================================ //
 
   /**
-   * One pass over the monthly summary rows in the window, feeding all three
-   * summary-derived reports at once.
+   * One pass over the monthly summary rows in the window, feeding every
+   * summary-derived report at once.
    *
-   * Deliberately a single query: trend, mix and per-person totals are three
-   * groupings of the same rows, and running three queries would let them
-   * disagree if a recompute landed between them.
+   * Deliberately a single query: trend (by month), mix (by shift type),
+   * per-person totals and per-person-per-month are four groupings of the same
+   * rows, and running four queries would let them disagree if a recompute
+   * landed between them.
    */
   function readSummary() {
     var trend = [];
@@ -287,7 +305,12 @@
 
     var mixMap   = {};      // shiftId -> bucket
     var perUser  = {};      // userId  -> {shifts, onCall, amount}
-    var seenUser = {};
+    // userId -> array of shift counts, one slot per month in the window. The
+    // activity heatmap's whole data set, produced by the same pass rather than
+    // by a second query — it is the cross-product of the two groupings already
+    // being built here.
+    var perUserMonth = {};
+    var seenUser     = {};
     var totals   = { shifts: 0, onCall: 0, amount: SHOW_PAY ? 0 : null,
                      people: 0, currency: 'INR' };
 
@@ -340,12 +363,16 @@
       mixMap[sid].count += count;
       if (SHOW_PAY) mixMap[sid].amount += amount;
 
-      // ── per person ──
+      // ── per person, and per person per month ──
       if (uid) {
-        if (!perUser[uid]) perUser[uid] = { shifts: 0, onCall: 0, amount: SHOW_PAY ? 0 : null };
+        if (!perUser[uid]) {
+          perUser[uid] = { shifts: 0, onCall: 0, amount: SHOW_PAY ? 0 : null };
+          perUserMonth[uid] = newZeroRow(trend.length);
+        }
         perUser[uid].shifts += count;
         perUser[uid].onCall += onCall;
         if (SHOW_PAY) perUser[uid].amount += amount;
+        perUserMonth[uid][idx] += count;
         if (!seenUser[uid]) { seenUser[uid] = true; totals.people++; }
       }
 
@@ -366,46 +393,89 @@
     }
     for (var leftover in mixMap) mix.push(mixMap[leftover]);   // deactivated types, last
 
-    return { trend: trend, mix: mix, perUser: perUser, totals: totals };
+    return {
+      trend: trend, mix: mix, totals: totals,
+      perUser: perUser, perUserMonth: perUserMonth
+    };
+  }
+
+  function newZeroRow(n) {
+    var a = [];
+    for (var i = 0; i < n; i++) a.push(0);
+    return a;
   }
 
   /**
-   * The per-person comparison, ranked and capped.
+   * Rank the people in scope by one measure and cap the list.
    *
-   * Ranked by cost when pay is visible and by shift count when it is not, so the
-   * chart's ordering never leaks the amounts that were deliberately withheld.
+   * Two reports want a ranked, capped set and they want different orderings:
+   * the comparison chart leads on cost, the activity heatmap on volume. Ranking
+   * is therefore a parameter, and the two capped sets are unioned for a single
+   * name lookup rather than each running its own.
    */
-  function buildTeam(perUser) {
+  function rankUsers(perUser, measure) {
     var rows = [];
     for (var uid in perUser) {
       rows.push({
         userId: uid,
         shifts: perUser[uid].shifts,
         onCall: perUser[uid].onCall,
-        // The bars stack: weekday work below, on-call above, summing to shifts.
+        // The comparison bars stack: weekday work below, on-call above,
+        // summing to the person's total.
         weekday: perUser[uid].shifts - perUser[uid].onCall,
         amount: perUser[uid].amount
       });
     }
-    rows.sort(function (a, b) {
-      var av = SHOW_PAY ? a.amount : a.shifts;
-      var bv = SHOW_PAY ? b.amount : b.shifts;
-      return bv - av;
-    });
-
+    rows.sort(function (a, b) { return (b[measure] || 0) - (a[measure] || 0); });
     var truncated = rows.length > TEAM_LIMIT;
-    if (truncated) rows = rows.slice(0, TEAM_LIMIT);
+    return { rows: truncated ? rows.slice(0, TEAM_LIMIT) : rows, truncated: truncated };
+  }
 
-    var people = readPeople(rows, 'userId');
+  function nameRows(rows, people) {
     for (var i = 0; i < rows.length; i++) {
       var p = people[rows[i].userId] || { name: '(unknown user)', initials: '?', employeeId: '' };
       rows[i].name       = p.name;
       rows[i].initials   = p.initials;
       rows[i].employeeId = p.employeeId;
     }
-    data.teamTruncated = truncated;
-    data.teamLimit     = TEAM_LIMIT;
     return rows;
+  }
+
+  /**
+   * The activity heatmap: one row per person, one cell per month in the window.
+   *
+   * Answers "who has been carrying the shifts, and when" — a question neither
+   * the trend (which flattens people) nor the comparison chart (which flattens
+   * months) can answer, because each collapses the axis the other keeps.
+   *
+   * `max` is sent with the grid so the client can scale cell intensity without
+   * a second pass over the data. It is the busiest single person-month in the
+   * window, so the darkest cell is always a real observation rather than an
+   * arbitrary ceiling.
+   */
+  function buildActivity(rows, perUserMonth) {
+    var months = [];
+    for (var p = 0; p < WINDOW.periods.length; p++) {
+      months.push({ key: WINDOW.periods[p].key, label: WINDOW.periods[p].label });
+    }
+
+    var max = 0;
+    var out = [];
+    for (var i = 0; i < rows.length; i++) {
+      var cells = perUserMonth[rows[i].userId] || newZeroRow(months.length);
+      for (var m = 0; m < cells.length; m++) if (cells[m] > max) max = cells[m];
+      out.push({
+        userId:     rows[i].userId,
+        name:       rows[i].name,
+        initials:   rows[i].initials,
+        employeeId: rows[i].employeeId,
+        total:      rows[i].shifts,
+        onCall:     rows[i].onCall,
+        cells:      cells
+      });
+    }
+
+    return { months: months, rows: out, max: max };
   }
 
   /**
@@ -464,15 +534,40 @@
   }
 
   /**
-   * Submission and approval state for the months in the window.
+   * Submission and approval state for the months in the window, plus how long
+   * each stage actually took.
    *
-   * Not one of the four charts — it is the context strip above them. A trend
-   * that dips in the latest month usually means "not submitted yet", not "cost
-   * fell", and without this the chart quietly lies about the current month.
+   * Two jobs. The totals are the context strip above every chart — a trend that
+   * dips in the latest month usually means "not submitted yet" rather than
+   * "cost fell", and without this the chart quietly lies about the current
+   * month. The per-month lags are the Timeliness report: the process measure
+   * that says whether the pay data is arriving on time and being actioned, as
+   * opposed to what is in it.
+   *
+   * Both lags are measured in whole days and both can be negative, which is
+   * reported rather than clamped: the submission window opens on the last
+   * weekday of the month, so submitting a day early is legitimate and "-1"
+   * is the honest number. Clamping at zero would quietly turn early submitters
+   * into on-the-day submitters.
    */
   function readApproval() {
-    var out = { submitted: 0, approved: 0, rejected: 0, latestPending: 0 };
+    var out = {
+      submitted: 0, approved: 0, rejected: 0, latestPending: 0,
+      months: [], avgSubmitLag: null, avgDecisionLag: null
+    };
     var latestKey = data.year + '|' + data.month;
+
+    for (var p = 0; p < WINDOW.periods.length; p++) {
+      out.months.push({
+        key:   WINDOW.periods[p].key,
+        label: WINDOW.periods[p].label,
+        submitted: 0, approved: 0, rejected: 0,
+        submitLag: null, decisionLag: null,
+        _sLagSum: 0, _sLagN: 0, _dLagSum: 0, _dLagN: 0
+      });
+    }
+
+    var sLagSum = 0, sLagN = 0, dLagSum = 0, dLagN = 0;
 
     var gr = new GlideRecord(TABLE_LOCK);
     gr.addQuery('u_year', 'IN', WINDOW.years.join(','));
@@ -480,21 +575,66 @@
     gr.query();
 
     while (gr.next()) {
-      var y = parseInt(gr.getValue('u_year'),  10);
-      var m = parseInt(gr.getValue('u_month'), 10) - 1;
-      if (WINDOW.index[y + '|' + m] === undefined) continue;
+      var y   = parseInt(gr.getValue('u_year'),  10);
+      var m   = parseInt(gr.getValue('u_month'), 10) - 1;
+      var idx = WINDOW.index[y + '|' + m];
+      if (idx === undefined) continue;
+      var bucket = out.months[idx];
 
       // Rows written before the status column existed read empty; their mere
       // presence meant "submitted", same reading as the approval widget.
       var st = gr.getValue('status') || 'submitted';
-      if (st === 'submitted')     out.submitted++;
-      else if (st === 'approved') out.approved++;
-      else if (st === 'rejected') out.rejected++;
+      if (st === 'submitted')     { out.submitted++; bucket.submitted++; }
+      else if (st === 'approved') { out.approved++;  bucket.approved++;  }
+      else if (st === 'rejected') { out.rejected++;  bucket.rejected++;  }
 
       if (st === 'submitted' && (y + '|' + m) === latestKey) out.latestPending++;
+
+      // ── how long after the month closed did this arrive ──
+      var submittedOn = dateOf(gr.getValue('u_submitted_on'));
+      if (submittedOn) {
+        var monthEnd = y + '-' + pad(m + 1) + '-' + pad(daysInMonth(y, m));
+        var sLag = daysBetween(monthEnd, submittedOn);
+        bucket._sLagSum += sLag; bucket._sLagN++;
+        sLagSum += sLag; sLagN++;
+
+        // ── and how long did the manager then take ──
+        var actionedOn = dateOf(gr.getValue('actioned_on'));
+        if (actionedOn && (st === 'approved' || st === 'rejected')) {
+          var dLag = daysBetween(submittedOn, actionedOn);
+          bucket._dLagSum += dLag; bucket._dLagN++;
+          dLagSum += dLag; dLagN++;
+        }
+      }
     }
+
+    // null, not zero, where nothing was measured — a month with no submissions
+    // has no lag, and drawing it as a zero-day turnaround would read as the best
+    // month on the chart.
+    for (var i = 0; i < out.months.length; i++) {
+      var b = out.months[i];
+      b.submitLag   = b._sLagN ? round1(b._sLagSum / b._sLagN) : null;
+      b.decisionLag = b._dLagN ? round1(b._dLagSum / b._dLagN) : null;
+      delete b._sLagSum; delete b._sLagN; delete b._dLagSum; delete b._dLagN;
+    }
+    out.avgSubmitLag   = sLagN ? round1(sLagSum / sLagN) : null;
+    out.avgDecisionLag = dLagN ? round1(dLagSum / dLagN) : null;
     return out;
   }
+
+  /**
+   * The date part of a stored datetime, or ''.
+   *
+   * Day granularity is deliberate. These lags are reported to a tenth of a day
+   * across a month of submissions; carrying the clock time would imply a
+   * precision that a "submitted on the 3rd" business process does not have.
+   */
+  function dateOf(value) {
+    var s = trim(value);
+    return /^\d{4}-\d{2}-\d{2}/.test(s) ? s.substring(0, 10) : '';
+  }
+
+  function round1(n) { return Math.round(n * 10) / 10; }
 
   /**
    * Display names for a set of rows, in one query.
