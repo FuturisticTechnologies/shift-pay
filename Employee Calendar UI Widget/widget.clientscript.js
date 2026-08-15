@@ -363,8 +363,10 @@ api.controller = function ($scope, $element, $timeout) {
         : 'Submission window closed ' + shortDate(closeKey);
     }
     // A rejected month is editable again, so the button reads "Resubmit".
+    // An approved one says so: "Submitted" on a month the banner has just
+    // announced as approved reads like the decision never landed.
     c.submitLabel = c.locked
-      ? 'Submitted'
+      ? (c.data.status === 'approved' ? 'Approved' : 'Submitted')
       : (c.wasRejected ? 'Resubmit month' : 'Submit month');
 
     // 7. re-stamp current shift + comment on cells (entries/comments may have changed)
