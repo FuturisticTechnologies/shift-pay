@@ -15,7 +15,7 @@ A **ServiceNow scoped application** (scope `x_1995110_shift_0`, portal `/shiftpa
   - `widget.server-script.js` — server-side IIFE (SSJS / Rhino), reads `input`/`options`, writes `data`
   - `widget.styles.scss` — styles; all custom classes namespaced `shift-`
   - `option-schema.json` — instance options (titles + the five configurable table names)
-- `Manager Approval UI Widget/` — team approval queue: per-month tabs, approve/reject singly or in bulk, a review drill-in, per-day correction with a mandatory reason, per-shift-type cost, and a cross-month History tab of the manager's own past decisions. Built and deployed. **ACLs are not written** — it works today only because `admin` bypasses them, so a real line manager cannot yet read a reportee's submissions. It reimplements no shift or pay rule; everything comes from the three Script Includes.
+- `Manager Approval UI Widget/` — team approval queue: per-month tabs, approve/reject singly or in bulk, a review drill-in, per-day correction with a mandatory reason, per-shift-type cost, and a cross-month History tab of the manager's own past decisions. Built and deployed. It reimplements no shift or pay rule; everything comes from the three Script Includes.
 - `Script Includes/` — server-side classes shared by more than one widget. Not widget source, so it deploys to `sys_script_include` rather than `sp_widget`.
   - `ShiftPayAggregator.js` — weekly/monthly aggregation with the rate snapshot, **parameterised by user**. Both the calendar (own user) and the manager widget (a reportee) call it. This logic used to live inline in the calendar server script hard-wired to `gs.getUserID()`, which is precisely what made it unusable from the manager side. Never fork it — a second copy of payroll maths that drifts is a pay bug.
   - `ShiftPayEntitlements.js` — the CO entitlement lifecycle, **parameterised by user**, extracted from the calendar server script for the same reason. Owns the entitlement table (insert/consume/release/delete), the weekday-window arithmetic, and the ordering rules for changing a day that grants or consumes a CO. It does **not** own weekend/holiday detection or the catalogue `allow_*` flags — those are `ShiftPayCalendarRules`. Same rule as the aggregator: never fork it. Logging a `grants_co` shift creates a right to a day off; two copies would drift over who owes whom a day.
@@ -60,6 +60,12 @@ A day change is a **three-phase transaction** that must bracket the day write, b
 - **`post` is not idempotent and nothing warns you.** A double POST of a Script Include produced two active records sharing one `api_name`, 11 seconds apart, which ServiceNow then resolves unpredictably. After any `post`, query by name and confirm the count is 1.
 
 PowerShell note for reading results back: `$_.field + "text"` throws on the PSObject cnit returns; use `"$($_.field.value)"` interpolation, with `-DisplayAll -ExcludeRefLinks` when you want display values.
+
+## Scope
+
+**This is a proof of concept, and table ACLs are deliberately not written.** The app runs as `admin`, who bypasses them. Do not add ACLs or treat their absence as a defect to fix — it is a scope decision, not an oversight.
+
+What this does *not* license: the widget-level guards are the real access control here and must stay rigorous. `assertReportee` runs before every manager write, `show_pay_amounts` strips money from `data` rather than hiding it in the template, and day corrections re-check `isAllowedOn` server-side. `c.server.get({...})` is callable from the browser with any payload, so a guard that lives only in the template is no guard at all — being a POC does not change that.
 
 ## Conventions
 
