@@ -680,6 +680,30 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* Correctable days.
+   Affordance is a hover/focus state rather than a permanent outline: every day
+   of a submitted month is clickable, so marking them all would be 31 boxes of
+   decoration competing with the shift chips, which are the thing to read. */
+.shift-mgr__day--edit {
+  cursor: pointer;
+  transition: border-color 90ms ease, background 90ms ease;
+}
+.shift-mgr__day--edit:hover,
+.shift-mgr__day--edit:focus {
+  border-color: var(--shift-text-mute);
+  background: var(--shift-surface-alt, var(--shift-surface));
+  outline: none;
+}
+.shift-mgr__day--edit:focus-visible {
+  outline: 2px solid var(--shift-focus, var(--shift-text-mute));
+  outline-offset: 1px;
+}
+.shift-mgr__hint {
+  font-weight: 400;
+  font-size: 11.5px;
+  color: var(--shift-text-faint);
+  margin-left: 4px;
+}
 .shift-mgr__coverage {
   margin-top: 10px;
   font-size: 12px;
@@ -834,10 +858,24 @@
   border-color: var(--shift-red-border);
   background: var(--shift-red-bg);
 }
+.shift-mgr__select {
+  width: 100%;
+  border: 1px solid var(--shift-border-2);
+  border-radius: 6px;
+  padding: 8px 11px;
+  font: inherit;
+  font-size: 13px;
+  background: var(--shift-bg-input);
+  color: var(--shift-text);
+}
 .shift-mgr__helper {
   margin-top: 5px;
   font-size: 11.5px;
   color: var(--shift-text-faint);
+}
+/* Spacing between the two stacked fields in the correction dialog. */
+.shift-mgr__helper + .shift-mgr__label {
+  margin-top: 14px;
 }
 .shift-mgr__helper--err {
   color: var(--shift-red);

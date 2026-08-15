@@ -31,6 +31,7 @@ api.controller = function ($scope) {
   c.rejectComment = '';
   c.rejectError   = '';
   c.detailCells   = [];     // month grid for the open detail panel
+  c.correcting    = null;   // the day being corrected, or null
   c.weekdayNames  = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   c.tabs = [
@@ -105,6 +106,92 @@ api.controller = function ($scope) {
   c.closeDetail = function () {
     c.data.detail = null;
     c.detailCells = [];
+    c.cancelCorrect();
+  };
+
+  // ───── Per-day correction ─────────────────────────────────────────────────
+
+  /**
+   * Open the correction dialog for one day.
+   *
+   * The options offered are `detail.allowedShifts[date]` — what THIS employee
+   * could legally have logged on THIS date, computed server-side from their own
+   * entitlement windows. The day's current shift is added even when it is no
+   * longer in that list (a CO whose entitlement is now consumed is the usual
+   * case) so the dialog can show what is there without offering to re-pick it.
+   */
+  c.openCorrect = function (cell) {
+    if (!cell || !cell.inMonth || !c.data.detail || !c.data.detail.canEditDays) return;
+    if (c.saving) return;
+
+    var currentId = cell.shift ? cell.shift.shiftId : '';
+    var allowed   = (c.data.detail.allowedShifts || {})[cell.key] || [];
+    var byId      = catalogueById();
+
+    var opts = [];
+    for (var i = 0; i < allowed.length; i++) {
+      if (byId[allowed[i]]) opts.push(byId[allowed[i]]);
+    }
+    if (currentId && byId[currentId]) {
+      var present = false;
+      for (var j = 0; j < opts.length; j++) {
+        if (opts[j].sys_id === currentId) { present = true; break; }
+      }
+      if (!present) opts.unshift(byId[currentId]);
+    }
+
+    c.correcting = {
+      key:       cell.key,
+      day:       cell.day,
+      weekend:   cell.weekend,
+      currentId: currentId,
+      current:   cell.shift,
+      options:   opts,
+      choice:    currentId,
+      reason:    '',
+      error:     ''
+    };
+  };
+
+  c.cancelCorrect = function () {
+    c.correcting = null;
+  };
+
+  /** Nothing to send while the pick still matches what is already there. */
+  c.correctChanged = function () {
+    return !!c.correcting && c.correcting.choice !== c.correcting.currentId;
+  };
+
+  c.confirmCorrect = function () {
+    if (!c.correcting || c.saving) return;
+    var reason = (c.correcting.reason || '').replace(/^\s+|\s+$/g, '');
+    if (!reason) {
+      // Belt and braces — the button is disabled and the server refuses too.
+      c.correcting.error = 'A reason is required to correct a day.';
+      return;
+    }
+    if (!c.correctChanged()) {
+      c.correcting.error = 'Pick a different shift, or clear the day.';
+      return;
+    }
+    send({
+      action: 'correctDay',
+      userId: c.data.detail.userId,
+      year:   c.data.year,
+      month:  c.data.month,
+      date:   c.correcting.key,
+      shift:  c.correcting.choice,
+      reason: reason
+    }, function () {
+      // The server returns a re-read detail either way. Keep the panel open —
+      // a correction is usually one of several — and rebuild the grid from it.
+      c.detailCells = c.data.detail ? buildDetailCells(c.data.detail) : [];
+      if (c.data.actionError) {
+        if (c.correcting) c.correcting.error = c.data.actionError;
+      } else {
+        c.cancelCorrect();
+      }
+    });
   };
 
   c.approve = function (row) {
@@ -176,9 +263,17 @@ api.controller = function ($scope) {
 
   // ───── Internals ──────────────────────────────────────────────────────────
 
+  /** sys_id → catalogue row, rebuilt from whatever data the server last sent. */
+  function catalogueById() {
+    var map = {}, cat = (c.data && c.data.shiftCatalogue) || [];
+    for (var i = 0; i < cat.length; i++) map[cat[i].sys_id] = cat[i];
+    return map;
+  }
+
   function loadMonth(y, m) {
     c.saving = true;
     c.cancelReject();
+    c.cancelCorrect();
     c.server.get({ action: 'loadQueue', year: y, month: m }).then(function (r) {
       c.data   = r.data;
       c.saving = false;
@@ -198,11 +293,6 @@ api.controller = function ($scope) {
     });
   }
 
-  /**
-   * Indian digit grouping (1,84,500) — the last three digits, then pairs.
-   * toLocaleString('en-IN') is not dependable across the browsers Service Portal
-   * has to support, so this is done explicitly.
-   */
   /**
    * Lay the month out Monday-first, padded to whole weeks.
    *
@@ -239,6 +329,11 @@ api.controller = function ($scope) {
 
   function pad2(n) { return n < 10 ? '0' + n : '' + n; }
 
+  /**
+   * Indian digit grouping (1,84,500) — the last three digits, then pairs.
+   * toLocaleString('en-IN') is not dependable across the browsers Service Portal
+   * has to support, so this is done explicitly.
+   */
   function groupDigits(n) {
     var neg = n < 0;
     var s = Math.abs(n).toString();

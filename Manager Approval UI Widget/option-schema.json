@@ -30,6 +30,14 @@
     "section": "Behaviour"
   },
   {
+    "name": "enable_co_entitlement",
+    "label": "Enable CO entitlement rules",
+    "type": "boolean",
+    "default": true,
+    "hint": "Must match the same option on the employee calendar widget. Governs whether a day correction applies the compensatory-off entitlement rules — whether CO is offered only inside an open window, and whether removing an OC shift a CO depends on is refused. The two screens disagreeing here is worse than either setting alone.",
+    "section": "Behaviour"
+  },
+  {
     "name": "shift_table",
     "label": "Day-entry table",
     "type": "string",
@@ -67,6 +75,14 @@
     "type": "string",
     "default": "x_1995110_shift_0_shift_day_change",
     "hint": "Table name. One row per manager correction to a day: user, date, previous_shift, new_shift, reason, changed_by, changed_on.",
+    "section": "Data"
+  },
+  {
+    "name": "entitlement_table",
+    "label": "CO entitlement table",
+    "type": "string",
+    "default": "x_1995110_shift_0_shift_co_entitlement",
+    "hint": "Table name. Maps a compound-OC shift to the CO right it grants. Read and written when a day correction touches a shift whose oc_role grants or consumes a CO.",
     "section": "Data"
   }
 ]
