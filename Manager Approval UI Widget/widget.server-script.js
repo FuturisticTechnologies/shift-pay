@@ -122,7 +122,8 @@
     }
 
     if (action === 'approve') {
-      actionOne(inp.userId, data.year, data.month, 'approved', inp.comment || '');
+      var aErr = actionOne(inp.userId, data.year, data.month, 'approved', inp.comment || '');
+      if (aErr) fail(aErr);
     }
 
     else if (action === 'reject') {
@@ -132,7 +133,24 @@
         fail('A reason is required to reject a timesheet.');
         return;
       }
-      actionOne(inp.userId, data.year, data.month, 'rejected', trim(inp.comment));
+      var rErr = actionOne(inp.userId, data.year, data.month, 'rejected', trim(inp.comment));
+      if (rErr) fail(rErr);
+    }
+
+    else if (action === 'bulkApprove' || action === 'bulkReject') {
+      var isReject = action === 'bulkReject';
+      var bComment = trim(inp.comment);
+      // One comment, applied to every rejected timesheet — FR-M7.
+      if (isReject && !bComment) {
+        fail('A reason is required to reject a timesheet.');
+        return;
+      }
+      var ids = inp.userIds || [];
+      if (!ids.length) {
+        fail('Nothing selected.');
+        return;
+      }
+      actionMany(ids, data.year, data.month, isReject ? 'rejected' : 'approved', bComment);
     }
 
     else if (action === 'correctDay') {
@@ -267,11 +285,16 @@
   /**
    * Approve or reject one timesheet.
    *
-   * Every guard runs per row so that the bulk paths (added later) get the same
-   * protection for free by looping this rather than writing their own query.
+   * Every guard runs per row, so the bulk paths get the same protection for
+   * free by looping this rather than writing their own query.
+   *
+   * Returns '' on success, or the refusal message — it does not raise the
+   * message itself. The single-row path shows it straight away; the bulk path
+   * collects the refusals into one summary, because twenty growls telling a
+   * manager their screen was stale is worse than one line saying so.
    */
   function actionOne(userId, y, m, newStatus, comment) {
-    if (!assertReportee(userId)) return false;
+    if (!isReportee(userId)) return nonReporteeRefusal(userId);
 
     var gr = new GlideRecord(TABLE_LOCK);
     gr.addQuery('u_user',  userId);
@@ -280,17 +303,13 @@
     gr.setLimit(1);
     gr.query();
 
-    if (!gr.next()) {
-      fail('That timesheet has not been submitted yet.');
-      return false;
-    }
+    if (!gr.next()) return 'That timesheet has not been submitted yet.';
 
     // Only Submitted → Approved / Rejected is legal. Anything else means the
     // screen was stale or the payload was hand-made.
     var current = gr.getValue('status') || 'submitted';
     if (current !== 'submitted') {
-      fail('That timesheet is already ' + current + ' and cannot be actioned again.');
-      return false;
+      return 'That timesheet is already ' + current + ' and cannot be actioned again.';
     }
 
     gr.setValue('status',          newStatus);
@@ -298,7 +317,43 @@
     gr.setValue('actioned_on',     new GlideDateTime());
     gr.setValue('manager_comment', comment);
     gr.update();
-    return true;
+    return '';
+  }
+
+  /**
+   * Approve or reject many timesheets in one action (FR-M6 / FR-M7).
+   *
+   * Deliberately a loop over actionOne rather than a bulk query: every
+   * authorisation and state guard then applies per row, and a row that has
+   * moved since the screen was drawn is skipped rather than forced. One
+   * rejection comment is applied to every rejected row, per FR-M7.
+   */
+  function actionMany(userIds, y, m, newStatus, comment) {
+    var done = 0;
+    var refusals = [];   // distinct messages, in the order first seen
+    for (var i = 0; i < userIds.length; i++) {
+      var err = actionOne(userIds[i], y, m, newStatus, comment);
+      if (!err) { done++; continue; }
+      if (refusals.indexOf(err) === -1) refusals.push(err);
+    }
+
+    var verb  = newStatus === 'approved' ? 'Approved' : 'Rejected';
+    var total = userIds.length;
+
+    if (done) {
+      gs.addInfoMessage(verb + ' ' + done +
+        (total > done ? ' of ' + total : '') +
+        ' timesheet' + (done === 1 ? '' : 's') + ' for ' + data.monthLabel + '.');
+    }
+    if (refusals.length) {
+      fail((total - done) + ' could not be actioned — ' + refusals.join(' '));
+    }
+    return done;
+  }
+
+  /** Is this user one of my direct reportees? The pure predicate, no side effects. */
+  function isReportee(userId) {
+    return !!(userId && reporteeMap[userId]);
   }
 
   /**
@@ -306,10 +361,15 @@
    * timesheet; anything else is refused without saying whether the user exists.
    */
   function assertReportee(userId) {
-    if (userId && reporteeMap[userId]) return true;
-    fail('You can only action timesheets for your own direct reportees.');
-    gs.warn('[ShiftPay] ' + USER_ID + ' attempted to action a non-reportee timesheet (' + userId + ')');
+    if (isReportee(userId)) return true;
+    fail(nonReporteeRefusal(userId));
     return false;
+  }
+
+  /** Logs the attempt and returns the deliberately uninformative refusal. */
+  function nonReporteeRefusal(userId) {
+    gs.warn('[ShiftPay] ' + USER_ID + ' attempted to action a non-reportee timesheet (' + userId + ')');
+    return 'You can only action timesheets for your own direct reportees.';
   }
 
   function fail(msg) {
