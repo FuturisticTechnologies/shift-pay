@@ -106,15 +106,26 @@ export class CaseEvidence {
     return s;
   }
 
-  /** Attach a screenshot to the most recent step, or to the case if none yet. */
+  /**
+   * Attach a screenshot to the most recent step.
+   *
+   * If nothing has called `step()` yet, one is opened here rather than dropping
+   * the image. The generator only renders screenshots that hang off a step, so
+   * the earlier "attach if there is a step" version wrote the PNG to disk and
+   * then silently left it out of the document — measured on TC-SP-009, whose
+   * entire point is the screenshot, and whose document came out with none.
+   * Losing evidence quietly is the worst failure mode this class can have.
+   */
   async shot(page: Page, label: string): Promise<string> {
+    if (!this.result.steps.length) {
+      this.step(label.replace(/-+/g, ' ').replace(/^./, (c) => c.toUpperCase()) + '.');
+    }
     const dir = path.join(EVIDENCE_DIR, this.result.id);
     fs.mkdirSync(dir, { recursive: true });
     const safe = label.replace(/[^a-z0-9-_]+/gi, '-').toLowerCase();
     const file = path.join(dir, `${String(this.stepNo).padStart(2, '0')}-${safe}.png`);
     await page.screenshot({ path: file, fullPage: true });
-    const current = this.result.steps[this.result.steps.length - 1];
-    if (current) current.screenshots.push(file);
+    this.result.steps[this.result.steps.length - 1].screenshots.push(file);
     return file;
   }
 

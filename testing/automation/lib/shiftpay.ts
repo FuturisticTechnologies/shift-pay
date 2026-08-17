@@ -331,6 +331,20 @@ export interface QueueRow {
   actionable: boolean;
 }
 
+/*
+ * A note that governs every scraper below: read `textContent`, never `innerText`.
+ *
+ * `widget.styles.scss` applies `text-transform: uppercase` in seven places —
+ * status pills, stat labels, tab labels, chips. `innerText` returns the
+ * *rendered* text, so it hands back "SUBMITTED" where the DOM holds "Submitted",
+ * and a comparison against a record value then fails on case alone. Worse, a
+ * lookup keyed on a label — `tiles['Awaiting action']` — quietly returns
+ * undefined and the case reports a number nobody rendered.
+ *
+ * Each evaluate defines its own `txt()` because the callback is serialised into
+ * the page and cannot close over anything here.
+ */
+
 /** Open the manager queue and wait for it to settle. */
 export async function openManagerQueue(page: Page): Promise<void> {
   await openPortal(page, PAGES.manager);
@@ -357,42 +371,48 @@ export async function queueRows(page: Page): Promise<QueueRow[]> {
   const empty = await wrap.locator('.shift-mgr__norows').count();
   if (empty) return [];
 
-  return wrap.locator('tbody tr').evaluateAll((trs) =>
-    trs
+  return wrap.locator('tbody tr').evaluateAll((trs) => {
+    const txt = (el: Element | null) => (el?.textContent ?? '').replace(/\s+/g, ' ').trim();
+    return trs
       .filter((tr) => !tr.querySelector('.shift-mgr__norows'))
       .map((tr) => {
-        const text = (sel: string) =>
-          (tr.querySelector(sel) as HTMLElement | null)?.innerText.trim() ?? '';
-        const nums = Array.from(tr.querySelectorAll('.shift-mgr__num')).map((n) =>
-          (n as HTMLElement).innerText.trim()
-        );
+        const text = (sel: string) => txt(tr.querySelector(sel));
+        const nums = Array.from(tr.querySelectorAll('.shift-mgr__num')).map(txt);
+
+        // The pill wraps a decorative glyph span alongside the label, so its own
+        // text is "● Submitted". Subtract the glyph rather than splitting on
+        // whitespace — a two-word status would lose half of itself.
+        const pill = tr.querySelector('.shift-mgr__pill');
+        const glyph = txt(pill?.querySelector('.shift-mgr__pillglyph') ?? null);
+        const status = txt(pill).replace(glyph, '').trim();
+
         return {
           name: text('.shift-mgr__nm'),
           employeeId: text('.shift-mgr__id'),
           mix: Array.from(tr.querySelectorAll('.shift-mgr__chipset')).map((cs) => ({
-            code: (cs.querySelector('.shift-mgr__chip') as HTMLElement | null)?.innerText.trim() ?? '',
-            count: (cs.querySelector('.shift-mgr__chipn') as HTMLElement | null)?.innerText.trim() ?? '',
+            code: txt(cs.querySelector('.shift-mgr__chip')),
+            count: txt(cs.querySelector('.shift-mgr__chipn')),
           })),
           // Weekdays is always the first numeric cell; Total pay, when shown, is
           // the second. Reading by position within the numeric cells rather than
           // by column index keeps this correct when show_pay_amounts is off.
           weekdays: nums[0] ?? '',
           pay: nums[1] ?? '',
-          status: text('.shift-mgr__pill'),
+          status,
           actionable: !!tr.querySelector('input[type="checkbox"]'),
         };
-      })
-  );
+      });
+  });
 }
 
 /** The stat strip as { label: value }, e.g. { 'Awaiting action': '3' }. */
 export async function statTiles(page: Page): Promise<Record<string, string>> {
   return page.locator(MGR.strip).evaluate((strip) => {
+    const txt = (el: Element | null) => (el?.textContent ?? '').replace(/\s+/g, ' ').trim();
     const out: Record<string, string> = {};
     strip.querySelectorAll('.shift-mgr__stat').forEach((s) => {
-      const k = (s.querySelector('.shift-mgr__statk') as HTMLElement | null)?.innerText.trim();
-      const v = (s.querySelector('.shift-mgr__statv') as HTMLElement | null)?.innerText.trim();
-      if (k) out[k] = v ?? '';
+      const k = txt(s.querySelector('.shift-mgr__statk'));
+      if (k) out[k] = txt(s.querySelector('.shift-mgr__statv'));
     });
     return out;
   });
@@ -401,11 +421,16 @@ export async function statTiles(page: Page): Promise<Record<string, string>> {
 /** The tab strip as { label: badgeCount }; a tab with no badge maps to ''. */
 export async function tabBadges(page: Page): Promise<Record<string, string>> {
   return page.locator(MGR.widget).evaluate((w) => {
+    const txt = (el: Element | null) => (el?.textContent ?? '').replace(/\s+/g, ' ').trim();
     const out: Record<string, string> = {};
     w.querySelectorAll('.shift-mgr__tab').forEach((t) => {
-      const badge = t.querySelector('.shift-mgr__tabcount') as HTMLElement | null;
-      const label = (t as HTMLElement).innerText.replace(badge?.innerText ?? '', '').trim();
-      out[label] = badge?.innerText.trim() ?? '';
+      const badge = t.querySelector('.shift-mgr__tabcount');
+      const count = txt(badge);
+      // The badge is nested inside the tab, so the tab's own text is
+      // "Awaiting me 1". Strip the badge's text from the end rather than
+      // globally — a tab labelled with a digit would otherwise lose it.
+      const label = txt(t).replace(new RegExp(`\\s*${count}\\s*$`), '').trim();
+      out[label] = count;
     });
     return out;
   });
@@ -483,11 +508,12 @@ export async function closeDetail(page: Page): Promise<void> {
  */
 export async function detailDays(page: Page): Promise<Record<string, string>> {
   return page.locator(MGR.panelCal).evaluate((cal) => {
+    const txt = (el: Element | null) => (el?.textContent ?? '').replace(/\s+/g, ' ').trim();
     const out: Record<string, string> = {};
     cal.querySelectorAll('.shift-mgr__day').forEach((d) => {
       if (d.classList.contains('shift-mgr__day--out')) return;
-      const num = (d.querySelector('.shift-mgr__daynum') as HTMLElement | null)?.innerText.trim();
-      const shift = (d.querySelector('.shift-mgr__dayshift') as HTMLElement | null)?.innerText.trim();
+      const num = txt(d.querySelector('.shift-mgr__daynum'));
+      const shift = txt(d.querySelector('.shift-mgr__dayshift'));
       if (num && shift) out[num] = shift;
     });
     return out;
@@ -506,23 +532,22 @@ export async function detailLedger(
   page: Page
 ): Promise<{ lines: LedgerLine[]; totalShifts: string; totalAmount: string }> {
   return page.locator(MGR.panel).evaluate((panel) => {
+    const txt = (el: Element | null) => (el?.textContent ?? '').replace(/\s+/g, ' ').trim();
     const table = panel.querySelector('.shift-mgr__ledger');
     const lines: { name: string; count: string; rate: string; amount: string }[] = [];
     let totalShifts = '';
     let totalAmount = '';
     table?.querySelectorAll('tbody tr').forEach((tr) => {
-      const nums = Array.from(tr.querySelectorAll('.shift-mgr__num')).map((n) =>
-        (n as HTMLElement).innerText.trim()
-      );
+      const nums = Array.from(tr.querySelectorAll('.shift-mgr__num')).map(txt);
       if (tr.classList.contains('shift-mgr__ledgertotal')) {
         totalShifts = nums[0] ?? '';
         totalAmount = nums[nums.length - 1] ?? '';
         return;
       }
-      const chip = tr.querySelector('.shift-mgr__chip') as HTMLElement | null;
+      const chip = tr.querySelector('.shift-mgr__chip');
       if (!chip) return; // the "Nothing aggregated" row
       lines.push({
-        name: chip.innerText.trim(),
+        name: txt(chip),
         count: nums[0] ?? '',
         rate: nums[1] ?? '',
         amount: nums[nums.length - 1] ?? '',
@@ -537,16 +562,14 @@ export async function detailWeeks(
   page: Page
 ): Promise<{ periodStart: string; count: string; amount: string }[]> {
   return page.locator(MGR.panel).evaluate((panel) => {
+    const txt = (el: Element | null) => (el?.textContent ?? '').replace(/\s+/g, ' ').trim();
     const tables = panel.querySelectorAll('.shift-mgr__ledger');
     const weeks = tables[1];
     if (!weeks) return [];
     return Array.from(weeks.querySelectorAll('tbody tr')).map((tr) => {
-      const nums = Array.from(tr.querySelectorAll('.shift-mgr__num')).map((n) =>
-        (n as HTMLElement).innerText.trim()
-      );
-      const label = (tr.querySelector('td') as HTMLElement | null)?.innerText.trim() ?? '';
+      const nums = Array.from(tr.querySelectorAll('.shift-mgr__num')).map(txt);
       return {
-        periodStart: label.replace(/^Week of\s*/, ''),
+        periodStart: txt(tr.querySelector('td')).replace(/^Week of\s*/i, ''),
         count: nums[0] ?? '',
         amount: nums[1] ?? '',
       };

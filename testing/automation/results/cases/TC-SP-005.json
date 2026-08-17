@@ -1,0 +1,147 @@
+{
+  "run": {
+    "instance": "https://dev307042.service-now.com",
+    "executedBy": "admin",
+    "executedVia": "Playwright (automated), driving the /shiftpay Service Portal; every screen assertion cross-checked against the ServiceNow Table API."
+  },
+  "case": {
+    "id": "TC-SP-005",
+    "title": "The weekend dropdown offers two shifts the business rules forbid",
+    "startedAt": "2026-08-17T13:10:16.487Z",
+    "verdict": "FAIL",
+    "steps": [
+      {
+        "n": 1,
+        "text": "Open the Saturday 2026-10-03 and open the shift dropdown.",
+        "at": "2026-08-17T13:10:20.177Z",
+        "screenshots": [
+          "C:\\Users\\patel\\Documents\\ServiceNow Work Project Docs\\Personal AI Assisted\\ShiftPay Clean Vibe coding\\testing\\automation\\evidence\\TC-SP-005\\01-saturday-dropdown-six-options.png"
+        ]
+      },
+      {
+        "n": 2,
+        "text": "Read the catalogue rows that cause it.",
+        "at": "2026-08-17T13:10:20.634Z",
+        "screenshots": []
+      }
+    ],
+    "records": [
+      {
+        "label": "What the Saturday dropdown offers, by group heading",
+        "table": "/shiftpay?id=fill_shift",
+        "query": "2026-10-03",
+        "rows": [
+          {
+            "group_heading": "OFF / NOT ELIGIBLE",
+            "shift": "L",
+            "label": "Leave"
+          },
+          {
+            "group_heading": "OFF / NOT ELIGIBLE",
+            "shift": "Not Eligible",
+            "label": "Not Eligible"
+          },
+          {
+            "group_heading": "HOLIDAY WORK (WEEKEND OR DECLARED HOLIDAY)",
+            "shift": "OC",
+            "label": "On Call Allowance, if you have worked as a Stand-by on the Holiday"
+          },
+          {
+            "group_heading": "HOLIDAY WORK (WEEKEND OR DECLARED HOLIDAY)",
+            "shift": "OC + CO",
+            "label": "On call Allowance + Compensatory off, if you have worked on Holiday, in the regular hours not in the UK or US Shift"
+          },
+          {
+            "group_heading": "HOLIDAY WORK (WEEKEND OR DECLARED HOLIDAY)",
+            "shift": "OC + UK + CO",
+            "label": "On call Allowance + Compensatory off+ UK Shift, if you have worked on the holiday in the UK shift"
+          },
+          {
+            "group_heading": "HOLIDAY WORK (WEEKEND OR DECLARED HOLIDAY)",
+            "shift": "OC + US + CO",
+            "label": "On call Allowance + Compensatory off+ US Shift, if you have worked on the holiday in the US shift"
+          }
+        ],
+        "at": "2026-08-17T13:10:20.634Z"
+      },
+      {
+        "label": "Catalogue rows selectable on a weekend or holiday",
+        "table": "x_1995110_shift_0_shift_type",
+        "query": "active=true^allow_weekend_holiday=true",
+        "rows": [
+          {
+            "oc_role": "none",
+            "rate": "0",
+            "allow_weekend_holiday": "true",
+            "name": "L",
+            "allow_weekday": "true",
+            "description": "Leave",
+            "day_category": "off"
+          },
+          {
+            "oc_role": "none",
+            "rate": "0",
+            "allow_weekend_holiday": "true",
+            "name": "Not Eligible",
+            "allow_weekday": "true",
+            "description": "Not Eligible",
+            "day_category": "off"
+          },
+          {
+            "oc_role": "none",
+            "rate": "500",
+            "allow_weekend_holiday": "true",
+            "name": "OC",
+            "allow_weekday": "false",
+            "description": "On Call Allowance, if you have worked as a Stand-by on the Holiday",
+            "day_category": "holiday"
+          },
+          {
+            "oc_role": "grants_co",
+            "rate": "500",
+            "allow_weekend_holiday": "true",
+            "name": "OC + CO",
+            "allow_weekday": "false",
+            "description": "On call Allowance + Compensatory off, if you have worked on Holiday, in the regular hours not in the UK or US Shift",
+            "day_category": "holiday"
+          },
+          {
+            "oc_role": "grants_co",
+            "rate": "850",
+            "allow_weekend_holiday": "true",
+            "name": "OC + UK + CO",
+            "allow_weekday": "false",
+            "description": "On call Allowance + Compensatory off+ UK Shift, if you have worked on the holiday in the UK shift",
+            "day_category": "holiday"
+          },
+          {
+            "oc_role": "grants_co",
+            "rate": "1000",
+            "allow_weekend_holiday": "true",
+            "name": "OC + US + CO",
+            "allow_weekday": "false",
+            "description": "On call Allowance + Compensatory off+ US Shift, if you have worked on the holiday in the US shift",
+            "day_category": "holiday"
+          }
+        ],
+        "at": "2026-08-17T13:10:20.771Z"
+      }
+    ],
+    "observations": [
+      "Cause: the catalogue rows \"L\" and \"Not Eligible\" carry allow_weekend_holiday = true. Availability is data-driven, so the widget is faithfully rendering what the data says — the data is what disagrees with the specification.",
+      "FIX is a data change, not a code change: untick allow_weekend_holiday on those rows. No widget is touched, and nothing needs redeploying.",
+      "SEVERITY today is cosmetic only because both offending rows are rated at 0. The same mistake on a paid row would put money on a day nobody worked, which is a pay bug rather than a tidiness one.",
+      "ADJACENT: the consumes_co row carries day_category = holiday while allow_weekend_holiday = false, so the legend and the dropdown file CO under \"Holiday work (weekend or declared holiday)\" — a class of day on which it can never be logged. Cosmetic, but it sends a user looking in the wrong place. Recorded here rather than raised as its own case."
+    ],
+    "expected": [
+      "README section \"Business Rules — Shift Availability\" states the weekend/holiday set is exactly OC, OC+CO, OC+UK+CO and OC+US+CO.",
+      "A Saturday therefore offers four shift types, and no others."
+    ],
+    "actual": [
+      "The Saturday dropdown offers 6 shift types: L, Not Eligible, OC, OC + CO, OC + UK + CO, OC + US + CO.",
+      "2 of them are not in the documented weekend set: L, Not Eligible."
+    ],
+    "verdictReason": "The weekend dropdown offers 6 shift types where the documented rules allow 4. L and Not Eligible should not be selectable on a Saturday.",
+    "finishedAt": "2026-08-17T13:10:20.773Z"
+  }
+}
