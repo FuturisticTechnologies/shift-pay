@@ -1,0 +1,141 @@
+{
+  "run": {
+    "instance": "https://dev307042.service-now.com",
+    "executedBy": "admin",
+    "executedVia": "Playwright (automated), driving the /shiftpay Service Portal; every screen assertion cross-checked against the ServiceNow Table API."
+  },
+  "case": {
+    "id": "TC-SP-006",
+    "title": "The queue is exactly the manager's direct reportees",
+    "startedAt": "2026-08-17T13:10:22.661Z",
+    "verdict": "PASS",
+    "steps": [
+      {
+        "n": 1,
+        "text": "Read the manager hierarchy from sys_user.",
+        "at": "2026-08-17T13:10:23.152Z",
+        "screenshots": []
+      },
+      {
+        "n": 2,
+        "text": "Open the manager approval queue and show every reportee.",
+        "at": "2026-08-17T13:10:23.284Z",
+        "screenshots": [
+          "C:\\Users\\patel\\Documents\\ServiceNow Work Project Docs\\Personal AI Assisted\\ShiftPay Clean Vibe coding\\testing\\automation\\evidence\\TC-SP-006\\02-manager-queue.png"
+        ]
+      }
+    ],
+    "records": [
+      {
+        "label": "Direct reportees",
+        "table": "sys_user",
+        "query": "manager=<me>^active=true",
+        "rows": [
+          {
+            "sys_id": "02826bf03710200044e0bfc8bcbe5d88",
+            "user_name": "billie.cowley",
+            "name": "Billie Cowley",
+            "employee_number": ""
+          },
+          {
+            "sys_id": "02826bf03710200044e0bfc8bcbe5d64",
+            "user_name": "jewel.agresta",
+            "name": "Jewel Agresta",
+            "employee_number": ""
+          },
+          {
+            "sys_id": "02826bf03710200044e0bfc8bcbe5d5e",
+            "user_name": "melinda.carleton",
+            "name": "Melinda Carleton",
+            "employee_number": ""
+          }
+        ],
+        "at": "2026-08-17T13:10:23.284Z"
+      },
+      {
+        "label": "Timesheets for the displayed month",
+        "table": "x_1995110_shift_0_monthly_timesheet",
+        "query": "u_year=2026^u_month=6",
+        "rows": [
+          {
+            "approver": "",
+            "u_user": "02826bf03710200044e0bfc8bcbe5d5e",
+            "u_year": "2026",
+            "u_month": "6",
+            "status": "submitted"
+          }
+        ],
+        "at": "2026-08-17T13:10:27.213Z"
+      },
+      {
+        "label": "Queue as rendered",
+        "table": "/shiftpay?id=manager_approval",
+        "query": "June 2026",
+        "rows": [
+          {
+            "employee": "Billie Cowley",
+            "status": "Not submitted",
+            "weekdays": "0 / 22",
+            "actionable": "false"
+          },
+          {
+            "employee": "Jewel Agresta",
+            "status": "Not submitted",
+            "weekdays": "0 / 22",
+            "actionable": "false"
+          },
+          {
+            "employee": "Melinda Carleton",
+            "status": "Submitted",
+            "weekdays": "15 / 22",
+            "actionable": "true"
+          }
+        ],
+        "at": "2026-08-17T13:10:27.213Z"
+      },
+      {
+        "label": "Reconciliation — screen against records",
+        "table": "(derived)",
+        "query": "reportee list and timesheet status",
+        "rows": [
+          {
+            "employee": "Billie Cowley",
+            "status_expected": "Not submitted",
+            "status_on_screen": "Not submitted",
+            "agrees": "YES"
+          },
+          {
+            "employee": "Jewel Agresta",
+            "status_expected": "Not submitted",
+            "status_on_screen": "Not submitted",
+            "agrees": "YES"
+          },
+          {
+            "employee": "Melinda Carleton",
+            "status_expected": "Submitted",
+            "status_on_screen": "Submitted",
+            "agrees": "YES"
+          }
+        ],
+        "at": "2026-08-17T13:10:27.224Z"
+      }
+    ],
+    "observations": [
+      "The reportee list is not just the queue's row set — it is the authorisation set. assertReportee checks every manager write against the same map, so proving the queue is scoped correctly is proving the widget's access control is scoped correctly.",
+      "A reportee with nothing submitted is deliberately kept in the queue as \"Not submitted\". Dropping them would make a missing timesheet invisible, which is the one thing a manager most needs to see.",
+      "This case asserts the TAB BADGES rather than the stat strip. The strip's \"Awaiting action\" tile is the subject of TC-SP-009 and is known to be wrong; asserting it here would make two cases fail for one defect."
+    ],
+    "expected": [
+      "The rendered rows equal the active users whose manager field names the signed-in user — no more, no fewer.",
+      "Nobody who is not a direct reportee appears in the queue.",
+      "A reportee with no timesheet appears as \"Not submitted\" rather than being dropped.",
+      "Each row's status matches that reportee's monthly_timesheet row for the displayed month."
+    ],
+    "actual": [
+      "3 direct reportee(s); 3 row(s) rendered for June 2026.",
+      "Tab badges: Awaiting me 1 · Approved 0 · Rejected 0 · Not submitted 2 · All 3 · History "
+    ],
+    "verdictReason": "The queue renders exactly the 3 direct reportee(s), each with the status their timesheet record holds.",
+    "finishedAt": "2026-08-17T13:10:27.224Z"
+  }
+}

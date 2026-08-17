@@ -740,10 +740,14 @@ test('TC-SP-006 — The queue is exactly the manager\'s direct reportees', async
   });
   ev.record('Direct reportees', 'sys_user', 'manager=<me>^active=true', reportees);
 
-  ev.step('Open the manager approval queue.');
+  ev.step('Open the manager approval queue and show every reportee.');
   await SP.openManagerQueue(page);
   const { year, month0, timesheets } = await managerMonthWithData(page, me);
   await SP.gotoManagerMonth(page, year, month0);
+  // The queue opens on "Awaiting me", which is a filtered view. This case is
+  // about who the queue *can* show, so it has to be on the unfiltered tab —
+  // otherwise it asserts the tab filter, which is TC-SP-008's job.
+  await SP.setTab(page, 'All');
   await ev.shot(page, 'manager-queue');
 
   const rows = await SP.queueRows(page);
@@ -917,11 +921,17 @@ test('TC-SP-007 — The review drill-in agrees with the records it summarises', 
 
   const weekSum = weekly.reduce((n, w) => n + Number(w.u_amount), 0);
   const monthSum = monthly.reduce((n, s) => n + Number(s.u_amount), 0);
+  // The summary table holds one row per shift type per week; the panel renders
+  // one row per WEEK, summing the types. Comparing the rendered rows against the
+  // raw row count would fail on a month with more than one shift type in it —
+  // and pass only on the degenerate month that happens to have exactly one.
+  const distinctWeeks = [...new Set(weekly.map((w) => w.u_period_start))].sort();
 
   ev.record('Pay breakdown arithmetic', '(derived)', 'count x rate snapshot = amount', ledgerRows);
   ev.record('Weekly split against the monthly total', '(derived)', 'sum of weeks vs sum of month', [
     {
       weeks_on_screen: String(weeks.length),
+      distinct_weeks_in_summary: String(distinctWeeks.length),
       week_rows_in_summary: String(weekly.length),
       weekly_total: String(weekSum),
       monthly_total: String(monthSum),
@@ -959,7 +969,9 @@ test('TC-SP-007 — The review drill-in agrees with the records it summarises', 
 
   expect(dayMismatches, 'days on screen vs submission rows').toEqual([]);
   expect(arithmeticBreaks, 'count x rate snapshot = amount').toEqual([]);
-  expect(weeks.length, 'weekly rows rendered').toBe(weekly.length);
+  expect(weeks.map((w) => w.periodStart).sort(), 'weeks rendered vs weeks aggregated').toEqual(
+    distinctWeeks
+  );
   expect(weekSum, 'weekly amounts sum to the monthly total').toBe(monthSum);
   expect(Number(ledger.totalShifts), 'ledger total shifts').toBe(
     monthly.reduce((n, s) => n + Number(s.u_count), 0)
@@ -1094,12 +1106,19 @@ test('TC-SP-009 — The "Awaiting action" count contradicts the queue beneath it
     limit: 100,
   });
 
+  ev.step('Open the manager approval queue on a month where the reportees\' statuses differ.');
   await SP.openManagerQueue(page);
   const { year, month0, timesheets } = await managerMonthWithData(page, me);
   await SP.gotoManagerMonth(page, year, month0);
   await SP.setTab(page, 'All');
+
+  ev.step(
+    'Capture the stat strip, the tab badges and the table together — the contradiction is ' +
+      'between three parts of one screen, so it has to be one image.'
+  );
   await ev.shot(page, 'stat-strip-contradicts-the-queue');
 
+  ev.step('Read all three, and the timesheet records that settle which of them is right.');
   const tiles = await SP.statTiles(page);
   const badges = await SP.tabBadges(page);
   const rows = await SP.queueRows(page);

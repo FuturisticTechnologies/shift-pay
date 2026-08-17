@@ -1,0 +1,142 @@
+{
+  "run": {
+    "instance": "https://dev307042.service-now.com",
+    "executedBy": "admin",
+    "executedVia": "Playwright (automated), driving the /shiftpay Service Portal; every screen assertion cross-checked against the ServiceNow Table API."
+  },
+  "case": {
+    "id": "TC-SP-003",
+    "title": "The CO entitlement lifecycle, end to end",
+    "startedAt": "2026-08-17T13:09:52.409Z",
+    "verdict": "PASS",
+    "steps": [
+      {
+        "n": 1,
+        "text": "Log OC + CO on the Saturday 2026-10-03.",
+        "at": "2026-08-17T13:09:55.697Z",
+        "screenshots": [
+          "C:\\Users\\patel\\Documents\\ServiceNow Work Project Docs\\Personal AI Assisted\\ShiftPay Clean Vibe coding\\testing\\automation\\evidence\\TC-SP-003\\01-oc-logged.png"
+        ]
+      },
+      {
+        "n": 2,
+        "text": "Read the entitlement row it opened, and check the window arithmetic independently.",
+        "at": "2026-08-17T13:09:56.447Z",
+        "screenshots": []
+      },
+      {
+        "n": 3,
+        "text": "Open 2026-10-05, inside the window, and confirm CO is now offered.",
+        "at": "2026-08-17T13:09:56.583Z",
+        "screenshots": [
+          "C:\\Users\\patel\\Documents\\ServiceNow Work Project Docs\\Personal AI Assisted\\ShiftPay Clean Vibe coding\\testing\\automation\\evidence\\TC-SP-003\\03-co-now-offered.png"
+        ]
+      },
+      {
+        "n": 4,
+        "text": "Select CO and save; confirm the entitlement is consumed, not duplicated.",
+        "at": "2026-08-17T13:09:56.887Z",
+        "screenshots": []
+      },
+      {
+        "n": 5,
+        "text": "Attempt to clear the OC shift the CO depends on — the server must refuse.",
+        "at": "2026-08-17T13:09:57.583Z",
+        "screenshots": []
+      },
+      {
+        "n": 6,
+        "text": "Teardown: clear the CO, then the OC, and confirm the entitlement is deleted.",
+        "at": "2026-08-17T13:09:58.212Z",
+        "screenshots": []
+      }
+    ],
+    "records": [
+      {
+        "label": "Entitlement rows before the run",
+        "table": "x_1995110_shift_0_shift_co_entitlement",
+        "query": "u_user=<me>",
+        "rows": [],
+        "at": "2026-08-17T13:09:52.667Z"
+      },
+      {
+        "label": "Entitlement opened by the OC shift",
+        "table": "x_1995110_shift_0_shift_co_entitlement",
+        "query": "oc_date=2026-10-03",
+        "rows": [
+          {
+            "sys_id": "460e7c05c33e0b549c1a944ed4013177",
+            "u_oc_entry": "020e7c05c33e0b549c1a944ed4013177",
+            "u_oc_window_end": "2026-10-13",
+            "oc_date": "2026-10-03",
+            "u_co_entry": "",
+            "u_co_date": ""
+          }
+        ],
+        "at": "2026-08-17T13:09:56.583Z"
+      },
+      {
+        "label": "Entitlement after the CO was taken",
+        "table": "x_1995110_shift_0_shift_co_entitlement",
+        "query": "oc_date=2026-10-03",
+        "rows": [
+          {
+            "sys_id": "460e7c05c33e0b549c1a944ed4013177",
+            "u_oc_entry": "020e7c05c33e0b549c1a944ed4013177",
+            "u_oc_window_end": "2026-10-13",
+            "oc_date": "2026-10-03",
+            "u_co_entry": "960e7c05c33e0b549c1a944ed401317b",
+            "u_co_date": "2026-10-05"
+          }
+        ],
+        "at": "2026-08-17T13:09:57.583Z"
+      },
+      {
+        "label": "The OC day after the refused clear",
+        "table": "x_1995110_shift_0_u_shift_submission",
+        "query": "u_date=2026-10-03",
+        "rows": [
+          {
+            "sys_id": "020e7c05c33e0b549c1a944ed4013177",
+            "u_shift_type": "57a10d12938d4b507f08f2a0ed03d6ad",
+            "u_date": "2026-10-03"
+          }
+        ],
+        "at": "2026-08-17T13:09:58.212Z"
+      },
+      {
+        "label": "After teardown",
+        "table": "(derived)",
+        "query": "entitlements and the two days",
+        "rows": [
+          {
+            "entitlement_rows": "0",
+            "baseline_rows": "0",
+            "rows_for_oc_date": "0",
+            "submission_rows_left": "0"
+          }
+        ],
+        "at": "2026-08-17T13:10:02.021Z"
+      }
+    ],
+    "observations": [
+      "The window is seven *weekdays*, not seven days — _nthWeekdayAfter skips Saturdays and Sundays. This case computes the expected end date itself rather than reading u_oc_window_end back, because a case that reads the value it is checking asserts nothing.",
+      "The refusal in step 5 is the ordering guard in ShiftPayEntitlements.releasePrevious: removing the OC would leave a CO nobody had earned. It is asserted here at record level. That the SCREEN does not report the refusal is a separate defect — see TC-SP-004."
+    ],
+    "expected": [
+      "Logging a grants_co shift inserts one entitlement row whose u_oc_window_end is the 7th weekday after the OC date.",
+      "CO becomes selectable on a weekday inside that window, where TC-SP-001 proved it is not selectable without one.",
+      "Saving CO consumes that same entitlement row — u_co_date and u_co_entry are set, and no second row appears.",
+      "Clearing the OC shift is refused while a CO depends on it; the submission row survives.",
+      "After teardown the entitlement row is deleted and the table is back to its baseline count."
+    ],
+    "actual": [
+      "Window: 2026-10-03 → 2026-10-13; independently computed 7th weekday after = 2026-10-13.",
+      "2026-10-05 now offers: UK, US, L, Not Eligible, CO, OC, OC + CO, OC + UK + CO, OC + US + CO",
+      "Entitlement now records u_co_date = 2026-10-05 and an entry reference is set. Total rows: 1 (baseline 0).",
+      "After the refused clear the OC submission row still exists."
+    ],
+    "verdictReason": "Window opened with correct weekday arithmetic, consumed in place, guarded against removal, and released cleanly. Entitlement table back to baseline.",
+    "finishedAt": "2026-08-17T13:10:02.021Z"
+  }
+}
