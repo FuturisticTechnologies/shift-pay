@@ -54,7 +54,15 @@ A day change is a **three-phase transaction** that must bracket the day write, b
 
 **Manager day corrections** (`correctDay`) apply only to a month in `submitted` status — approved is final, rejected is back with the employee. The action runs `assertReportee`, demands a reason, checks the date is really inside the displayed month, and gates the new shift on `ShiftPayCalendarRules.isAllowedOn` for *that reportee*: a manager may fix a mistake, not mint an exception. It then runs the same three-phase entitlement transaction as the calendar, writes an audit row to `x_1995110_shift_0_shift_day_change` (`user`, `date`, `previous_shift`, `new_shift`, `reason`, `changed_by`, `changed_on`), and recomputes the reportee's aggregates. The employee's `u_comment` on the day is left alone — it is their note, and the reason for the change belongs in the audit row.
 
-**Deploying to the instance.** Writes go through `cnit put sp_widget -SysId <id>` (fields `template`, `script`, `client_script`, `css`) and `cnit post/put sys_script_include`. Four traps, all hit for real:
+**Deploying to the instance.** Writes go through `cnit put sp_widget -SysId <id>` (fields `template`, `script`, `client_script`, `css`) and `cnit post/put sys_script_include`.
+
+`tools/deploy-widget-field.mjs` is the first trap below made executable — it builds an ASCII-escaped, LF-normalised body file, refuses to emit one that does not round-trip, and prints the push and read-back commands:
+
+```
+node tools/deploy-widget-field.mjs "Manager Approval UI Widget/widget.template.html" template
+```
+
+Four traps, all hit for real:
 
 - `Get-Content -Raw` returns a string carrying ETS note properties that `ConvertTo-Json` serialises into the payload, and PowerShell 5.1's `ConvertTo-Json` does not escape non-ASCII while cnit reads body files with no `-Encoding`. Read with `[IO.File]::ReadAllText`, escape every char above 127 to `\uXXXX`, write ASCII — then **read the field back and compare it to the local file**. A push can return HTTP 200 and store garbage.
 - **`cnit get` ignores `-SysId`** — it is only a `put` parameter. `get <table> -SysId <id>` silently returns the *first row of the whole table* instead, so a readback "verified" that way can be a completely different record. Always use `get <table> -Query "sys_id=<id>"`.
