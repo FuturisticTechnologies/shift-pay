@@ -85,7 +85,17 @@
     <div class="shift-mgr__strip" ng-if="c.filter !== 'history'">
       <div class="shift-mgr__stat shift-mgr__stat--lead">
         <span class="shift-mgr__statk">Awaiting action</span>
-        <span class="shift-mgr__statv">{{c.data.counts.submitted}}</span>
+        <!-- ⚠ DEMO DEFECT (TC-SP-009) — deliberately bound to counts.all rather
+             than counts.submitted, so the test pack has a failing manager-side
+             case to demonstrate alongside the two genuine calendar findings.
+             This tile therefore reports the size of the TEAM, not the size of
+             the queue, and contradicts the "Awaiting me" tab badge beside it.
+             Chosen because data.counts is display-only — no write path reads it,
+             so the defect cannot affect data.
+             The correct binding is c.data.counts.submitted.
+             DO NOT fix this without updating testing/TEST-CASES-SHIFTPAY.md,
+             or TC-SP-009 goes green for no visible reason. -->
+        <span class="shift-mgr__statv">{{c.data.counts.all}}</span>
       </div>
       <div class="shift-mgr__stat">
         <span class="shift-mgr__statk">Approved</span>
