@@ -7,13 +7,13 @@
   "case": {
     "id": "TC-SP-003",
     "title": "The CO entitlement lifecycle, end to end",
-    "startedAt": "2026-08-17T13:09:52.409Z",
+    "startedAt": "2026-08-17T13:24:17.632Z",
     "verdict": "PASS",
     "steps": [
       {
         "n": 1,
         "text": "Log OC + CO on the Saturday 2026-10-03.",
-        "at": "2026-08-17T13:09:55.697Z",
+        "at": "2026-08-17T13:24:21.086Z",
         "screenshots": [
           "C:\\Users\\patel\\Documents\\ServiceNow Work Project Docs\\Personal AI Assisted\\ShiftPay Clean Vibe coding\\testing\\automation\\evidence\\TC-SP-003\\01-oc-logged.png"
         ]
@@ -21,13 +21,13 @@
       {
         "n": 2,
         "text": "Read the entitlement row it opened, and check the window arithmetic independently.",
-        "at": "2026-08-17T13:09:56.447Z",
+        "at": "2026-08-17T13:24:21.947Z",
         "screenshots": []
       },
       {
         "n": 3,
         "text": "Open 2026-10-05, inside the window, and confirm CO is now offered.",
-        "at": "2026-08-17T13:09:56.583Z",
+        "at": "2026-08-17T13:24:22.084Z",
         "screenshots": [
           "C:\\Users\\patel\\Documents\\ServiceNow Work Project Docs\\Personal AI Assisted\\ShiftPay Clean Vibe coding\\testing\\automation\\evidence\\TC-SP-003\\03-co-now-offered.png"
         ]
@@ -35,19 +35,19 @@
       {
         "n": 4,
         "text": "Select CO and save; confirm the entitlement is consumed, not duplicated.",
-        "at": "2026-08-17T13:09:56.887Z",
+        "at": "2026-08-17T13:24:22.491Z",
         "screenshots": []
       },
       {
         "n": 5,
         "text": "Attempt to clear the OC shift the CO depends on — the server must refuse.",
-        "at": "2026-08-17T13:09:57.583Z",
+        "at": "2026-08-17T13:24:23.138Z",
         "screenshots": []
       },
       {
         "n": 6,
         "text": "Teardown: clear the CO, then the OC, and confirm the entitlement is deleted.",
-        "at": "2026-08-17T13:09:58.212Z",
+        "at": "2026-08-17T13:24:23.744Z",
         "screenshots": []
       }
     ],
@@ -57,7 +57,7 @@
         "table": "x_1995110_shift_0_shift_co_entitlement",
         "query": "u_user=<me>",
         "rows": [],
-        "at": "2026-08-17T13:09:52.667Z"
+        "at": "2026-08-17T13:24:18.377Z"
       },
       {
         "label": "Entitlement opened by the OC shift",
@@ -65,15 +65,15 @@
         "query": "oc_date=2026-10-03",
         "rows": [
           {
-            "sys_id": "460e7c05c33e0b549c1a944ed4013177",
-            "u_oc_entry": "020e7c05c33e0b549c1a944ed4013177",
+            "sys_id": "d551458dc33e0b549c1a944ed40131ae",
+            "u_oc_entry": "9151458dc33e0b549c1a944ed40131ae",
             "u_oc_window_end": "2026-10-13",
             "oc_date": "2026-10-03",
             "u_co_entry": "",
             "u_co_date": ""
           }
         ],
-        "at": "2026-08-17T13:09:56.583Z"
+        "at": "2026-08-17T13:24:22.084Z"
       },
       {
         "label": "Entitlement after the CO was taken",
@@ -81,15 +81,15 @@
         "query": "oc_date=2026-10-03",
         "rows": [
           {
-            "sys_id": "460e7c05c33e0b549c1a944ed4013177",
-            "u_oc_entry": "020e7c05c33e0b549c1a944ed4013177",
+            "sys_id": "d551458dc33e0b549c1a944ed40131ae",
+            "u_oc_entry": "9151458dc33e0b549c1a944ed40131ae",
             "u_oc_window_end": "2026-10-13",
             "oc_date": "2026-10-03",
-            "u_co_entry": "960e7c05c33e0b549c1a944ed401317b",
+            "u_co_entry": "2951458dc33e0b549c1a944ed40131b2",
             "u_co_date": "2026-10-05"
           }
         ],
-        "at": "2026-08-17T13:09:57.583Z"
+        "at": "2026-08-17T13:24:23.138Z"
       },
       {
         "label": "The OC day after the refused clear",
@@ -97,12 +97,12 @@
         "query": "u_date=2026-10-03",
         "rows": [
           {
-            "sys_id": "020e7c05c33e0b549c1a944ed4013177",
+            "sys_id": "9151458dc33e0b549c1a944ed40131ae",
             "u_shift_type": "57a10d12938d4b507f08f2a0ed03d6ad",
             "u_date": "2026-10-03"
           }
         ],
-        "at": "2026-08-17T13:09:58.212Z"
+        "at": "2026-08-17T13:24:23.744Z"
       },
       {
         "label": "After teardown",
@@ -116,7 +116,7 @@
             "submission_rows_left": "0"
           }
         ],
-        "at": "2026-08-17T13:10:02.021Z"
+        "at": "2026-08-17T13:24:27.256Z"
       }
     ],
     "observations": [
@@ -137,6 +137,6 @@
       "After the refused clear the OC submission row still exists."
     ],
     "verdictReason": "Window opened with correct weekday arithmetic, consumed in place, guarded against removal, and released cleanly. Entitlement table back to baseline.",
-    "finishedAt": "2026-08-17T13:10:02.021Z"
+    "finishedAt": "2026-08-17T13:24:27.256Z"
   }
 }
