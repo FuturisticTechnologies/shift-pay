@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A **ServiceNow scoped application** (scope `x_1995110_shift_0`, portal `/shiftpay`) for logging daily shifts, tracking compensatory-off (CO) entitlements, and computing pay. The repo holds the **source-exported component files of Service Portal widgets** — there is no build, package manager, test runner, or lint config. Editing here is editing widget source that gets pasted/synced back into a ServiceNow instance. There is nothing to compile or run locally; "running" means deploying the widget into a ServiceNow Service Portal page. `BRD-ShiftPay.md` is the business requirements doc and `README.md` documents the data model, roles, and business rules in depth — read them before changing behavior.
+A **ServiceNow scoped application** (scope `x_1995110_shift_0`, portal `/shiftpay`) for logging daily shifts, tracking compensatory-off (CO) entitlements, and computing pay. The repo holds the **source-exported component files of Service Portal widgets** — the widgets themselves have no build step, package manager or lint config. Editing there is editing widget source that gets pasted/synced back into a ServiceNow instance; "running" means deploying the widget into a Service Portal page. `BRD-ShiftPay.md` is the business requirements doc and `README.md` documents the data model, roles, and business rules in depth — read them before changing behavior.
+
+`testing/` is the one part of the repo that *is* runnable: a Playwright + python-docx pack that drives the deployed widgets and produces Word evidence records. See **Testing** below.
 
 ## Layout
 
@@ -66,6 +68,28 @@ PowerShell note for reading results back: `$_.field + "text"` throws on the PSOb
 **The scope lever is `sys_user_preference` `apps.current_app`.** `sys_scope` cannot be set through the Table API — like `sys_created_by`, the POST returns 200 and the session's scope wins. To create a record in Global, set that preference to `global` first, create the record, then set it back to `bbd97549938183507f08f2a0ed03d60b`. `scratchpad/fix-run.js` drives the run and refuses unless the form reads Global.
 
 **One-time sweeps must be confined per table, and the key differs.** `sys_dictionary`/`sys_choice`/`sys_db_object` key on `name STARTSWITH x_1995110_shift_0` — a `sys_scope` filter there is wrong, because 36 of the 53 ShiftPay dictionary rows (the auto-generated `sys_*` columns) carry an *empty* scope and would be silently skipped. `sys_script_include`/`sp_widget` have no table name to key on, so they must use `sys_scope`. Matching on the user alone is a blanket instance sweep: the first `reattribute-created-by` dry run offered to rewrite two CAF Compliance widgets and an unrelated Script Include, one of them authored by another person and merely *touched* by the retired account.
+
+## Testing
+
+`testing/` holds the test pack. One command runs a case end to end — it signs in, opens a browser, drives the widget, and writes a branded Word evidence record:
+
+```powershell
+.\testing\run-case.ps1 TC-SP-003     # or `all`; -Headless, -NoOpen, -NoAuth
+```
+
+- `testing/TEST-CASES-SHIFTPAY.md` — **the single source of truth for what a case is.** 40 cases, 9 automated. The Word documents merge this definition with the run's JSON; nothing is retyped between them, so a document cannot claim an expected result the spec does not contain. Its heading and `| **Label** | value |` metadata format is parsed by `evidence-generator/case_parser.py` — keep the shape when adding cases.
+- `testing/automation/` — Playwright. `lib/servicenow.ts` (Table API), `lib/shiftpay.ts` (widget selectors and date maths), `lib/evidence.ts` (structured capture), `specs/shiftpay-cases.spec.ts`.
+- `testing/evidence-generator/` — Python; `branding.py` is Futuristic Technologies house style and is the only file to touch for a rebrand.
+
+**Three of the nine automated cases are expected to FAIL. A green run is the broken one.** Do not "fix" a red case without reading `testing/README.md`:
+
+- **TC-SP-004 (real, P1)** — every server-side refusal in the calendar is invisible *and* the client repaints as if the write succeeded. `c.saveCell`/`c.clearCell`/`c.bulkApply` branch on `r.data.error`; the server sets it nowhere, using `gs.addErrorMessage()` in all six refusal paths. The Manager Approval widget's `fail()` shows the correct pattern.
+- **TC-SP-005 (real, P2)** — `L` and `Not Eligible` carry `allow_weekend_holiday = true`, so a Saturday offers six shifts where README §Business Rules allows four. A data fix, not a code fix.
+- **TC-SP-009 (introduced, P2)** — **a deliberate demo defect**: the `.shift-mgr__stat--lead` tile in `Manager Approval UI Widget/widget.template.html` is bound to `c.data.counts.all` instead of `c.data.counts.submitted`. The line carries a comment saying so. Chosen because `data.counts` is display-only — no write path reads it — so it cannot affect data. **Fixing it requires updating TEST-CASES-SHIFTPAY.md in the same change**, or the pack goes green for no visible reason.
+
+Two further real findings are recorded but not automated, because neither produces a screenshot: **TC-SP-030** (`x_shiftpay.holiday_schedule` does not exist — no `x_shiftpay.*` property does — so `holidays()` returns `{}`, no date is ever a holiday, and nothing warns) and **TC-SP-031** (the calendar's five default option table names name no table; it runs only on the `sp_instance` overrides).
+
+Writing cases touch only the signed-in account's own calendar, two months ahead, and reverse themselves. Nothing in the pack approves, rejects or corrects a timesheet.
 
 ## Scope
 
