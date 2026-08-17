@@ -1,0 +1,180 @@
+{
+  "run": {
+    "instance": "https://dev307042.service-now.com",
+    "executedBy": "admin",
+    "executedVia": "Playwright (automated), driving the /shiftpay Service Portal; every screen assertion cross-checked against the ServiceNow Table API."
+  },
+  "case": {
+    "id": "TC-SP-001",
+    "title": "Weekday and weekend offer different shift sets, driven by catalogue columns",
+    "startedAt": "2026-08-17T13:09:41.001Z",
+    "verdict": "PASS",
+    "steps": [
+      {
+        "n": 1,
+        "text": "Open the calendar and navigate to October 2026.",
+        "at": "2026-08-17T13:09:41.611Z",
+        "screenshots": []
+      },
+      {
+        "n": 2,
+        "text": "Open the plain weekday 2026-10-01 and read every shift offered.",
+        "at": "2026-08-17T13:09:44.759Z",
+        "screenshots": [
+          "C:\\Users\\patel\\Documents\\ServiceNow Work Project Docs\\Personal AI Assisted\\ShiftPay Clean Vibe coding\\testing\\automation\\evidence\\TC-SP-001\\02-weekday-dropdown.png"
+        ]
+      },
+      {
+        "n": 3,
+        "text": "Open the Saturday 2026-10-03 and read every shift offered.",
+        "at": "2026-08-17T13:09:45.255Z",
+        "screenshots": [
+          "C:\\Users\\patel\\Documents\\ServiceNow Work Project Docs\\Personal AI Assisted\\ShiftPay Clean Vibe coding\\testing\\automation\\evidence\\TC-SP-001\\03-weekend-dropdown.png"
+        ]
+      }
+    ],
+    "records": [
+      {
+        "label": "Active shift catalogue",
+        "table": "x_1995110_shift_0_shift_type",
+        "query": "active=true",
+        "rows": [
+          {
+            "sys_id": "08614d52938d4b507f08f2a0ed03d676",
+            "oc_role": "consumes_co",
+            "rate": "0",
+            "allow_weekend_holiday": "false",
+            "name": "CO",
+            "allow_weekday": "true",
+            "description": "Compensatory Off if you have worked on the holiday",
+            "currency": "INR",
+            "day_category": "holiday"
+          },
+          {
+            "sys_id": "df61c112938d4b507f08f2a0ed03d6a6",
+            "oc_role": "none",
+            "rate": "0",
+            "allow_weekend_holiday": "true",
+            "name": "L",
+            "allow_weekday": "true",
+            "description": "Leave",
+            "currency": "INR",
+            "day_category": "off"
+          },
+          {
+            "sys_id": "75718512938d4b507f08f2a0ed03d6f2",
+            "oc_role": "none",
+            "rate": "0",
+            "allow_weekend_holiday": "true",
+            "name": "Not Eligible",
+            "allow_weekday": "true",
+            "description": "Not Eligible",
+            "currency": "INR",
+            "day_category": "off"
+          },
+          {
+            "sys_id": "9d81c552938d4b507f08f2a0ed03d6e6",
+            "oc_role": "none",
+            "rate": "500",
+            "allow_weekend_holiday": "true",
+            "name": "OC",
+            "allow_weekday": "false",
+            "description": "On Call Allowance, if you have worked as a Stand-by on the Holiday",
+            "currency": "INR",
+            "day_category": "holiday"
+          },
+          {
+            "sys_id": "57a10d12938d4b507f08f2a0ed03d6ad",
+            "oc_role": "grants_co",
+            "rate": "500",
+            "allow_weekend_holiday": "true",
+            "name": "OC + CO",
+            "allow_weekday": "false",
+            "description": "On call Allowance + Compensatory off, if you have worked on Holiday, in the regular hours not in the UK or US Shift",
+            "currency": "INR",
+            "day_category": "holiday"
+          },
+          {
+            "sys_id": "65918552938d4b507f08f2a0ed03d6ed",
+            "oc_role": "grants_co",
+            "rate": "850",
+            "allow_weekend_holiday": "true",
+            "name": "OC + UK + CO",
+            "allow_weekday": "false",
+            "description": "On call Allowance + Compensatory off+ UK Shift, if you have worked on the holiday in the UK shift",
+            "currency": "INR",
+            "day_category": "holiday"
+          },
+          {
+            "sys_id": "d8a1c912938d4b507f08f2a0ed03d60a",
+            "oc_role": "grants_co",
+            "rate": "1000",
+            "allow_weekend_holiday": "true",
+            "name": "OC + US + CO",
+            "allow_weekday": "false",
+            "description": "On call Allowance + Compensatory off+ US Shift, if you have worked on the holiday in the US shift",
+            "currency": "INR",
+            "day_category": "holiday"
+          },
+          {
+            "sys_id": "adc08d12938d4b507f08f2a0ed03d6b5",
+            "oc_role": "none",
+            "rate": "350",
+            "allow_weekend_holiday": "false",
+            "name": "UK",
+            "allow_weekday": "true",
+            "description": "UK Shift (12:00 PM – 12:00 AM)",
+            "currency": "INR",
+            "day_category": "regular"
+          },
+          {
+            "sys_id": "b151c912938d4b507f08f2a0ed03d605",
+            "oc_role": "none",
+            "rate": "500",
+            "allow_weekend_holiday": "false",
+            "name": "US",
+            "allow_weekday": "true",
+            "description": "US Shift (6:00 PM – 6:00 AM)",
+            "currency": "INR",
+            "day_category": "regular"
+          }
+        ],
+        "at": "2026-08-17T13:09:41.610Z"
+      },
+      {
+        "label": "Allowed shifts, screen vs catalogue",
+        "table": "(derived)",
+        "query": "2026-10-01 and 2026-10-03",
+        "rows": [
+          {
+            "day": "2026-10-01",
+            "kind": "weekday",
+            "on_screen": "L, Not Eligible, UK, US",
+            "from_catalogue": "L, Not Eligible, UK, US"
+          },
+          {
+            "day": "2026-10-03",
+            "kind": "weekend",
+            "on_screen": "L, Not Eligible, OC, OC + CO, OC + UK + CO, OC + US + CO",
+            "from_catalogue": "L, Not Eligible, OC, OC + CO, OC + UK + CO, OC + US + CO"
+          }
+        ],
+        "at": "2026-08-17T13:09:45.968Z"
+      }
+    ],
+    "observations": [
+      "The catalogue drives this entirely: no code branches on a shift type's name. \"CO\" is withheld from the weekday list by ShiftPayCalendarRules.baseAllowedSysIds and added back only where an unconsumed entitlement window covers the date — proved by TC-SP-003."
+    ],
+    "expected": [
+      "The weekday dropdown equals the catalogue rows with allow_weekday = true, minus the consumes_co row.",
+      "The weekend dropdown equals the catalogue rows with allow_weekend_holiday = true.",
+      "CO is absent from the weekday list — a CO is earned, not merely permitted."
+    ],
+    "actual": [
+      "Weekday 2026-10-01 offers: L, Not Eligible, UK, US",
+      "Saturday 2026-10-03 offers: L, Not Eligible, OC, OC + CO, OC + UK + CO, OC + US + CO"
+    ],
+    "verdictReason": "Both lists match the catalogue columns exactly, and CO is correctly absent from the weekday list.",
+    "finishedAt": "2026-08-17T13:09:45.969Z"
+  }
+}

@@ -1,0 +1,9 @@
+# Per-case run results land here, one JSON per case, written as each case
+# finishes. This directory is the run archive — a .docx can always be rebuilt
+# from it, which is why the generated Word documents are gitignored and these
+# are not.
+#
+# Deliberately one file per case rather than one accumulating manifest:
+# Playwright restarts its worker after a failed test and resets module state, so
+# an in-memory array loses every case recorded before the first failure. Three of
+# the nine cases here are expected to fail, so that is not hypothetical.

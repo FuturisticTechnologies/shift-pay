@@ -1,0 +1,15 @@
+{
+  "name": "shiftpay-test-automation",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Playwright automation for the ShiftPay test pack (Service Portal + ServiceNow Table API).",
+  "scripts": {
+    "case": "node run-case.mjs",
+    "auth": "playwright test --project=setup",
+    "sp": "playwright test --project=sp",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.0"
+  }
+}

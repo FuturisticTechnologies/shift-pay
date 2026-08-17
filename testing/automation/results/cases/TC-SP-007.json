@@ -1,0 +1,246 @@
+{
+  "run": {
+    "instance": "https://dev307042.service-now.com",
+    "executedBy": "admin",
+    "executedVia": "Playwright (automated), driving the /shiftpay Service Portal; every screen assertion cross-checked against the ServiceNow Table API."
+  },
+  "case": {
+    "id": "TC-SP-007",
+    "title": "The review drill-in agrees with the records it summarises",
+    "startedAt": "2026-08-17T13:10:27.445Z",
+    "verdict": "PASS",
+    "steps": [
+      {
+        "n": 1,
+        "text": "Open the review drill-in for Melinda Carleton, June 2026.",
+        "at": "2026-08-17T13:10:31.070Z",
+        "screenshots": [
+          "C:\\Users\\patel\\Documents\\ServiceNow Work Project Docs\\Personal AI Assisted\\ShiftPay Clean Vibe coding\\testing\\automation\\evidence\\TC-SP-007\\01-review-drill-in.png"
+        ]
+      },
+      {
+        "n": 2,
+        "text": "Read the day rows and the aggregate rows the panel claims to summarise.",
+        "at": "2026-08-17T13:10:31.546Z",
+        "screenshots": []
+      }
+    ],
+    "records": [
+      {
+        "label": "Day rows for the month",
+        "table": "x_1995110_shift_0_u_shift_submission",
+        "query": "u_user=melinda.carleton^June 2026",
+        "rows": [
+          {
+            "date": "2026-06-01",
+            "shift": "UK"
+          },
+          {
+            "date": "2026-06-02",
+            "shift": "L"
+          },
+          {
+            "date": "2026-06-03",
+            "shift": "US"
+          },
+          {
+            "date": "2026-06-04",
+            "shift": "US"
+          },
+          {
+            "date": "2026-06-05",
+            "shift": "US"
+          },
+          {
+            "date": "2026-06-06",
+            "shift": "OC"
+          },
+          {
+            "date": "2026-06-07",
+            "shift": "OC + UK + CO"
+          },
+          {
+            "date": "2026-06-08",
+            "shift": "UK"
+          },
+          {
+            "date": "2026-06-09",
+            "shift": "CO"
+          },
+          {
+            "date": "2026-06-10",
+            "shift": "L"
+          },
+          {
+            "date": "2026-06-11",
+            "shift": "UK"
+          },
+          {
+            "date": "2026-06-12",
+            "shift": "L"
+          },
+          {
+            "date": "2026-06-13",
+            "shift": "OC"
+          },
+          {
+            "date": "2026-06-14",
+            "shift": "OC"
+          },
+          {
+            "date": "2026-06-15",
+            "shift": "US"
+          },
+          {
+            "date": "2026-06-16",
+            "shift": "UK"
+          },
+          {
+            "date": "2026-06-17",
+            "shift": "US"
+          },
+          {
+            "date": "2026-06-23",
+            "shift": "UK"
+          },
+          {
+            "date": "2026-06-24",
+            "shift": "UK"
+          }
+        ],
+        "at": "2026-08-17T13:10:32.099Z"
+      },
+      {
+        "label": "Monthly aggregate with the rate snapshot",
+        "table": "x_1995110_shift_0_shift_submission_summary",
+        "query": "u_period_type=month^u_year=2026^u_month=6",
+        "rows": [
+          {
+            "shift": "UK",
+            "count": "6",
+            "rate_snapshot": "350",
+            "amount": "2100"
+          },
+          {
+            "shift": "CO",
+            "count": "1",
+            "rate_snapshot": "0",
+            "amount": "0"
+          },
+          {
+            "shift": "US",
+            "count": "5",
+            "rate_snapshot": "500",
+            "amount": "2500"
+          },
+          {
+            "shift": "L",
+            "count": "3",
+            "rate_snapshot": "0",
+            "amount": "0"
+          },
+          {
+            "shift": "OC",
+            "count": "3",
+            "rate_snapshot": "500",
+            "amount": "1500"
+          },
+          {
+            "shift": "OC + UK + CO",
+            "count": "1",
+            "rate_snapshot": "850",
+            "amount": "850"
+          }
+        ],
+        "at": "2026-08-17T13:10:32.099Z"
+      },
+      {
+        "label": "Pay breakdown arithmetic",
+        "table": "(derived)",
+        "query": "count x rate snapshot = amount",
+        "rows": [
+          {
+            "shift": "UK",
+            "count": "6",
+            "rate_snapshot": "350",
+            "amount": "2100",
+            "count_x_rate": "2100",
+            "agrees": "YES"
+          },
+          {
+            "shift": "CO",
+            "count": "1",
+            "rate_snapshot": "0",
+            "amount": "0",
+            "count_x_rate": "0",
+            "agrees": "YES"
+          },
+          {
+            "shift": "US",
+            "count": "5",
+            "rate_snapshot": "500",
+            "amount": "2500",
+            "count_x_rate": "2500",
+            "agrees": "YES"
+          },
+          {
+            "shift": "L",
+            "count": "3",
+            "rate_snapshot": "0",
+            "amount": "0",
+            "count_x_rate": "0",
+            "agrees": "YES"
+          },
+          {
+            "shift": "OC",
+            "count": "3",
+            "rate_snapshot": "500",
+            "amount": "1500",
+            "count_x_rate": "1500",
+            "agrees": "YES"
+          },
+          {
+            "shift": "OC + UK + CO",
+            "count": "1",
+            "rate_snapshot": "850",
+            "amount": "850",
+            "count_x_rate": "850",
+            "agrees": "YES"
+          }
+        ],
+        "at": "2026-08-17T13:10:32.100Z"
+      },
+      {
+        "label": "Weekly split against the monthly total",
+        "table": "(derived)",
+        "query": "sum of weeks vs sum of month",
+        "rows": [
+          {
+            "weeks_on_screen": "4",
+            "distinct_weeks_in_summary": "4",
+            "week_rows_in_summary": "12",
+            "weekly_total": "6950",
+            "monthly_total": "6950",
+            "agrees": "YES"
+          }
+        ],
+        "at": "2026-08-17T13:10:32.100Z"
+      }
+    ],
+    "observations": [
+      "The amounts are read from u_rate_snapshot and u_amount, frozen when the month was aggregated — not recomputed from today's catalogue rate. That is the point: a rate change after aggregation must not move what a manager is approving, and asserting against the live rate would hide it if it ever did.",
+      "The weekly split comes from the same summary table as the monthly headline, which is why the two cannot drift. A widget that recomputed one of them independently would eventually disagree with the other, and payroll would have two numbers."
+    ],
+    "expected": [
+      "Every populated day cell in the drill-in matches a u_shift_submission row for that user and month, day for day and shift for shift.",
+      "Each pay-breakdown line satisfies count x rate snapshot = amount, taken from the summary table rather than the live catalogue rate.",
+      "The weekly split sums to the monthly total, so the split and the headline cannot disagree."
+    ],
+    "actual": [
+      "19 populated day cell(s) on screen against 19 submission row(s); 0 mismatch(es).",
+      "6 pay line(s), all satisfying count x snapshot = amount; weekly total 6950 against monthly total 6950."
+    ],
+    "verdictReason": "The drill-in agrees with the records on every count: 19 days, 6 pay lines, and a weekly split that sums to the monthly total.",
+    "finishedAt": "2026-08-17T13:10:32.180Z"
+  }
+}

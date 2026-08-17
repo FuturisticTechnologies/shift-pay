@@ -1,0 +1,108 @@
+{
+  "run": {
+    "instance": "https://dev307042.service-now.com",
+    "executedBy": "admin",
+    "executedVia": "Playwright (automated), driving the /shiftpay Service Portal; every screen assertion cross-checked against the ServiceNow Table API."
+  },
+  "case": {
+    "id": "TC-SP-002",
+    "title": "Logging a day writes one row and re-aggregates with a rate snapshot",
+    "startedAt": "2026-08-17T13:09:46.276Z",
+    "verdict": "PASS",
+    "steps": [
+      {
+        "n": 1,
+        "text": "Log UK on 2026-10-01 with a comment, and confirm the chip renders.",
+        "at": "2026-08-17T13:09:49.740Z",
+        "screenshots": [
+          "C:\\Users\\patel\\Documents\\ServiceNow Work Project Docs\\Personal AI Assisted\\ShiftPay Clean Vibe coding\\testing\\automation\\evidence\\TC-SP-002\\01-day-logged.png"
+        ]
+      },
+      {
+        "n": 2,
+        "text": "Read the submission row the save produced.",
+        "at": "2026-08-17T13:09:51.137Z",
+        "screenshots": []
+      },
+      {
+        "n": 3,
+        "text": "Read the recomputed week summary and check the arithmetic.",
+        "at": "2026-08-17T13:09:51.267Z",
+        "screenshots": []
+      },
+      {
+        "n": 4,
+        "text": "Clear 2026-10-01 and confirm both the row and the aggregate revert.",
+        "at": "2026-08-17T13:09:51.429Z",
+        "screenshots": []
+      }
+    ],
+    "records": [
+      {
+        "label": "Week summary before the write",
+        "table": "x_1995110_shift_0_shift_submission_summary",
+        "query": "u_user=6816f79cc0a8016401c5a33be04be441^u_period_type=week^u_period_start=2026-09-28^u_shift_type=adc08d12938d4b507f08f2a0ed03d6b5",
+        "rows": [],
+        "at": "2026-08-17T13:09:49.740Z"
+      },
+      {
+        "label": "Submission row after the save",
+        "table": "x_1995110_shift_0_u_shift_submission",
+        "query": "u_user=<me>^u_date=2026-10-01",
+        "rows": [
+          {
+            "sys_id": "340e3cc5c33e0b549c1a944ed40131ea",
+            "u_shift_type": "adc08d12938d4b507f08f2a0ed03d6b5",
+            "u_date": "2026-10-01",
+            "u_comment": "Automated test — TC-SP-002"
+          }
+        ],
+        "at": "2026-08-17T13:09:51.267Z"
+      },
+      {
+        "label": "Week summary after the write",
+        "table": "x_1995110_shift_0_shift_submission_summary",
+        "query": "u_user=6816f79cc0a8016401c5a33be04be441^u_period_type=week^u_period_start=2026-09-28^u_shift_type=adc08d12938d4b507f08f2a0ed03d6b5",
+        "rows": [
+          {
+            "u_period_start": "2026-09-28",
+            "sys_id": "b40e3cc5c33e0b549c1a944ed40131eb",
+            "u_rate_snapshot": "350",
+            "u_amount": "350",
+            "u_count": "1",
+            "u_currency": "INR"
+          }
+        ],
+        "at": "2026-08-17T13:09:51.428Z"
+      },
+      {
+        "label": "After the clear",
+        "table": "(derived)",
+        "query": "2026-10-01 and week of 2026-09-28",
+        "rows": [
+          {
+            "submission_rows": "0",
+            "summary_count": "0",
+            "summary_count_before_run": "0"
+          }
+        ],
+        "at": "2026-08-17T13:09:52.176Z"
+      }
+    ],
+    "observations": [
+      "The rate is asserted as u_rate_snapshot on the summary row, not as the live catalogue rate. The snapshot is what payroll pays and what a manager approves, so a catalogue change after aggregation must not move it — reading the live rate would hide it if that ever broke.",
+      "Aggregates are recomputed rather than incremented: ShiftPayAggregator deletes and rewrites the affected week and month rows per shift type, which is why clearing the day removes the row outright instead of leaving a zero-count orphan."
+    ],
+    "expected": [
+      "Saving produces exactly one u_shift_submission row for that user and date, with the chosen shift type and the typed comment.",
+      "A week summary row exists for the Monday of that week with u_rate_snapshot equal to the catalogue rate and u_amount = u_count x u_rate_snapshot.",
+      "Clearing the day removes the submission row and reverts the summary."
+    ],
+    "actual": [
+      "1 submission row(s) for 2026-10-01; week of 2026-09-28 now counts 1 UK shift(s) at a snapshot of 350.",
+      "After clearing: 0 submission row(s), week count back to 0 (was 0 before the run)."
+    ],
+    "verdictReason": "One row written and removed cleanly; the week aggregate moved to 1 at a snapshot of 350 and back to 0.",
+    "finishedAt": "2026-08-17T13:09:52.176Z"
+  }
+}

@@ -1,0 +1,131 @@
+{
+  "run": {
+    "instance": "https://dev307042.service-now.com",
+    "executedBy": "admin",
+    "executedVia": "Playwright (automated), driving the /shiftpay Service Portal; every screen assertion cross-checked against the ServiceNow Table API."
+  },
+  "case": {
+    "id": "TC-SP-004",
+    "title": "A refused write is painted on screen as though it succeeded",
+    "startedAt": "2026-08-17T13:10:02.308Z",
+    "verdict": "FAIL",
+    "steps": [
+      {
+        "n": 1,
+        "text": "Build the dependency: OC + CO on 2026-10-03, then CO on 2026-10-05.",
+        "at": "2026-08-17T13:10:05.530Z",
+        "screenshots": []
+      },
+      {
+        "n": 2,
+        "text": "Press Clear on 2026-10-03. The server will refuse — watch what the screen does.",
+        "at": "2026-08-17T13:10:06.934Z",
+        "screenshots": [
+          "C:\\Users\\patel\\Documents\\ServiceNow Work Project Docs\\Personal AI Assisted\\ShiftPay Clean Vibe coding\\testing\\automation\\evidence\\TC-SP-004\\02-after-refused-clear-cell-is-empty.png"
+        ]
+      },
+      {
+        "n": 3,
+        "text": "Read the record. The server refused, so nothing should have moved.",
+        "at": "2026-08-17T13:10:08.019Z",
+        "screenshots": []
+      },
+      {
+        "n": 4,
+        "text": "Reload the page and look at the same cell again.",
+        "at": "2026-08-17T13:10:08.281Z",
+        "screenshots": [
+          "C:\\Users\\patel\\Documents\\ServiceNow Work Project Docs\\Personal AI Assisted\\ShiftPay Clean Vibe coding\\testing\\automation\\evidence\\TC-SP-004\\04-after-reload-chip-is-back.png"
+        ]
+      }
+    ],
+    "records": [
+      {
+        "label": "The OC day in the database after the refused clear",
+        "table": "x_1995110_shift_0_u_shift_submission",
+        "query": "u_date=2026-10-03",
+        "rows": [
+          {
+            "sys_id": "2c1efcc5c33e0b549c1a944ed4013170",
+            "u_shift_type": "57a10d12938d4b507f08f2a0ed03d6ad",
+            "u_date": "2026-10-03"
+          }
+        ],
+        "at": "2026-08-17T13:10:08.281Z"
+      },
+      {
+        "label": "The entitlement it granted",
+        "table": "x_1995110_shift_0_shift_co_entitlement",
+        "query": "oc_date=2026-10-03",
+        "rows": [
+          {
+            "sys_id": "601efcc5c33e0b549c1a944ed4013171",
+            "u_oc_entry": "2c1efcc5c33e0b549c1a944ed4013170",
+            "u_oc_window_end": "2026-10-13",
+            "oc_date": "2026-10-03",
+            "u_co_entry": "a01efcc5c33e0b549c1a944ed4013175",
+            "u_co_date": "2026-10-05"
+          }
+        ],
+        "at": "2026-08-17T13:10:08.281Z"
+      },
+      {
+        "label": "Screen versus record",
+        "table": "(derived)",
+        "query": "the same day, three readings",
+        "rows": [
+          {
+            "reading": "popover error shown",
+            "value": "NO",
+            "expected": "yes"
+          },
+          {
+            "reading": "chip immediately after the refused clear",
+            "value": "(empty)",
+            "expected": "OC + CO"
+          },
+          {
+            "reading": "chip after a page reload",
+            "value": "OC + CO",
+            "expected": "OC + CO"
+          },
+          {
+            "reading": "submission rows in the database",
+            "value": "1",
+            "expected": "1"
+          }
+        ],
+        "at": "2026-08-17T13:10:10.967Z"
+      },
+      {
+        "label": "After teardown",
+        "table": "x_1995110_shift_0_u_shift_submission",
+        "query": "u_dateIN2026-10-03,2026-10-05",
+        "rows": [
+          {
+            "submission_rows_left": "0"
+          }
+        ],
+        "at": "2026-08-17T13:10:13.180Z"
+      }
+    ],
+    "observations": [
+      "ROOT CAUSE: c.saveCell, c.clearCell and c.bulkApply all branch on r.data.error. The calendar server script never sets data.error — all six refusal paths call gs.addErrorMessage() instead. r.data.error is therefore always undefined, the client takes its success branch, deletes the entry from c.entries, closes the popover and repaints.",
+      "SCOPE: this is not one refusal. Every server-side refusal in the calendar is invisible the same way — month locked, CO dependency, CO unavailable, a bulk-blocked shift type, and the incomplete-month submit refusal.",
+      "SEVERITY: the user believes a change landed that did not. They will not find out until they reload, and on a month they then submit, the discrepancy reaches the manager as a surprise.",
+      "FIX: mirror the Manager Approval widget, which gets this right — its fail() sets data.actionError AND calls gs.addErrorMessage, and its template renders .shift-mgr__error. Set data.error on the calendar's refusal paths and keep the growl.",
+      "The server is not at fault and needs no change: it refused, and the record proves it held the line."
+    ],
+    "expected": [
+      "When the server refuses to clear a day, the refusal is shown to the user — \"Cannot clear — CO on ... depends on this entry.\" in .shift-popover__error.",
+      "The day keeps its shift chip, because nothing was removed.",
+      "What the screen shows after the refusal matches what the screen shows after a reload."
+    ],
+    "actual": [
+      "The server refused correctly: 1 submission row(s) still present and the entitlement is untouched.",
+      "The screen did not say so. No error rendered, and the cell went to \"(empty)\" immediately after the refusal — then back to \"OC + CO\" after a reload."
+    ],
+    "verdictReason": "The server correctly refused to clear the day, but the calendar reported success — no error was shown and the cell was repainted empty while the record still held the shift. A user cannot tell a refused write from an accepted one.",
+    "finishedAt": "2026-08-17T13:10:13.181Z"
+  }
+}
