@@ -17,3 +17,7 @@ testing/evidence-packs/
 # Python
 __pycache__/
 *.pyc
+
+# Deploy payloads built by tools/deploy-widget-field.mjs — regenerated from the
+# source file every time, so there is nothing to keep.
+.deploy-*.json
