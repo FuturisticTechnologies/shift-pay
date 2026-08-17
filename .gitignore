@@ -1,0 +1,19 @@
+# Node / Playwright
+node_modules/
+testing/automation/.auth/
+testing/automation/evidence/
+testing/automation/playwright-report/
+testing/automation/test-results/
+
+# Credentials. Never commit.
+.env
+testing/automation/.env
+
+# Generated Word documents. The run archive under
+# testing/automation/results/cases/ is the thing worth keeping — a .docx can
+# always be rebuilt from it, and binary churn in review is noise.
+testing/evidence-packs/
+
+# Python
+__pycache__/
+*.pyc
