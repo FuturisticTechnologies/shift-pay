@@ -185,6 +185,9 @@ data.
   2026-06-09). Confirm it still does after running TC-SP-003 or TC-SP-004.
 - **`admin` has 86 day rows** spanning 2026-04-01 to 2026-08-21. The write cases
   deliberately work two months ahead of that.
-- The **`shiftpay-reporting-ui` widget and `shift_reports` page exist on the
-  instance but have no source in this repository.** No cases are written for
-  them.
+- **`shiftpay-reporting-ui` now has source** in `Reports UI Widget/`, exported
+  from the instance on 18 Aug 2026. No cases cover it yet.
+- **The reportee roster grew to six** on 18 Aug 2026 (`One Time Scripts/seed-demo-data.js`),
+  and May–July day rows were reseeded for all of them. The manager cases derive
+  their expectations at runtime from `manager=<me>^active=true`, so they absorb
+  this — but any figure you remember from an earlier run is stale.

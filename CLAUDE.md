@@ -8,6 +8,10 @@ A **ServiceNow scoped application** (scope `x_1995110_shift_0`, portal `/shiftpa
 
 `testing/` is the one part of the repo that *is* runnable: a Playwright + python-docx pack that drives the deployed widgets and produces Word evidence records. See **Testing** below.
 
+## Setting up a fresh machine
+
+`SETUP.md` at the repo root is the install runbook, split into three independent tracks — Power BI demo, test pack, widget deployment — each listing only its own dependencies. Follow it rather than inferring dependencies from the tree; most of the repo has nothing to install, and `SETUP.md` says so explicitly so an agent does not go hunting for a build step that was never there. Credentials are not in it: the instance URL and login live in `connection.txt` at the root, which is gitignored and travels only in the folder ZIP.
+
 ## Layout
 
 - `Landing Page UI Widget/` — simple ShiftPay home screen with always-visible links to the employee calendar and manager approvals. It uses the signed-in user's first name for the greeting and configurable Service Portal page IDs for both destinations.
@@ -22,6 +26,7 @@ A **ServiceNow scoped application** (scope `x_1995110_shift_0`, portal `/shiftpa
   - `ShiftPayAggregator.js` — weekly/monthly aggregation with the rate snapshot, **parameterised by user**. Both the calendar (own user) and the manager widget (a reportee) call it. This logic used to live inline in the calendar server script hard-wired to `gs.getUserID()`, which is precisely what made it unusable from the manager side. Never fork it — a second copy of payroll maths that drifts is a pay bug.
   - `ShiftPayEntitlements.js` — the CO entitlement lifecycle, **parameterised by user**, extracted from the calendar server script for the same reason. Owns the entitlement table (insert/consume/release/delete), the weekday-window arithmetic, and the ordering rules for changing a day that grants or consumes a CO. It does **not** own weekend/holiday detection or the catalogue `allow_*` flags — those are `ShiftPayCalendarRules`. Same rule as the aggregator: never fork it. Logging a `grants_co` shift creates a right to a day off; two copies would drift over who owes whom a day.
   - `ShiftPayCalendarRules.js` — which shift types a user may log on a date, **parameterised by user**. Owns the catalogue read (with its semantic columns), `configError` validation, the holiday set, weekend/holiday classification, the `allow_*` flags, and the composed allowed-shift list (`allowedForDate` / `allowedForMonth` / `isAllowedOn`). It **builds and owns** the `ShiftPayEntitlements` instance — call `rules.entitlements()` rather than constructing one alongside, or the catalogue gets read twice and the semantics can disagree. A caller that knows only a user sys_id gets the whole rule set from `new ShiftPayCalendarRules({ userId: x })`.
+- `Power BI/` — read-only reporting layer over the same tables, built in Power BI Desktop (free, no account) against the Table API. `README.md` there is the rebuild runbook; the `.pbix` is gitignored but ships in the folder ZIP with its data cached, so a demo needs only Desktop installed. Two rules it must not break: money comes from the summary table's `u_amount`/`u_rate_snapshot` and never from live catalogue rates, and every money measure filters `u_period_type = 'month'` or the clipped week rows double-count. It reimplements no shift or pay rule.
 
 ## Architecture essentials (read before editing the calendar widget)
 

@@ -8,6 +8,8 @@ testing/automation/test-results/
 # Credentials. Never commit.
 .env
 testing/automation/.env
+# PDI URL + login, handed over in the folder ZIP rather than through git.
+connection.txt
 
 # Generated Word documents. The run archive under
 # testing/automation/results/cases/ is the thing worth keeping — a .docx can
@@ -17,6 +19,11 @@ testing/evidence-packs/
 # Python
 __pycache__/
 *.pyc
+
+# Power BI report files. Binary, and the import-mode cache inside them holds real
+# pay figures — neither belongs in git history. Rebuildable from Power BI/README.md,
+# and a ZIP of the working folder still carries them to whoever needs to demo.
+*.pbix
 
 # Deploy payloads built by tools/deploy-widget-field.mjs — regenerated from the
 # source file every time, so there is nothing to keep.

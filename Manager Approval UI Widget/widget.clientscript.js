@@ -24,7 +24,7 @@ api.controller = function ($scope) {
   // data.monthLabel      'August 2026'
   // data.canManage       boolean
   // data.actionError     string
-  c.filter        = 'submitted';
+  c.filter        = 'all';
   c.search        = '';
   c.saving        = false;
   c.rejecting     = null;   // the row being rejected, or null
