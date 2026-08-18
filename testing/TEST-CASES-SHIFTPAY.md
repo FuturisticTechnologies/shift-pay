@@ -65,9 +65,10 @@ widget source** — see TC-SP-031.
 `shiftpay_home` (portal homepage), `fill_shift`, `manager_approval`,
 `shift_reports`.
 
-> `shift_reports` renders `shiftpay-reporting-ui`, a widget that **exists on the
-> instance but has no source in this repository**. No cases are written for it —
-> testing source we do not hold would be guesswork.
+> `shift_reports` renders `shiftpay-reporting-ui`. Its source now lives in
+> `Reports UI Widget/`, pulled from the instance on 18 Aug 2026. No cases are
+> written for it yet — the pack predates the export, and adding them is a
+> separate piece of work rather than an oversight.
 
 ### Shift type catalogue — 9 active rows
 
@@ -92,14 +93,28 @@ findings, not description — see TC-SP-005.
 
 | User | Role here | Data |
 |---|---|---|
-| `admin` | Employee **and** manager | 86 day rows; manages the three below |
-| `melinda.carleton` | Reportee | 80 day rows; three timesheets |
-| `jewel.agresta` | Reportee | none |
-| `billie.cowley` | Reportee | none |
+| `admin` | Employee **and** manager | 86 day rows, 2026-04-01 to 2026-08-21; no timesheet of their own; manages the six below |
+| `melinda.carleton` | Reportee | 100 day rows; four timesheets |
+| `abel.tuter` | Reportee | 73 day rows; three timesheets |
+| `amelia.caputo` | Reportee | 71 day rows; three timesheets |
+| `angelo.ferentz` | Reportee | 73 day rows; three timesheets |
+| `billie.cowley` | Reportee | 73 day rows; three timesheets |
+| `jewel.agresta` | Reportee | 69 day rows; three timesheets |
 
-Melinda's timesheets: **2026-04 approved**, **2026-05 submitted**, **2026-06
-submitted**. One entitlement row exists across the whole instance: OC on
-`2026-06-07`, window ending `2026-06-16`, consumed on `2026-06-09`.
+Every reportee except Melinda carries **2026-05 approved**, **2026-06 approved**,
+**2026-07 submitted**. Melinda carries **2026-04 approved**, **2026-05
+submitted**, **2026-06 submitted**, **2026-07 approved**.
+
+One entitlement row exists across the whole instance: OC on `2026-06-07`, window
+ending `2026-06-16`, consumed on `2026-06-09`. It belongs to Melinda, and
+`One Time Scripts/seed-demo-data.js` protects both of those dates specifically so
+re-seeding cannot orphan it.
+
+> **2026-07 is the demo month, and its mix is load-bearing.** Five reportees
+> submitted against one approved is what keeps `counts.all` (6) different from
+> `counts.submitted` (5). If every reportee were submitted the two would agree,
+> the TC-SP-009 tile would look correct, and that case would pass for the wrong
+> reason. Do not "tidy" July into a uniform state.
 
 ### Configuration
 

@@ -63,5 +63,34 @@
     "default": "manager_approval",
     "hint": "Service Portal page ID opened by the manager approvals card.",
     "section": "Manager card"
+  },
+  {
+    "name": "reports_title",
+    "label": "Reports card title",
+    "type": "string",
+    "default": "Reports",
+    "section": "Reports card"
+  },
+  {
+    "name": "reports_description",
+    "label": "Reports card description",
+    "type": "string",
+    "default": "Track cost, shift mix and compensatory-off health over time.",
+    "section": "Reports card"
+  },
+  {
+    "name": "reports_link_label",
+    "label": "Reports link label",
+    "type": "string",
+    "default": "Open reports",
+    "section": "Reports card"
+  },
+  {
+    "name": "reports_page_id",
+    "label": "Reports page ID",
+    "type": "string",
+    "default": "shift_reports",
+    "hint": "Service Portal page ID opened by the reports card.",
+    "section": "Reports card"
   }
 ]
