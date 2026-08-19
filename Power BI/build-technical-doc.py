@@ -3,7 +3,9 @@ Build the Power BI integration technical document.
 
     python "Power BI/build-technical-doc.py"
 
-Writes ShiftPay-PowerBI-Integration.docx next to this script.
+Writes ShiftPay-PowerBI-Integration.docx to the repository root, where it sits
+alongside the other documents someone opens first rather than buried in a
+subfolder.
 
 Branding comes from testing/evidence-generator/branding.py — the same module the
 test evidence packs use, so the two document families stay visually identical and
@@ -819,5 +821,5 @@ SELECTEDVALUE(DimShiftType[color_hex])
 
 
 if __name__ == "__main__":
-    out = build(HERE / "ShiftPay-PowerBI-Integration.docx")
+    out = build(REPO / "ShiftPay-PowerBI-Integration.docx")
     print(f"Written: {out}")

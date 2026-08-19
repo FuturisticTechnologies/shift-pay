@@ -31,4 +31,4 @@ __pycache__/
 
 # Generated Word documents. The build script is the source; a .docx can
 # always be rebuilt from it, and binary churn in review is noise.
-Power BI/*.docx
+/*.docx
