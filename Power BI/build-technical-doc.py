@@ -34,8 +34,6 @@ import branding as B
 DOC_KIND = "Technical Design Document"
 DOC_TITLE = "Power BI Reporting Integration"
 VERSION = "1.0"
-DOC_DATE = "19 August 2026"
-AUTHOR = "Futuristic Technologies"
 
 CODE_FILL = "F4F6F8"
 WHITE = RGBColor(0xFF, 0xFF, 0xFF)
@@ -301,8 +299,6 @@ def cover(doc):
 
     facts = [
         ("Document", f"{DOC_TITLE} v{VERSION}"),
-        ("Date", DOC_DATE),
-        ("Author", AUTHOR),
         ("Application", f"{B.PRODUCT} — {B.SCOPE}"),
         ("Source system", "ServiceNow, dev307042.service-now.com"),
         ("Target", "Power BI Desktop (Microsoft Fabric Free licence)"),
