@@ -7,19 +7,19 @@
   "case": {
     "id": "TC-SP-006",
     "title": "The queue is exactly the manager's direct reportees",
-    "startedAt": "2026-08-17T13:10:22.661Z",
+    "startedAt": "2026-08-19T08:07:09.395Z",
     "verdict": "PASS",
     "steps": [
       {
         "n": 1,
         "text": "Read the manager hierarchy from sys_user.",
-        "at": "2026-08-17T13:10:23.152Z",
+        "at": "2026-08-19T08:07:09.892Z",
         "screenshots": []
       },
       {
         "n": 2,
         "text": "Open the manager approval queue and show every reportee.",
-        "at": "2026-08-17T13:10:23.284Z",
+        "at": "2026-08-19T08:07:10.023Z",
         "screenshots": [
           "C:\\Users\\patel\\Documents\\ServiceNow Work Project Docs\\Personal AI Assisted\\ShiftPay Clean Vibe coding\\testing\\automation\\evidence\\TC-SP-006\\02-manager-queue.png"
         ]
@@ -31,6 +31,24 @@
         "table": "sys_user",
         "query": "manager=<me>^active=true",
         "rows": [
+          {
+            "sys_id": "62826bf03710200044e0bfc8bcbe5df1",
+            "user_name": "abel.tuter",
+            "name": "Abel Tuter",
+            "employee_number": ""
+          },
+          {
+            "sys_id": "aa826bf03710200044e0bfc8bcbe5dd6",
+            "user_name": "amelia.caputo",
+            "name": "Amelia Caputo",
+            "employee_number": ""
+          },
+          {
+            "sys_id": "7682abf03710200044e0bfc8bcbe5d13",
+            "user_name": "angelo.ferentz",
+            "name": "Angelo Ferentz",
+            "employee_number": ""
+          },
           {
             "sys_id": "02826bf03710200044e0bfc8bcbe5d88",
             "user_name": "billie.cowley",
@@ -50,48 +68,101 @@
             "employee_number": ""
           }
         ],
-        "at": "2026-08-17T13:10:23.284Z"
+        "at": "2026-08-19T08:07:10.023Z"
       },
       {
         "label": "Timesheets for the displayed month",
         "table": "x_1995110_shift_0_monthly_timesheet",
-        "query": "u_year=2026^u_month=6",
+        "query": "u_year=2026^u_month=7",
         "rows": [
           {
             "approver": "",
+            "u_user": "7682abf03710200044e0bfc8bcbe5d13",
+            "u_year": "2026",
+            "u_month": "7",
+            "status": "submitted"
+          },
+          {
+            "approver": "",
+            "u_user": "02826bf03710200044e0bfc8bcbe5d88",
+            "u_year": "2026",
+            "u_month": "7",
+            "status": "submitted"
+          },
+          {
+            "approver": "",
+            "u_user": "62826bf03710200044e0bfc8bcbe5df1",
+            "u_year": "2026",
+            "u_month": "7",
+            "status": "submitted"
+          },
+          {
+            "approver": "",
+            "u_user": "aa826bf03710200044e0bfc8bcbe5dd6",
+            "u_year": "2026",
+            "u_month": "7",
+            "status": "submitted"
+          },
+          {
+            "approver": "",
+            "u_user": "02826bf03710200044e0bfc8bcbe5d64",
+            "u_year": "2026",
+            "u_month": "7",
+            "status": "submitted"
+          },
+          {
+            "approver": "6816f79cc0a8016401c5a33be04be441",
             "u_user": "02826bf03710200044e0bfc8bcbe5d5e",
             "u_year": "2026",
-            "u_month": "6",
-            "status": "submitted"
+            "u_month": "7",
+            "status": "approved"
           }
         ],
-        "at": "2026-08-17T13:10:27.213Z"
+        "at": "2026-08-19T08:07:13.525Z"
       },
       {
         "label": "Queue as rendered",
         "table": "/shiftpay?id=manager_approval",
-        "query": "June 2026",
+        "query": "July 2026",
         "rows": [
           {
+            "employee": "Abel Tuter",
+            "status": "Submitted",
+            "weekdays": "23 / 23",
+            "actionable": "true"
+          },
+          {
+            "employee": "Amelia Caputo",
+            "status": "Submitted",
+            "weekdays": "23 / 23",
+            "actionable": "true"
+          },
+          {
+            "employee": "Angelo Ferentz",
+            "status": "Submitted",
+            "weekdays": "23 / 23",
+            "actionable": "true"
+          },
+          {
             "employee": "Billie Cowley",
-            "status": "Not submitted",
-            "weekdays": "0 / 22",
-            "actionable": "false"
+            "status": "Submitted",
+            "weekdays": "23 / 23",
+            "actionable": "true"
           },
           {
             "employee": "Jewel Agresta",
-            "status": "Not submitted",
-            "weekdays": "0 / 22",
-            "actionable": "false"
+            "status": "Submitted",
+            "weekdays": "23 / 23",
+            "actionable": "true"
           },
           {
             "employee": "Melinda Carleton",
-            "status": "Submitted",
-            "weekdays": "15 / 22",
-            "actionable": "true"
+            "status": "Approved",
+            "weekdays": "23 / 23",
+            "actionable": "false"
           }
         ],
-        "at": "2026-08-17T13:10:27.213Z"
+        "at": "2026-08-19T08:07:13.525Z"
       },
       {
         "label": "Reconciliation — screen against records",
@@ -99,25 +170,43 @@
         "query": "reportee list and timesheet status",
         "rows": [
           {
+            "employee": "Abel Tuter",
+            "status_expected": "Submitted",
+            "status_on_screen": "Submitted",
+            "agrees": "YES"
+          },
+          {
+            "employee": "Amelia Caputo",
+            "status_expected": "Submitted",
+            "status_on_screen": "Submitted",
+            "agrees": "YES"
+          },
+          {
+            "employee": "Angelo Ferentz",
+            "status_expected": "Submitted",
+            "status_on_screen": "Submitted",
+            "agrees": "YES"
+          },
+          {
             "employee": "Billie Cowley",
-            "status_expected": "Not submitted",
-            "status_on_screen": "Not submitted",
+            "status_expected": "Submitted",
+            "status_on_screen": "Submitted",
             "agrees": "YES"
           },
           {
             "employee": "Jewel Agresta",
-            "status_expected": "Not submitted",
-            "status_on_screen": "Not submitted",
+            "status_expected": "Submitted",
+            "status_on_screen": "Submitted",
             "agrees": "YES"
           },
           {
             "employee": "Melinda Carleton",
-            "status_expected": "Submitted",
-            "status_on_screen": "Submitted",
+            "status_expected": "Approved",
+            "status_on_screen": "Approved",
             "agrees": "YES"
           }
         ],
-        "at": "2026-08-17T13:10:27.224Z"
+        "at": "2026-08-19T08:07:13.538Z"
       }
     ],
     "observations": [
@@ -132,10 +221,10 @@
       "Each row's status matches that reportee's monthly_timesheet row for the displayed month."
     ],
     "actual": [
-      "3 direct reportee(s); 3 row(s) rendered for June 2026.",
-      "Tab badges: Awaiting me 1 · Approved 0 · Rejected 0 · Not submitted 2 · All 3 · History "
+      "6 direct reportee(s); 6 row(s) rendered for July 2026.",
+      "Tab badges: Awaiting me 5 · Approved 1 · Rejected 0 · Not submitted 0 · All 6 · History "
     ],
-    "verdictReason": "The queue renders exactly the 3 direct reportee(s), each with the status their timesheet record holds.",
-    "finishedAt": "2026-08-17T13:10:27.224Z"
+    "verdictReason": "The queue renders exactly the 6 direct reportee(s), each with the status their timesheet record holds.",
+    "finishedAt": "2026-08-19T08:07:13.539Z"
   }
 }

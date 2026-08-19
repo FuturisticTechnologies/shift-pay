@@ -7,19 +7,19 @@
   "case": {
     "id": "TC-SP-004",
     "title": "A refused write is painted on screen as though it succeeded",
-    "startedAt": "2026-08-17T13:10:02.308Z",
+    "startedAt": "2026-08-19T08:06:49.309Z",
     "verdict": "FAIL",
     "steps": [
       {
         "n": 1,
         "text": "Build the dependency: OC + CO on 2026-10-03, then CO on 2026-10-05.",
-        "at": "2026-08-17T13:10:05.530Z",
+        "at": "2026-08-19T08:06:52.308Z",
         "screenshots": []
       },
       {
         "n": 2,
         "text": "Press Clear on 2026-10-03. The server will refuse — watch what the screen does.",
-        "at": "2026-08-17T13:10:06.934Z",
+        "at": "2026-08-19T08:06:53.627Z",
         "screenshots": [
           "C:\\Users\\patel\\Documents\\ServiceNow Work Project Docs\\Personal AI Assisted\\ShiftPay Clean Vibe coding\\testing\\automation\\evidence\\TC-SP-004\\02-after-refused-clear-cell-is-empty.png"
         ]
@@ -27,13 +27,13 @@
       {
         "n": 3,
         "text": "Read the record. The server refused, so nothing should have moved.",
-        "at": "2026-08-17T13:10:08.019Z",
+        "at": "2026-08-19T08:06:54.267Z",
         "screenshots": []
       },
       {
         "n": 4,
         "text": "Reload the page and look at the same cell again.",
-        "at": "2026-08-17T13:10:08.281Z",
+        "at": "2026-08-19T08:06:54.533Z",
         "screenshots": [
           "C:\\Users\\patel\\Documents\\ServiceNow Work Project Docs\\Personal AI Assisted\\ShiftPay Clean Vibe coding\\testing\\automation\\evidence\\TC-SP-004\\04-after-reload-chip-is-back.png"
         ]
@@ -46,12 +46,12 @@
         "query": "u_date=2026-10-03",
         "rows": [
           {
-            "sys_id": "2c1efcc5c33e0b549c1a944ed4013170",
+            "sys_id": "e2db0e21c3764f549c1a944ed4013136",
             "u_shift_type": "57a10d12938d4b507f08f2a0ed03d6ad",
             "u_date": "2026-10-03"
           }
         ],
-        "at": "2026-08-17T13:10:08.281Z"
+        "at": "2026-08-19T08:06:54.533Z"
       },
       {
         "label": "The entitlement it granted",
@@ -59,15 +59,15 @@
         "query": "oc_date=2026-10-03",
         "rows": [
           {
-            "sys_id": "601efcc5c33e0b549c1a944ed4013171",
-            "u_oc_entry": "2c1efcc5c33e0b549c1a944ed4013170",
+            "sys_id": "2adb0e21c3764f549c1a944ed4013136",
+            "u_oc_entry": "e2db0e21c3764f549c1a944ed4013136",
             "u_oc_window_end": "2026-10-13",
             "oc_date": "2026-10-03",
-            "u_co_entry": "a01efcc5c33e0b549c1a944ed4013175",
+            "u_co_entry": "32dbce21c3764f549c1a944ed4013163",
             "u_co_date": "2026-10-05"
           }
         ],
-        "at": "2026-08-17T13:10:08.281Z"
+        "at": "2026-08-19T08:06:54.533Z"
       },
       {
         "label": "Screen versus record",
@@ -95,7 +95,7 @@
             "expected": "1"
           }
         ],
-        "at": "2026-08-17T13:10:10.967Z"
+        "at": "2026-08-19T08:06:56.954Z"
       },
       {
         "label": "After teardown",
@@ -106,7 +106,7 @@
             "submission_rows_left": "0"
           }
         ],
-        "at": "2026-08-17T13:10:13.180Z"
+        "at": "2026-08-19T08:06:58.183Z"
       }
     ],
     "observations": [
@@ -126,6 +126,6 @@
       "The screen did not say so. No error rendered, and the cell went to \"(empty)\" immediately after the refusal — then back to \"OC + CO\" after a reload."
     ],
     "verdictReason": "The server correctly refused to clear the day, but the calendar reported success — no error was shown and the cell was repainted empty while the record still held the shift. A user cannot tell a refused write from an accepted one.",
-    "finishedAt": "2026-08-17T13:10:13.181Z"
+    "finishedAt": "2026-08-19T08:06:58.183Z"
   }
 }

@@ -7,13 +7,13 @@
   "case": {
     "id": "TC-SP-007",
     "title": "The review drill-in agrees with the records it summarises",
-    "startedAt": "2026-08-17T13:10:27.445Z",
+    "startedAt": "2026-08-19T08:07:13.841Z",
     "verdict": "PASS",
     "steps": [
       {
         "n": 1,
-        "text": "Open the review drill-in for Melinda Carleton, June 2026.",
-        "at": "2026-08-17T13:10:31.070Z",
+        "text": "Open the review drill-in for Angelo Ferentz, July 2026.",
+        "at": "2026-08-19T08:07:17.182Z",
         "screenshots": [
           "C:\\Users\\patel\\Documents\\ServiceNow Work Project Docs\\Personal AI Assisted\\ShiftPay Clean Vibe coding\\testing\\automation\\evidence\\TC-SP-007\\01-review-drill-in.png"
         ]
@@ -21,7 +21,7 @@
       {
         "n": 2,
         "text": "Read the day rows and the aggregate rows the panel claims to summarise.",
-        "at": "2026-08-17T13:10:31.546Z",
+        "at": "2026-08-19T08:07:17.779Z",
         "screenshots": []
       }
     ],
@@ -29,130 +29,142 @@
       {
         "label": "Day rows for the month",
         "table": "x_1995110_shift_0_u_shift_submission",
-        "query": "u_user=melinda.carleton^June 2026",
+        "query": "u_user=angelo.ferentz^July 2026",
         "rows": [
           {
-            "date": "2026-06-01",
+            "date": "2026-07-01",
             "shift": "UK"
           },
           {
-            "date": "2026-06-02",
-            "shift": "L"
+            "date": "2026-07-02",
+            "shift": "UK"
           },
           {
-            "date": "2026-06-03",
+            "date": "2026-07-03",
+            "shift": "UK"
+          },
+          {
+            "date": "2026-07-06",
+            "shift": "Not Eligible"
+          },
+          {
+            "date": "2026-07-07",
             "shift": "US"
           },
           {
-            "date": "2026-06-04",
+            "date": "2026-07-08",
             "shift": "US"
           },
           {
-            "date": "2026-06-05",
+            "date": "2026-07-09",
             "shift": "US"
           },
           {
-            "date": "2026-06-06",
+            "date": "2026-07-10",
+            "shift": "UK"
+          },
+          {
+            "date": "2026-07-11",
             "shift": "OC"
           },
           {
-            "date": "2026-06-07",
-            "shift": "OC + UK + CO"
-          },
-          {
-            "date": "2026-06-08",
-            "shift": "UK"
-          },
-          {
-            "date": "2026-06-09",
-            "shift": "CO"
-          },
-          {
-            "date": "2026-06-10",
-            "shift": "L"
-          },
-          {
-            "date": "2026-06-11",
-            "shift": "UK"
-          },
-          {
-            "date": "2026-06-12",
-            "shift": "L"
-          },
-          {
-            "date": "2026-06-13",
-            "shift": "OC"
-          },
-          {
-            "date": "2026-06-14",
-            "shift": "OC"
-          },
-          {
-            "date": "2026-06-15",
+            "date": "2026-07-13",
             "shift": "US"
           },
           {
-            "date": "2026-06-16",
-            "shift": "UK"
-          },
-          {
-            "date": "2026-06-17",
+            "date": "2026-07-14",
             "shift": "US"
           },
           {
-            "date": "2026-06-23",
+            "date": "2026-07-15",
+            "shift": "US"
+          },
+          {
+            "date": "2026-07-16",
+            "shift": "US"
+          },
+          {
+            "date": "2026-07-17",
+            "shift": "Not Eligible"
+          },
+          {
+            "date": "2026-07-20",
             "shift": "UK"
           },
           {
-            "date": "2026-06-24",
+            "date": "2026-07-21",
             "shift": "UK"
+          },
+          {
+            "date": "2026-07-22",
+            "shift": "UK"
+          },
+          {
+            "date": "2026-07-23",
+            "shift": "UK"
+          },
+          {
+            "date": "2026-07-24",
+            "shift": "UK"
+          },
+          {
+            "date": "2026-07-26",
+            "shift": "OC"
+          },
+          {
+            "date": "2026-07-27",
+            "shift": "UK"
+          },
+          {
+            "date": "2026-07-28",
+            "shift": "UK"
+          },
+          {
+            "date": "2026-07-29",
+            "shift": "UK"
+          },
+          {
+            "date": "2026-07-30",
+            "shift": "US"
+          },
+          {
+            "date": "2026-07-31",
+            "shift": "US"
           }
         ],
-        "at": "2026-08-17T13:10:32.099Z"
+        "at": "2026-08-19T08:07:18.361Z"
       },
       {
         "label": "Monthly aggregate with the rate snapshot",
         "table": "x_1995110_shift_0_shift_submission_summary",
-        "query": "u_period_type=month^u_year=2026^u_month=6",
+        "query": "u_period_type=month^u_year=2026^u_month=7",
         "rows": [
           {
+            "shift": "Not Eligible",
+            "count": "2",
+            "rate_snapshot": "0",
+            "amount": "0"
+          },
+          {
             "shift": "UK",
-            "count": "6",
+            "count": "12",
             "rate_snapshot": "350",
-            "amount": "2100"
-          },
-          {
-            "shift": "CO",
-            "count": "1",
-            "rate_snapshot": "0",
-            "amount": "0"
-          },
-          {
-            "shift": "US",
-            "count": "5",
-            "rate_snapshot": "500",
-            "amount": "2500"
-          },
-          {
-            "shift": "L",
-            "count": "3",
-            "rate_snapshot": "0",
-            "amount": "0"
+            "amount": "4200"
           },
           {
             "shift": "OC",
-            "count": "3",
+            "count": "2",
             "rate_snapshot": "500",
-            "amount": "1500"
+            "amount": "1000"
           },
           {
-            "shift": "OC + UK + CO",
-            "count": "1",
-            "rate_snapshot": "850",
-            "amount": "850"
+            "shift": "US",
+            "count": "9",
+            "rate_snapshot": "500",
+            "amount": "4500"
           }
         ],
-        "at": "2026-08-17T13:10:32.099Z"
+        "at": "2026-08-19T08:07:18.361Z"
       },
       {
         "label": "Pay breakdown arithmetic",
@@ -160,55 +172,39 @@
         "query": "count x rate snapshot = amount",
         "rows": [
           {
+            "shift": "Not Eligible",
+            "count": "2",
+            "rate_snapshot": "0",
+            "amount": "0",
+            "count_x_rate": "0",
+            "agrees": "YES"
+          },
+          {
             "shift": "UK",
-            "count": "6",
+            "count": "12",
             "rate_snapshot": "350",
-            "amount": "2100",
-            "count_x_rate": "2100",
-            "agrees": "YES"
-          },
-          {
-            "shift": "CO",
-            "count": "1",
-            "rate_snapshot": "0",
-            "amount": "0",
-            "count_x_rate": "0",
-            "agrees": "YES"
-          },
-          {
-            "shift": "US",
-            "count": "5",
-            "rate_snapshot": "500",
-            "amount": "2500",
-            "count_x_rate": "2500",
-            "agrees": "YES"
-          },
-          {
-            "shift": "L",
-            "count": "3",
-            "rate_snapshot": "0",
-            "amount": "0",
-            "count_x_rate": "0",
+            "amount": "4200",
+            "count_x_rate": "4200",
             "agrees": "YES"
           },
           {
             "shift": "OC",
-            "count": "3",
+            "count": "2",
             "rate_snapshot": "500",
-            "amount": "1500",
-            "count_x_rate": "1500",
+            "amount": "1000",
+            "count_x_rate": "1000",
             "agrees": "YES"
           },
           {
-            "shift": "OC + UK + CO",
-            "count": "1",
-            "rate_snapshot": "850",
-            "amount": "850",
-            "count_x_rate": "850",
+            "shift": "US",
+            "count": "9",
+            "rate_snapshot": "500",
+            "amount": "4500",
+            "count_x_rate": "4500",
             "agrees": "YES"
           }
         ],
-        "at": "2026-08-17T13:10:32.100Z"
+        "at": "2026-08-19T08:07:18.361Z"
       },
       {
         "label": "Weekly split against the monthly total",
@@ -216,15 +212,15 @@
         "query": "sum of weeks vs sum of month",
         "rows": [
           {
-            "weeks_on_screen": "4",
-            "distinct_weeks_in_summary": "4",
-            "week_rows_in_summary": "12",
-            "weekly_total": "6950",
-            "monthly_total": "6950",
+            "weeks_on_screen": "5",
+            "distinct_weeks_in_summary": "5",
+            "week_rows_in_summary": "11",
+            "weekly_total": "9700",
+            "monthly_total": "9700",
             "agrees": "YES"
           }
         ],
-        "at": "2026-08-17T13:10:32.100Z"
+        "at": "2026-08-19T08:07:18.361Z"
       }
     ],
     "observations": [
@@ -237,10 +233,10 @@
       "The weekly split sums to the monthly total, so the split and the headline cannot disagree."
     ],
     "actual": [
-      "19 populated day cell(s) on screen against 19 submission row(s); 0 mismatch(es).",
-      "6 pay line(s), all satisfying count x snapshot = amount; weekly total 6950 against monthly total 6950."
+      "25 populated day cell(s) on screen against 25 submission row(s); 0 mismatch(es).",
+      "4 pay line(s), all satisfying count x snapshot = amount; weekly total 9700 against monthly total 9700."
     ],
-    "verdictReason": "The drill-in agrees with the records on every count: 19 days, 6 pay lines, and a weekly split that sums to the monthly total.",
-    "finishedAt": "2026-08-17T13:10:32.180Z"
+    "verdictReason": "The drill-in agrees with the records on every count: 25 days, 4 pay lines, and a weekly split that sums to the monthly total.",
+    "finishedAt": "2026-08-19T08:07:18.452Z"
   }
 }
