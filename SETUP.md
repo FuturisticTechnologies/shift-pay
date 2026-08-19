@@ -34,9 +34,11 @@ The three tracks are independent. Install only what your track needs.
 | Demo the ShiftPay app — calendar and manager approvals | **A** | none, just a browser | 0 min |
 | Demo the Power BI report | **B** | Power BI Desktop | 10 min |
 | Run the automated test pack and produce Word evidence | **C** | Node, Python, Playwright browser | 20 min |
+| Stand the whole app up on a *different* instance | **D** | an update set you export first | 1–2 hrs |
 
 **Track A is the main demo.** B and C are supporting demos and neither is
-required for A.
+required for A. **Track D is not a demo** — it is the rebuild, and you only need
+it when moving to a second PDI.
 
 ### What this repo does NOT need
 
@@ -334,6 +336,101 @@ demonstrate a failing case, and fixing it silently makes the demo pointless.
 Nothing in the pack approves, rejects or corrects a timesheet. Every write goes
 to the signed-in account's own calendar two months ahead and reverses itself, so
 a full run cannot disturb the demo data.
+
+---
+
+## Track D — standing the app up on a second PDI
+
+**This repo is not an installer.** It holds widget source, Script Include source
+and a data seeder — not the schema. The tables, the columns, the portal pages and
+the widget *records* have to arrive some other way, and that way is an update set
+you export from the working instance. Do that first; nothing below works without
+it.
+
+Order matters here, because each step assumes the one above it.
+
+### D1 — export and import the update set
+
+From dev307042, capture the scoped app: the five tables plus
+`x_1995110_shift_0_shift_day_change`, every column added since (`oc_role`,
+`allow_weekday`, `allow_weekend_holiday`, `day_category`, `color_hex`), the four
+widgets, the three Script Includes, and the four portal pages
+(`shiftpay_home`, `fill_shift`, `manager_approval`, `shift_reports`).
+
+Two things update sets are known for dropping:
+
+- **Table data is not schema.** The nine shift-type catalogue rows are *data* and
+  will not travel automatically. Add them explicitly, or the app imports and then
+  refuses to run — `validateCatalogue` raises a `configError` banner the moment
+  the catalogue is empty or missing a `day_category`.
+- **`sp_instance` records carry the widget options**, and for the employee
+  calendar those options are load-bearing rather than cosmetic. Its five default
+  table names **name no table** (TC-SP-031) — the widget works only because the
+  instance parameters override all five with the real `x_1995110_shift_0_*`
+  names. Lose the `sp_instance` row and the calendar fails with a
+  table-not-found, not a legible error. Confirm all five overrides came across
+  before blaming anything else.
+
+### D2 — check the scope sys_id changed
+
+The new instance gets its **own** `sys_scope` sys_id. Anything holding
+`bbd97549938183507f08f2a0ed03d60b` is now pointing at the old instance —
+including `One Time Scripts/reattribute-metadata-by-scope.js` and several
+references in `CLAUDE.md`. Nothing breaks silently in a dangerous way, but a
+sweep keyed on the old sys_id will cheerfully report "0 rows, all clean" about an
+app it cannot see.
+
+### D3 — check the roster users exist
+
+`seed-demo-data.js` seeds six reportees against manager `admin`:
+
+`melinda.carleton` · `jewel.agresta` · `billie.cowley` · `abel.tuter` ·
+`amelia.caputo` · `angelo.ferentz`
+
+All six are stock ServiceNow demo users, so a fresh PDI has them. The script
+resolves each by `user_name` and warns rather than aborts on a miss, so read the
+log — a roster that silently shrank to four is a thin-looking demo, not an error.
+
+### D4 — run the seeder
+
+As a **Fix Script in the ShiftPay scope** (not Scripts - Background), `dryRun`
+true first, then flip it. It writes day rows for May, June and July 2026,
+recomputes aggregates through `ShiftPayAggregator`, and writes the monthly
+timesheets that fill the manager queue.
+
+It also sets the `manager` field on three of the six — a write to `sys_user`,
+which is a global table. A scoped app writing there needs a `sys_scope_privilege`
+row, and the platform will auto-grant one on the first run. **That is expected
+and legitimate here**, unlike the auto-grant CLAUDE.md warns about; just know it
+appears after the import, so the two instances will differ by that row unless you
+capture it.
+
+### D5 — know what is deliberately missing
+
+- **No CO entitlements.** Nothing seeds them; the seeder refuses to. This is
+  correct — Track A step A1.5–A1.7 *creates* one live on screen, and the reveal
+  in step 6 (`CO` appears only after the compound OC is logged) depends on there
+  being none beforehand. A pre-seeded entitlement would spoil the demo.
+- **The dates are absolute, not relative.** `seedMonths` is May–July 2026 and the
+  demo month is July 2026, hard-coded. The calendar opens on the *current* month,
+  which will be empty; navigate back to July 2026. Expect this rather than
+  discover it live.
+- **`x_shiftpay.holiday_schedule` does not exist** on the old instance either
+  (TC-SP-030), so there is nothing to carry over and no date is ever treated as a
+  holiday.
+
+### D6 — verify before trusting it
+
+| Check | Expect |
+|---|---|
+| Catalogue rows | 9 active, every one with a `day_category`, one `consumes_co`, three `grants_co` |
+| Calendar loads with no red banner | `configError` empty |
+| A Saturday and a weekday offer *different* dropdowns | the rules engine is reading the catalogue |
+| Manager queue, July 2026 | six rows — five submitted, one approved |
+| Day rows | roughly 70 per reportee across the three months |
+
+Then update `connection.txt` and your `cnit` profile to the new instance before
+running anything from track C.
 
 ---
 
