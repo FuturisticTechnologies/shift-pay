@@ -2,8 +2,10 @@
  * Demo data seed for ShiftPay — manager-queue edition.
  * =====================================================
  *
- * Supersedes generate-dummy-shift-data.js, which is kept only for reference.
- * Three things are different here and each was a deliberate fix:
+ * Replaced an earlier generate-dummy-shift-data.js, now deleted — it carried its
+ * own fork of the pay maths, which is the one thing CLAUDE.md forbids, so it was
+ * not worth keeping around to copy from. Three things differ here and each was a
+ * deliberate fix:
  *
  *   1. NO SEED MARKER IN THE COMMENT. The old script wrote
  *      "Generated dummy shift data (SPM_DUMMY_SHIFT_DATA_2026_06)" into u_comment
