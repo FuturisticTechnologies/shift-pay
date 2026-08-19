@@ -7,13 +7,13 @@
   "case": {
     "id": "TC-SP-005",
     "title": "The weekend dropdown offers two shifts the business rules forbid",
-    "startedAt": "2026-08-17T13:10:16.487Z",
+    "startedAt": "2026-08-19T08:07:02.420Z",
     "verdict": "FAIL",
     "steps": [
       {
         "n": 1,
         "text": "Open the Saturday 2026-10-03 and open the shift dropdown.",
-        "at": "2026-08-17T13:10:20.177Z",
+        "at": "2026-08-19T08:07:06.528Z",
         "screenshots": [
           "C:\\Users\\patel\\Documents\\ServiceNow Work Project Docs\\Personal AI Assisted\\ShiftPay Clean Vibe coding\\testing\\automation\\evidence\\TC-SP-005\\01-saturday-dropdown-six-options.png"
         ]
@@ -21,7 +21,7 @@
       {
         "n": 2,
         "text": "Read the catalogue rows that cause it.",
-        "at": "2026-08-17T13:10:20.634Z",
+        "at": "2026-08-19T08:07:07.095Z",
         "screenshots": []
       }
     ],
@@ -62,7 +62,7 @@
             "label": "On call Allowance + Compensatory off+ US Shift, if you have worked on the holiday in the US shift"
           }
         ],
-        "at": "2026-08-17T13:10:20.634Z"
+        "at": "2026-08-19T08:07:07.095Z"
       },
       {
         "label": "Catalogue rows selectable on a weekend or holiday",
@@ -124,7 +124,7 @@
             "day_category": "holiday"
           }
         ],
-        "at": "2026-08-17T13:10:20.771Z"
+        "at": "2026-08-19T08:07:07.243Z"
       }
     ],
     "observations": [
@@ -142,6 +142,6 @@
       "2 of them are not in the documented weekend set: L, Not Eligible."
     ],
     "verdictReason": "The weekend dropdown offers 6 shift types where the documented rules allow 4. L and Not Eligible should not be selectable on a Saturday.",
-    "finishedAt": "2026-08-17T13:10:20.773Z"
+    "finishedAt": "2026-08-19T08:07:07.244Z"
   }
 }

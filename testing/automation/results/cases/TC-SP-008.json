@@ -7,13 +7,13 @@
   "case": {
     "id": "TC-SP-008",
     "title": "Tabs and search filter the queue correctly",
-    "startedAt": "2026-08-17T13:10:32.398Z",
+    "startedAt": "2026-08-19T08:07:18.750Z",
     "verdict": "PASS",
     "steps": [
       {
         "n": 1,
         "text": "Switch to the \"Awaiting me\" tab and read the rows.",
-        "at": "2026-08-17T13:10:35.973Z",
+        "at": "2026-08-19T08:07:22.264Z",
         "screenshots": [
           "C:\\Users\\patel\\Documents\\ServiceNow Work Project Docs\\Personal AI Assisted\\ShiftPay Clean Vibe coding\\testing\\automation\\evidence\\TC-SP-008\\01-tab-awaiting-me.png"
         ]
@@ -21,25 +21,25 @@
       {
         "n": 2,
         "text": "Switch to the \"Approved\" tab and read the rows.",
-        "at": "2026-08-17T13:10:36.406Z",
+        "at": "2026-08-19T08:07:22.652Z",
         "screenshots": []
       },
       {
         "n": 3,
         "text": "Switch to the \"Rejected\" tab and read the rows.",
-        "at": "2026-08-17T13:10:36.751Z",
+        "at": "2026-08-19T08:07:22.971Z",
         "screenshots": []
       },
       {
         "n": 4,
         "text": "Switch to the \"Not submitted\" tab and read the rows.",
-        "at": "2026-08-17T13:10:37.091Z",
+        "at": "2026-08-19T08:07:23.251Z",
         "screenshots": []
       },
       {
         "n": 5,
         "text": "Switch to the \"All\" tab and read the rows.",
-        "at": "2026-08-17T13:10:37.409Z",
+        "at": "2026-08-19T08:07:23.522Z",
         "screenshots": [
           "C:\\Users\\patel\\Documents\\ServiceNow Work Project Docs\\Personal AI Assisted\\ShiftPay Clean Vibe coding\\testing\\automation\\evidence\\TC-SP-008\\05-tab-all.png"
         ]
@@ -47,7 +47,7 @@
       {
         "n": 6,
         "text": "Search for one reportee by name and confirm the view narrows but the badges do not.",
-        "at": "2026-08-17T13:10:37.831Z",
+        "at": "2026-08-19T08:07:23.984Z",
         "screenshots": [
           "C:\\Users\\patel\\Documents\\ServiceNow Work Project Docs\\Personal AI Assisted\\ShiftPay Clean Vibe coding\\testing\\automation\\evidence\\TC-SP-008\\06-search-filtered.png"
         ]
@@ -57,18 +57,18 @@
       {
         "label": "Every tab against the timesheet records",
         "table": "(derived)",
-        "query": "June 2026",
+        "query": "July 2026",
         "rows": [
           {
             "tab": "Awaiting me",
-            "on_screen": "Melinda Carleton",
-            "from_records": "Melinda Carleton",
+            "on_screen": "Abel Tuter, Amelia Caputo, Angelo Ferentz, Billie Cowley, Jewel Agresta",
+            "from_records": "Abel Tuter, Amelia Caputo, Angelo Ferentz, Billie Cowley, Jewel Agresta",
             "agrees": "YES"
           },
           {
             "tab": "Approved",
-            "on_screen": "(none)",
-            "from_records": "(none)",
+            "on_screen": "Melinda Carleton",
+            "from_records": "Melinda Carleton",
             "agrees": "YES"
           },
           {
@@ -79,34 +79,34 @@
           },
           {
             "tab": "Not submitted",
-            "on_screen": "Billie Cowley, Jewel Agresta",
-            "from_records": "Billie Cowley, Jewel Agresta",
+            "on_screen": "(none)",
+            "from_records": "(none)",
             "agrees": "YES"
           },
           {
             "tab": "All",
-            "on_screen": "Billie Cowley, Jewel Agresta, Melinda Carleton",
-            "from_records": "Billie Cowley, Jewel Agresta, Melinda Carleton",
+            "on_screen": "Abel Tuter, Amelia Caputo, Angelo Ferentz, Billie Cowley, Jewel Agresta, Melinda Carleton",
+            "from_records": "Abel Tuter, Amelia Caputo, Angelo Ferentz, Billie Cowley, Jewel Agresta, Melinda Carleton",
             "agrees": "YES"
           }
         ],
-        "at": "2026-08-17T13:10:37.831Z"
+        "at": "2026-08-19T08:07:23.984Z"
       },
       {
         "label": "Search behaviour",
         "table": "(derived)",
-        "query": "needle \"Billie\"",
+        "query": "needle \"Abel\"",
         "rows": [
           {
-            "rows_before": "3",
+            "rows_before": "6",
             "rows_after": "1",
             "expected_after": "1",
-            "badges_before": "{\"Awaiting me\":\"1\",\"Approved\":\"0\",\"Rejected\":\"0\",\"Not submitted\":\"2\",\"All\":\"3\",\"History\":\"\"}",
-            "badges_after": "{\"Awaiting me\":\"1\",\"Approved\":\"0\",\"Rejected\":\"0\",\"Not submitted\":\"2\",\"All\":\"3\",\"History\":\"\"}",
+            "badges_before": "{\"Awaiting me\":\"5\",\"Approved\":\"1\",\"Rejected\":\"0\",\"Not submitted\":\"0\",\"All\":\"6\",\"History\":\"\"}",
+            "badges_after": "{\"Awaiting me\":\"5\",\"Approved\":\"1\",\"Rejected\":\"0\",\"Not submitted\":\"0\",\"All\":\"6\",\"History\":\"\"}",
             "badges_unchanged": "YES"
           }
         ],
-        "at": "2026-08-17T13:10:38.380Z"
+        "at": "2026-08-19T08:07:24.642Z"
       }
     ],
     "observations": [
@@ -120,10 +120,10 @@
       "Search narrows the visible rows to those whose name or employee id contains the needle, and does not move the tab badges, which are month-level."
     ],
     "actual": [
-      "All five tabs agree with the timesheet records for June 2026.",
-      "Searching \"Billie\" narrowed 3 row(s) to 1, and the tab badges were unchanged."
+      "All five tabs agree with the timesheet records for July 2026.",
+      "Searching \"Abel\" narrowed 6 row(s) to 1, and the tab badges were unchanged."
     ],
     "verdictReason": "Every tab and the search box filter the queue exactly as the records say they should.",
-    "finishedAt": "2026-08-17T13:10:38.599Z"
+    "finishedAt": "2026-08-19T08:07:24.921Z"
   }
 }

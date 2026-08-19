@@ -7,19 +7,19 @@
   "case": {
     "id": "TC-SP-009",
     "title": "The \"Awaiting action\" count contradicts the queue beneath it",
-    "startedAt": "2026-08-17T13:10:38.895Z",
+    "startedAt": "2026-08-19T08:07:25.220Z",
     "verdict": "FAIL",
     "steps": [
       {
         "n": 1,
         "text": "Open the manager approval queue on a month where the reportees' statuses differ.",
-        "at": "2026-08-17T13:10:39.023Z",
+        "at": "2026-08-19T08:07:25.349Z",
         "screenshots": []
       },
       {
         "n": 2,
         "text": "Capture the stat strip, the tab badges and the table together — the contradiction is between three parts of one screen, so it has to be one image.",
-        "at": "2026-08-17T13:10:42.621Z",
+        "at": "2026-08-19T08:07:30.352Z",
         "screenshots": [
           "C:\\Users\\patel\\Documents\\ServiceNow Work Project Docs\\Personal AI Assisted\\ShiftPay Clean Vibe coding\\testing\\automation\\evidence\\TC-SP-009\\02-stat-strip-contradicts-the-queue.png"
         ]
@@ -27,7 +27,7 @@
       {
         "n": 3,
         "text": "Read all three, and the timesheet records that settle which of them is right.",
-        "at": "2026-08-17T13:10:42.684Z",
+        "at": "2026-08-19T08:07:30.435Z",
         "screenshots": []
       }
     ],
@@ -35,30 +35,65 @@
       {
         "label": "Timesheets for the displayed month",
         "table": "x_1995110_shift_0_monthly_timesheet",
-        "query": "u_year=2026^u_month=6",
+        "query": "u_year=2026^u_month=7",
         "rows": [
           {
             "approver": "",
+            "u_user": "7682abf03710200044e0bfc8bcbe5d13",
+            "u_year": "2026",
+            "u_month": "7",
+            "status": "submitted"
+          },
+          {
+            "approver": "",
+            "u_user": "02826bf03710200044e0bfc8bcbe5d88",
+            "u_year": "2026",
+            "u_month": "7",
+            "status": "submitted"
+          },
+          {
+            "approver": "",
+            "u_user": "62826bf03710200044e0bfc8bcbe5df1",
+            "u_year": "2026",
+            "u_month": "7",
+            "status": "submitted"
+          },
+          {
+            "approver": "",
+            "u_user": "aa826bf03710200044e0bfc8bcbe5dd6",
+            "u_year": "2026",
+            "u_month": "7",
+            "status": "submitted"
+          },
+          {
+            "approver": "",
+            "u_user": "02826bf03710200044e0bfc8bcbe5d64",
+            "u_year": "2026",
+            "u_month": "7",
+            "status": "submitted"
+          },
+          {
+            "approver": "6816f79cc0a8016401c5a33be04be441",
             "u_user": "02826bf03710200044e0bfc8bcbe5d5e",
             "u_year": "2026",
-            "u_month": "6",
-            "status": "submitted"
+            "u_month": "7",
+            "status": "approved"
           }
         ],
-        "at": "2026-08-17T13:10:42.734Z"
+        "at": "2026-08-19T08:07:30.515Z"
       },
       {
         "label": "Stat strip as rendered",
         "table": "/shiftpay?id=manager_approval",
-        "query": "June 2026",
+        "query": "July 2026",
         "rows": [
           {
             "tile": "Awaiting action",
-            "value": "3"
+            "value": "6"
           },
           {
             "tile": "Approved",
-            "value": "0"
+            "value": "1"
           },
           {
             "tile": "Rejected",
@@ -66,14 +101,14 @@
           },
           {
             "tile": "Pending cost",
-            "value": "₹6,950"
+            "value": "₹46,450"
           },
           {
             "tile": "Approved cost",
-            "value": "₹0"
+            "value": "₹7,950"
           }
         ],
-        "at": "2026-08-17T13:10:42.734Z"
+        "at": "2026-08-19T08:07:30.515Z"
       },
       {
         "label": "Four readings of the same number",
@@ -82,30 +117,30 @@
         "rows": [
           {
             "source": "\"Awaiting action\" stat tile",
-            "value": "3",
-            "correct": "1"
+            "value": "6",
+            "correct": "5"
           },
           {
             "source": "\"Awaiting me\" tab badge",
-            "value": "1",
-            "correct": "1"
+            "value": "5",
+            "correct": "5"
           },
           {
             "source": "actionable rows in the table",
-            "value": "1",
-            "correct": "1"
+            "value": "5",
+            "correct": "5"
           },
           {
             "source": "monthly_timesheet with status=submitted",
-            "value": "1",
-            "correct": "1"
+            "value": "5",
+            "correct": "5"
           }
         ],
-        "at": "2026-08-17T13:10:42.734Z"
+        "at": "2026-08-19T08:07:30.515Z"
       }
     ],
     "observations": [
-      "The contradiction is visible in a single screenshot: the headline tile says 3 while the tab badge directly above it says 1 and the table below shows 1 row(s) a manager can act on.",
+      "The contradiction is visible in a single screenshot: the headline tile says 6 while the tab badge directly above it says 5 and the table below shows 5 row(s) a manager can act on.",
       "CAUSE: the .shift-mgr__stat--lead tile is bound to c.data.counts.all rather than c.data.counts.submitted, so it reports the size of the team instead of the size of the queue. FIX: change the binding. One word.",
       "PROVENANCE: this defect was introduced deliberately, and is committed to the repository and deployed to the instance, so that the pack demonstrates a failing manager-side case alongside the two genuine calendar findings. The template line carries a comment naming this case — do not \"fix\" it without updating TEST-CASES-SHIFTPAY.md, or the pack goes green for no visible reason.",
       "It is cosmetic by construction. data.counts is display-only: nothing in handleAction, actionOne, actionMany or correctDay reads it, so the worst case is a wrong number on a tile and no write path is affected.",
@@ -116,10 +151,10 @@
       "It therefore agrees with the \"Awaiting me\" tab badge and with the number of actionable rows in the table."
     ],
     "actual": [
-      "The \"Awaiting action\" tile reads 3, while the records hold 1 submitted timesheet(s) for June 2026.",
-      "The \"Awaiting me\" tab badge reads 1 and the table shows 1 actionable row(s) — both correct. The tile is the outlier."
+      "The \"Awaiting action\" tile reads 6, while the records hold 5 submitted timesheet(s) for July 2026.",
+      "The \"Awaiting me\" tab badge reads 5 and the table shows 5 actionable row(s) — both correct. The tile is the outlier."
     ],
-    "verdictReason": "The \"Awaiting action\" tile reads 3 where the records hold 1 submitted timesheet(s). It reports the number of reportees, not the number awaiting a decision, and so contradicts both the tab badge and the table on the same screen.",
-    "finishedAt": "2026-08-17T13:10:42.735Z"
+    "verdictReason": "The \"Awaiting action\" tile reads 6 where the records hold 5 submitted timesheet(s). It reports the number of reportees, not the number awaiting a decision, and so contradicts both the tab badge and the table on the same screen.",
+    "finishedAt": "2026-08-19T08:07:30.516Z"
   }
 }
