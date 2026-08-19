@@ -3,7 +3,7 @@
  * application, keyed on sys_metadata rather than a hand-written table list.
  *
  * Run as a **Fix Script (sys_script_fix) whose Application is Global** — not as
- * a background script. See reattribute-created-by.js for why that matters: a
+ * a background script. The reason outlived the script that taught it: a
  * background script inherits the session scope silently, and running this in
  * the Shift Pay scope makes the platform auto-grant the app cross-scope read
  * privileges (sys_scope_privilege rows) for every platform table touched.
@@ -12,10 +12,10 @@
  *
  * Why this exists — the sequel
  * ----------------------------
- * `reattribute-created-by.js` (15 Aug 2026) listed seven tables by hand:
+ * The first pass (15 Aug 2026, since deleted) listed seven tables by hand:
  * sys_dictionary, sys_choice, sys_db_object, sys_script_include, sp_widget and
- * the two app data tables. Those seven are still clean, and re-running it
- * reports 0 — which is exactly why it looked finished. It was not. An
+ * the two app data tables. Those seven were left clean, and re-running it
+ * reported 0 — which is exactly why it looked finished. It was not. An
  * application file is any row on a table extending **sys_metadata**, and the
  * app owns nine further classes the list never mentioned:
  *
