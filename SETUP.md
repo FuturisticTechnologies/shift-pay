@@ -107,11 +107,23 @@ as you go.
 6. **Click a weekday inside that window.** `CO` is now offered — it was not
    before step 5. That is the entitlement being honoured.
 7. **Pick CO.** It consumes the entitlement.
-8. **Submit the month.** The month locks and goes read-only, and it appears in
-   the manager's queue.
 
 The point to land in step 4–7: the calendar is not a form with a list of
 options. It is a rules engine reading a catalogue.
+
+> **Do not demo "Submit month".** `submitMonth` refuses unless *every weekday in
+> the month is logged* — it counts unlogged weekdays and rejects with "Cannot
+> submit: N weekday(s) still unlogged". No month on the `admin` calendar is
+> complete, so the click would be refused.
+>
+> That refusal is also **invisible**: it goes through `gs.addErrorMessage()`,
+> which is the TC-SP-004 defect, so the screen can repaint as though the submit
+> landed. A step that appears to succeed while doing nothing is the one failure
+> mode worth engineering out of a demo.
+>
+> The submitted state is shown from the manager side instead, in A2, where July
+> holds six real submissions. Same point, no risk. If you later want the employee
+> submit flow on screen, it needs a fully-logged month seeded for `admin` first.
 
 ### A2 — manager approvals
 
