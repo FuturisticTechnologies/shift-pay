@@ -94,18 +94,11 @@ let
       ),
 
       Combined = List.Combine(Pages),
-      Blanked  = List.Transform(
-                   Combined,
-                   each Record.TransformFields(
-                     _,
-                     List.Transform(
-                       Record.FieldNames(_),
-                       (f) => {f, each if _ = "" then null else _}
-                     )
-                   )
-                 )
+      AsTable  = Table.FromRecords(Combined),
+      Blanked  = Table.ReplaceValue(
+                   AsTable, "", null, Replacer.ReplaceValue, Table.ColumnNames(AsTable))
     in
-      Table.FromRecords(Blanked)
+      Blanked
 in
   fnNow
 ```
