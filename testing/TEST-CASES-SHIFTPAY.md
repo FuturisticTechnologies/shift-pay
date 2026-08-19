@@ -105,10 +105,16 @@ Every reportee except Melinda carries **2026-05 approved**, **2026-06 approved**
 **2026-07 submitted**. Melinda carries **2026-04 approved**, **2026-05
 submitted**, **2026-06 submitted**, **2026-07 approved**.
 
-One entitlement row exists across the whole instance: OC on `2026-06-07`, window
-ending `2026-06-16`, consumed on `2026-06-09`. It belongs to Melinda, and
+One entitlement row exists across the whole of **dev307042**: OC on `2026-06-07`,
+window ending `2026-06-16`, consumed on `2026-06-09`. It belongs to Melinda, and
 `One Time Scripts/seed-demo-data.js` protects both of those dates specifically so
 re-seeding cannot orphan it.
+
+That count is this instance's history, not a precondition. It was created by hand
+through the widget; nothing seeds entitlements, so a freshly stood-up instance
+starts at **zero** and every case still passes. The automated cases read the
+baseline at run time and assert against it (see rule 4 below), and they scope the
+read to `u_user=<me>` — Melinda's row is not even in the set they look at.
 
 > **2026-07 is the demo month, and its mix is load-bearing.** Five reportees
 > submitted against one approved is what keeps `counts.all` (6) different from
@@ -134,8 +140,12 @@ does. See TC-SP-030.
 3. **`cnit` has no delete verb.** A case that aborts mid-transaction leaves
    residue that must be cleaned through the platform UI. Write late, tear down in
    one reversal.
-4. **The entitlement table is the fragile one.** It holds a single row at
-   baseline. Confirm it still does after any run of TC-SP-003 or TC-SP-004.
+4. **The entitlement table is the fragile one.** Whatever it holds before a run,
+   it must hold exactly that after. Confirm the count is unchanged following any
+   run of TC-SP-003 or TC-SP-004. The assertion is deliberately *relative* — the
+   spec reads the count first and expects `baseline + 1` mid-case and `baseline`
+   after teardown — so do not replace it with a fixed number. A hard-coded count
+   would encode one instance's history as a rule and fail everywhere else.
 5. Automated cases pick a **future, unsubmitted month** for their writes so no
    lock is in play and no aggregate anyone is looking at moves.
 
