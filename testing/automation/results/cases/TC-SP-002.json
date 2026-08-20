@@ -1,19 +1,19 @@
 {
   "run": {
-    "instance": "https://dev307042.service-now.com",
+    "instance": "https://dev227442.service-now.com",
     "executedBy": "admin",
     "executedVia": "Playwright (automated), driving the /shiftpay Service Portal; every screen assertion cross-checked against the ServiceNow Table API."
   },
   "case": {
     "id": "TC-SP-002",
     "title": "Logging a day writes one row and re-aggregates with a rate snapshot",
-    "startedAt": "2026-08-19T08:06:32.516Z",
+    "startedAt": "2026-08-20T20:02:06.146Z",
     "verdict": "PASS",
     "steps": [
       {
         "n": 1,
         "text": "Log UK on 2026-10-01 with a comment, and confirm the chip renders.",
-        "at": "2026-08-19T08:06:36.021Z",
+        "at": "2026-08-20T20:02:10.949Z",
         "screenshots": [
           "C:\\Users\\patel\\Documents\\ServiceNow Work Project Docs\\Personal AI Assisted\\ShiftPay Clean Vibe coding\\testing\\automation\\evidence\\TC-SP-002\\01-day-logged.png"
         ]
@@ -21,19 +21,19 @@
       {
         "n": 2,
         "text": "Read the submission row the save produced.",
-        "at": "2026-08-19T08:06:36.807Z",
+        "at": "2026-08-20T20:02:12.824Z",
         "screenshots": []
       },
       {
         "n": 3,
         "text": "Read the recomputed week summary and check the arithmetic.",
-        "at": "2026-08-19T08:06:36.940Z",
+        "at": "2026-08-20T20:02:13.007Z",
         "screenshots": []
       },
       {
         "n": 4,
         "text": "Clear 2026-10-01 and confirm both the row and the aggregate revert.",
-        "at": "2026-08-19T08:06:37.140Z",
+        "at": "2026-08-20T20:02:13.161Z",
         "screenshots": []
       }
     ],
@@ -43,7 +43,7 @@
         "table": "x_1995110_shift_0_shift_submission_summary",
         "query": "u_user=6816f79cc0a8016401c5a33be04be441^u_period_type=week^u_period_start=2026-09-28^u_shift_type=adc08d12938d4b507f08f2a0ed03d6b5",
         "rows": [],
-        "at": "2026-08-19T08:06:36.021Z"
+        "at": "2026-08-20T20:02:10.949Z"
       },
       {
         "label": "Submission row after the save",
@@ -51,13 +51,13 @@
         "query": "u_user=<me>^u_date=2026-10-01",
         "rows": [
           {
-            "sys_id": "e6cb422dc3be0f549c1a944ed4013129",
+            "sys_id": "32297946533a871074cf70c0a0490e6e",
             "u_shift_type": "adc08d12938d4b507f08f2a0ed03d6b5",
             "u_date": "2026-10-01",
             "u_comment": "Automated test — TC-SP-002"
           }
         ],
-        "at": "2026-08-19T08:06:36.940Z"
+        "at": "2026-08-20T20:02:13.007Z"
       },
       {
         "label": "Week summary after the write",
@@ -66,14 +66,14 @@
         "rows": [
           {
             "u_period_start": "2026-09-28",
-            "sys_id": "22cb0e21c3764f549c1a944ed401312b",
+            "sys_id": "36297946533a871074cf70c0a0490e6f",
             "u_rate_snapshot": "350",
             "u_amount": "350",
             "u_count": "1",
             "u_currency": "INR"
           }
         ],
-        "at": "2026-08-19T08:06:37.140Z"
+        "at": "2026-08-20T20:02:13.161Z"
       },
       {
         "label": "After the clear",
@@ -86,7 +86,7 @@
             "summary_count_before_run": "0"
           }
         ],
-        "at": "2026-08-19T08:06:38.401Z"
+        "at": "2026-08-20T20:02:14.457Z"
       }
     ],
     "observations": [
@@ -103,6 +103,6 @@
       "After clearing: 0 submission row(s), week count back to 0 (was 0 before the run)."
     ],
     "verdictReason": "One row written and removed cleanly; the week aggregate moved to 1 at a snapshot of 350 and back to 0.",
-    "finishedAt": "2026-08-19T08:06:38.401Z"
+    "finishedAt": "2026-08-20T20:02:14.457Z"
   }
 }
