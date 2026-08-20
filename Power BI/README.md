@@ -48,13 +48,29 @@ AppSource is the one ordinary thing that does ask you to sign in.
 
 ### 2. Point it at the instance
 
-You need the instance base URL (`https://devNNNNN.service-now.com`, no trailing slash)
-and a username and password for Basic auth. Use the credentials behind the
-`shiftpay-admin` cnit profile — the app runs as `admin` anyway.
+You need the instance base URL (`https://dev227442.service-now.com`, no trailing
+slash) and a username and password for Basic auth. Use the credentials behind the
+`shiftpay-demo` cnit profile — the app runs as `admin` anyway.
 
 1. **Home → Transform data** to open Power Query Editor.
 2. **Manage Parameters → New Parameter**. Name it `Instance`, type Text, current value
    = the base URL.
+
+**To retarget the shipped `ShiftPay.pbix`** the parameter already exists: **Home →
+Transform data → Manage Parameters → `Instance`**, change *Current Value*, then
+**Close & Apply** and Refresh. Power BI Desktop is the only way to do this — the
+parameter and every query live compressed inside the file's `DataModel` part, so
+there is no text in the `.pbix` to edit from outside. Note that refreshing
+replaces the cached data the demo relies on, so only do it when you actually want
+the new instance's numbers.
+
+> **Basic auth has to be allow-listed on the instance.** Every query here
+> authenticates with Basic, and current ServiceNow releases block that unless the
+> user holds `snc_basic_auth_api_access` — see
+> `glide.authenticate.basic_auth.allowed_roles`. `admin` was granted that role on
+> dev227442 on 2026-08-20, so it works today. Without it every query fails with a
+> credentials error indistinguishable from a wrong password, and re-entering the
+> password will not fix it.
 
 > **PDI hibernation.** A Personal Developer Instance sleeps after about ten days idle.
 > Every query fails with a connection error when that happens — wake the instance from
@@ -94,7 +110,16 @@ let
       ),
 
       Combined = List.Combine(Pages),
-      AsTable  = Table.FromRecords(Combined),
+
+      // An empty table answers {"result":[]}, which carries no field names at
+      // all, so Table.FromRecords would return a table with zero columns and
+      // every later step fails with "the column ... wasn't found". The field
+      // list we asked for is the schema, so build the empty table from that.
+      Columns  = List.Transform(Text.Split(fields, ","), Text.Trim),
+      AsTable  = if List.IsEmpty(Combined)
+                 then #table(Columns, {})
+                 else Table.FromRecords(Combined),
+
       Blanked  = Table.ReplaceValue(
                    AsTable, "", null, Replacer.ReplaceValue, Table.ColumnNames(AsTable))
     in
@@ -103,7 +128,7 @@ in
   fnNow
 ```
 
-Three parts of that are load-bearing:
+Four parts of that are load-bearing:
 
 - **`RelativePath` and `Query` rather than a concatenated URL string.** A URL built by
   string-joining fails Power BI's static analysis and blocks refresh in the web
@@ -115,6 +140,13 @@ Three parts of that are load-bearing:
   nulls. Left alone, an empty `u_co_date` errors the moment the column is set to Date
   type, and `ISBLANK` in DAX returns false for every row — so the CO reports would
   silently read zero. This converts `""` to null across every column.
+- **The empty-table branch.** `{"result":[]}` has no field names in it, so
+  `Table.FromRecords` on an empty list gives a table with **zero columns**, and
+  Power BI blocks the load with *"The column 'x' of the table wasn't found."* Two of
+  the seven queries hit this on any freshly seeded instance: `Entitlements` and
+  `Corrections` are both legitimately empty until someone creates a CO or a manager
+  corrects a day. Reconstructing the schema from the `fields` argument is what keeps
+  a correct, empty table from looking like a broken query.
 
 Then, for each row below: **New Source → Blank Query → Advanced Editor**, paste
 `let Source = fnNow("<table>", "<fields>") in Source`, rename the query.
