@@ -1,19 +1,19 @@
 {
   "run": {
-    "instance": "https://dev307042.service-now.com",
+    "instance": "https://dev227442.service-now.com",
     "executedBy": "admin",
     "executedVia": "Playwright (automated), driving the /shiftpay Service Portal; every screen assertion cross-checked against the ServiceNow Table API."
   },
   "case": {
     "id": "TC-SP-008",
     "title": "Tabs and search filter the queue correctly",
-    "startedAt": "2026-08-19T08:07:18.750Z",
+    "startedAt": "2026-08-20T20:03:03.642Z",
     "verdict": "PASS",
     "steps": [
       {
         "n": 1,
         "text": "Switch to the \"Awaiting me\" tab and read the rows.",
-        "at": "2026-08-19T08:07:22.264Z",
+        "at": "2026-08-20T20:03:08.857Z",
         "screenshots": [
           "C:\\Users\\patel\\Documents\\ServiceNow Work Project Docs\\Personal AI Assisted\\ShiftPay Clean Vibe coding\\testing\\automation\\evidence\\TC-SP-008\\01-tab-awaiting-me.png"
         ]
@@ -21,25 +21,25 @@
       {
         "n": 2,
         "text": "Switch to the \"Approved\" tab and read the rows.",
-        "at": "2026-08-19T08:07:22.652Z",
+        "at": "2026-08-20T20:03:09.474Z",
         "screenshots": []
       },
       {
         "n": 3,
         "text": "Switch to the \"Rejected\" tab and read the rows.",
-        "at": "2026-08-19T08:07:22.971Z",
+        "at": "2026-08-20T20:03:09.758Z",
         "screenshots": []
       },
       {
         "n": 4,
         "text": "Switch to the \"Not submitted\" tab and read the rows.",
-        "at": "2026-08-19T08:07:23.251Z",
+        "at": "2026-08-20T20:03:10.045Z",
         "screenshots": []
       },
       {
         "n": 5,
         "text": "Switch to the \"All\" tab and read the rows.",
-        "at": "2026-08-19T08:07:23.522Z",
+        "at": "2026-08-20T20:03:10.300Z",
         "screenshots": [
           "C:\\Users\\patel\\Documents\\ServiceNow Work Project Docs\\Personal AI Assisted\\ShiftPay Clean Vibe coding\\testing\\automation\\evidence\\TC-SP-008\\05-tab-all.png"
         ]
@@ -47,7 +47,7 @@
       {
         "n": 6,
         "text": "Search for one reportee by name and confirm the view narrows but the badges do not.",
-        "at": "2026-08-19T08:07:23.984Z",
+        "at": "2026-08-20T20:03:10.731Z",
         "screenshots": [
           "C:\\Users\\patel\\Documents\\ServiceNow Work Project Docs\\Personal AI Assisted\\ShiftPay Clean Vibe coding\\testing\\automation\\evidence\\TC-SP-008\\06-search-filtered.png"
         ]
@@ -90,7 +90,7 @@
             "agrees": "YES"
           }
         ],
-        "at": "2026-08-19T08:07:23.984Z"
+        "at": "2026-08-20T20:03:10.730Z"
       },
       {
         "label": "Search behaviour",
@@ -106,7 +106,7 @@
             "badges_unchanged": "YES"
           }
         ],
-        "at": "2026-08-19T08:07:24.642Z"
+        "at": "2026-08-20T20:03:11.331Z"
       }
     ],
     "observations": [
@@ -124,6 +124,6 @@
       "Searching \"Abel\" narrowed 6 row(s) to 1, and the tab badges were unchanged."
     ],
     "verdictReason": "Every tab and the search box filter the queue exactly as the records say they should.",
-    "finishedAt": "2026-08-19T08:07:24.921Z"
+    "finishedAt": "2026-08-20T20:03:11.589Z"
   }
 }
