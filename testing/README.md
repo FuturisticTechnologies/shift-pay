@@ -75,7 +75,10 @@ copy .env.example .env     # then fill in SN_USER and SN_PASSWORD
 ```
 
 The account needs its own calendar at `/shiftpay?id=fill_shift` and at least one
-direct reportee for the manager cases. `admin` satisfies both on `dev307042`.
+direct reportee for the manager cases. `admin` satisfies both on `dev227442`: six
+direct reportees, and its own calendar, which starts empty because the seeder
+does not seed the manager. The writing cases make their own data, so that is the
+expected starting state.
 `.env` is gitignored and must never be committed.
 
 The session is saved to `.auth/` and reused for 8 hours; after that the runner
