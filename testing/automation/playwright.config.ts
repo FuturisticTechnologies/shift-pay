@@ -14,7 +14,7 @@ try {
 }
 
 export const SN_INSTANCE = (
-  process.env.SN_INSTANCE || 'https://dev307042.service-now.com'
+  process.env.SN_INSTANCE || 'https://dev227442.service-now.com'
 ).replace(/\/$/, '');
 
 export const AUTH_STATE = path.join(__dirname, '.auth', 'servicenow.json');

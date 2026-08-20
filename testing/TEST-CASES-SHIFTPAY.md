@@ -13,9 +13,9 @@ them, so a document cannot claim an expected result this file does not contain.
 | | |
 |---|---|
 | Application | Shift Pay Management, scope `x_1995110_shift_0`, v1.0.0 |
-| Instance | `dev307042.service-now.com` |
+| Instance | `dev227442.service-now.com` |
 | Portal | `/shiftpay` |
-| Baseline captured | 2026-08-17, direct from instance metadata |
+| Baseline captured | 2026-08-20, direct from instance metadata (re-pointed from `dev307042` that day) |
 | Cases | 40 — **9 automated**, 31 pending |
 
 ---
@@ -93,28 +93,28 @@ findings, not description — see TC-SP-005.
 
 | User | Role here | Data |
 |---|---|---|
-| `admin` | Employee **and** manager | 86 day rows, 2026-04-01 to 2026-08-21; no timesheet of their own; manages the six below |
-| `melinda.carleton` | Reportee | 100 day rows; four timesheets |
+| `admin` | Employee **and** manager | **no day rows of their own** — the seeder refuses to seed the manager as their own reportee; no timesheet either; manages the six below |
+| `melinda.carleton` | Reportee | 69 day rows; three timesheets |
 | `abel.tuter` | Reportee | 73 day rows; three timesheets |
 | `amelia.caputo` | Reportee | 71 day rows; three timesheets |
 | `angelo.ferentz` | Reportee | 73 day rows; three timesheets |
 | `billie.cowley` | Reportee | 73 day rows; three timesheets |
 | `jewel.agresta` | Reportee | 69 day rows; three timesheets |
 
-Every reportee except Melinda carries **2026-05 approved**, **2026-06 approved**,
-**2026-07 submitted**. Melinda carries **2026-04 approved**, **2026-05
-submitted**, **2026-06 submitted**, **2026-07 approved**.
+All six reportees carry **2026-05 approved** and **2026-06 approved**. July 2026
+is **submitted** for five of them and **approved** for Melinda; the blockquote
+below says why that one difference matters.
 
-One entitlement row exists across the whole of **dev307042**: OC on `2026-06-07`,
-window ending `2026-06-16`, consumed on `2026-06-09`. It belongs to Melinda, and
-`One Time Scripts/seed-demo-data.js` protects both of those dates specifically so
-re-seeding cannot orphan it.
+**Zero entitlement rows exist on `dev227442`,** and that is the correct starting
+state rather than a gap: nothing seeds entitlements, the demo creates one live on
+screen, and the reveal depends on there being none beforehand.
 
-That count is this instance's history, not a precondition. It was created by hand
-through the widget; nothing seeds entitlements, so a freshly stood-up instance
-starts at **zero** and every case still passes. The automated cases read the
-baseline at run time and assert against it (see rule 4 below), and they scope the
-read to `u_user=<me>` — Melinda's row is not even in the set they look at.
+None of these counts are preconditions — they are one instance's history, and the
+previous instance's differed (`dev307042` held a single entitlement, created by
+hand through the widget, plus an April timesheet and a calendar for `admin`). The
+automated cases read the baseline at run time and assert against it (see rule 4
+below), scoped to `u_user=<me>`, so they pass on either instance. Do not replace
+that relative assertion with a fixed number.
 
 > **2026-07 is the demo month, and its mix is load-bearing.** Five reportees
 > submitted against one approved is what keeps `counts.all` (6) different from

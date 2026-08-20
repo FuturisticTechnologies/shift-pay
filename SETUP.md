@@ -66,7 +66,7 @@ page works, but the front door is part of the product — open it first and clic
 through.
 
 ```
-https://dev307042.service-now.com/shiftpay
+https://dev227442.service-now.com/shiftpay
 ```
 
 That is the `shiftpay_home` page. It greets the signed-in user by first name and
@@ -81,7 +81,7 @@ exist in total:
 | Reports | `shift_reports` | yes |
 
 Any of them can also be opened directly as
-`https://dev307042.service-now.com/shiftpay?id=<page id>`.
+`https://dev227442.service-now.com/shiftpay?id=<page id>`.
 
 > **Read "Known defects to demo around" at the end of this track before
 > presenting.** Three are deliberate or known, and one of them will make the
@@ -157,7 +157,7 @@ server-side.
 ### A3 — the reports page
 
 ```
-https://dev307042.service-now.com/shiftpay?id=shift_reports
+https://dev227442.service-now.com/shiftpay?id=shift_reports
 ```
 
 In-portal reporting, rendered by `shiftpay-reporting-ui`, reachable from the
@@ -351,11 +351,11 @@ Order matters here, because each step assumes the one above it.
 
 ### D1 — export and import the update set
 
-From dev307042, capture the scoped app: the five tables plus
-`x_1995110_shift_0_shift_day_change`, every column added since (`oc_role`,
-`allow_weekday`, `allow_weekend_holiday`, `day_category`, `color_hex`), the four
-widgets, the three Script Includes, and the four portal pages
-(`shiftpay_home`, `fill_shift`, `manager_approval`, `shift_reports`).
+From the working instance — dev227442 as of 2026-08-20 — capture the scoped app:
+the five tables plus `x_1995110_shift_0_shift_day_change`, every column added
+since (`oc_role`, `allow_weekday`, `allow_weekend_holiday`, `day_category`,
+`color_hex`), the four widgets, the three Script Includes, and the four portal
+pages (`shiftpay_home`, `fill_shift`, `manager_approval`, `shift_reports`).
 
 Two things update sets are known for dropping:
 
