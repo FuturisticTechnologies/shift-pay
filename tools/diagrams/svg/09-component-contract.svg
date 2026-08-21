@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="452"
+     viewBox="0 0 960 452" font-family="'Segoe UI','Calibri','Helvetica Neue',Arial,sans-serif">
+<defs>
+  <marker id="a" viewBox="0 0 10 10" refX="9.2" refY="5"
+          markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" fill="#606676"/>
+  </marker>
+  <marker id="ao" viewBox="0 0 10 10" refX="9.2" refY="5"
+          markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" fill="#F7662D"/>
+  </marker>
+  <marker id="an" viewBox="0 0 10 10" refX="9.2" refY="5"
+          markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" fill="#A81845"/>
+  </marker>
+</defs>
+<rect width="960" height="452" fill="#FFFFFF"/>
+<rect x="130" y="20" width="590" height="96" rx="7" fill="#FFFFFF" stroke="#D5D9E0" stroke-width="1.3"/>
+<rect x="130" y="20" width="7" height="96" rx="3" fill="#003654" stroke="#003654" stroke-width="1.3"/>
+<text x="156" y="52" font-size="13" fill="#003654" text-anchor="start" font-weight="700" letter-spacing="0.8">SERVER VIEW MODEL</text>
+<text x="156" y="78" font-size="11.6" fill="#606676" text-anchor="start" font-weight="400">Builds a plain data object — rows, maps, labels, flags, colours.</text>
+<text x="156" y="97" font-size="11.6" fill="#606676" text-anchor="start" font-weight="400">No markup, and no formatting decisions.</text>
+<rect x="130" y="160" width="590" height="96" rx="7" fill="#FFFFFF" stroke="#D5D9E0" stroke-width="1.3"/>
+<rect x="130" y="160" width="7" height="96" rx="3" fill="#006096" stroke="#006096" stroke-width="1.3"/>
+<text x="156" y="192" font-size="13" fill="#006096" text-anchor="start" font-weight="700" letter-spacing="0.8">ANGULARJS CONTROLLER  ( c )</text>
+<text x="156" y="218" font-size="11.6" fill="#606676" text-anchor="start" font-weight="400">Copies what it needs at bootstrap, derives view state — grid cells,</text>
+<text x="156" y="237" font-size="11.6" fill="#606676" text-anchor="start" font-weight="400">groups, counts, styles — and owns all interaction state.</text>
+<rect x="130" y="300" width="590" height="96" rx="7" fill="#FFFFFF" stroke="#D5D9E0" stroke-width="1.3"/>
+<rect x="130" y="300" width="7" height="96" rx="3" fill="#606676" stroke="#606676" stroke-width="1.3"/>
+<text x="156" y="332" font-size="13" fill="#606676" text-anchor="start" font-weight="700" letter-spacing="0.8">TEMPLATE</text>
+<text x="156" y="358" font-size="11.6" fill="#606676" text-anchor="start" font-weight="400">Renders the controller. No business logic, and no arithmetic</text>
+<text x="156" y="377" font-size="11.6" fill="#606676" text-anchor="start" font-weight="400">beyond display.</text>
+<path d="M 425,116 L 425,156" fill="none" stroke="#606676" stroke-width="1.4" stroke-linejoin="round" marker-end="url(#a)"/>
+<rect x="407.81" y="130.5" width="34.38" height="17.5" fill="#FFFFFF"/>
+<text x="425" y="141" font-size="11.5" fill="#003654" text-anchor="middle" font-weight="400">data</text>
+<path d="M 425,256 L 425,296" fill="none" stroke="#606676" stroke-width="1.4" stroke-linejoin="round" marker-end="url(#a)"/>
+<rect x="410.8575" y="270.5" width="28.285" height="17.5" fill="#FFFFFF"/>
+<text x="425" y="281" font-size="11.5" fill="#003654" text-anchor="middle" font-weight="400">c.*</text>
+<path d="M 720,396 L 788,396 L 788,68 L 720,68" fill="none" stroke="#F7662D" stroke-width="1.4" stroke-linejoin="round" marker-end="url(#ao)"/>
+<text x="802" y="216" font-size="11" fill="#F7662D" text-anchor="start" font-weight="600">every write re-runs</text>
+<text x="802" y="232" font-size="11" fill="#F7662D" text-anchor="start" font-weight="400">the whole server view</text>
+<text x="802" y="248" font-size="11" fill="#F7662D" text-anchor="start" font-weight="400">model, and the client</text>
+<text x="802" y="264" font-size="11" fill="#F7662D" text-anchor="start" font-weight="400">re-seeds from it</text>
+<text x="130" y="424" font-size="11.5" fill="#606676" text-anchor="start" font-weight="400" font-style="italic">The same contract in all four components — learn one, and you have learned them all.</text>
+<text x="0" y="444" font-size="11" fill="#F7662D" text-anchor="start" font-weight="700" letter-spacing="0.6">Figure 9</text>
+<text x="58" y="444" font-size="11" fill="#606676" text-anchor="start" font-weight="400">The three-layer component contract</text>
+</svg>
