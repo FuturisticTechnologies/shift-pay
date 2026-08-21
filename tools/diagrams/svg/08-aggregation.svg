@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="312"
+     viewBox="0 0 960 312" font-family="'Segoe UI','Calibri','Helvetica Neue',Arial,sans-serif">
+<defs>
+  <marker id="a" viewBox="0 0 10 10" refX="9.2" refY="5"
+          markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" fill="#606676"/>
+  </marker>
+  <marker id="ao" viewBox="0 0 10 10" refX="9.2" refY="5"
+          markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" fill="#F7662D"/>
+  </marker>
+  <marker id="an" viewBox="0 0 10 10" refX="9.2" refY="5"
+          markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" fill="#A81845"/>
+  </marker>
+</defs>
+<rect width="960" height="312" fill="#FFFFFF"/>
+<rect x="220.0" y="11.0" width="520" height="46" rx="23.0" fill="#003654" stroke="#003654" stroke-width="1.3"/>
+<text x="480" y="39.0" font-size="13" fill="#FFFFFF" text-anchor="middle" font-weight="600">Any day change — save, clear, bulk apply or manager correction</text>
+<path d="M 480,57 L 480,92" fill="none" stroke="#606676" stroke-width="1.4" stroke-linejoin="round" marker-end="url(#a)"/>
+<line x1="120" y1="92" x2="840" y2="92" stroke="#606676" stroke-width="1.4"/>
+<path d="M 127,92 L 127,118" fill="none" stroke="#606676" stroke-width="1.4" stroke-linejoin="round" marker-end="url(#a)"/>
+<rect x="20" y="120" width="215" height="104" rx="7" fill="#FFFFFF" stroke="#D5D9E0" stroke-width="1.3"/>
+<circle cx="43" cy="141.5" r="10.5" fill="#F7662D"/>
+<text x="43" y="145.5" font-size="11.5" fill="#FFFFFF" text-anchor="middle" font-weight="700">1</text>
+<text x="62" y="146.5" font-size="13.5" fill="#003654" text-anchor="start" font-weight="600">Identify the periods</text>
+<text x="62" y="163.8" font-size="11.3" fill="#606676" text-anchor="start" font-weight="400">the month containing</text>
+<text x="62" y="179.60000000000002" font-size="11.3" fill="#606676" text-anchor="start" font-weight="400">the date, and its</text>
+<text x="62" y="195.40000000000003" font-size="11.3" fill="#606676" text-anchor="start" font-weight="400">ISO week</text>
+<path d="M 362,92 L 362,118" fill="none" stroke="#606676" stroke-width="1.4" stroke-linejoin="round" marker-end="url(#a)"/>
+<rect x="255" y="120" width="215" height="104" rx="7" fill="#FFFFFF" stroke="#D5D9E0" stroke-width="1.3"/>
+<circle cx="278" cy="141.5" r="10.5" fill="#F7662D"/>
+<text x="278" y="145.5" font-size="11.5" fill="#FFFFFF" text-anchor="middle" font-weight="700">2</text>
+<text x="297" y="146.5" font-size="13.5" fill="#003654" text-anchor="start" font-weight="600">Delete</text>
+<text x="297" y="163.8" font-size="11.3" fill="#606676" text-anchor="start" font-weight="400">every summary row</text>
+<text x="297" y="179.60000000000002" font-size="11.3" fill="#606676" text-anchor="start" font-weight="400">for those periods</text>
+<path d="M 597,92 L 597,118" fill="none" stroke="#606676" stroke-width="1.4" stroke-linejoin="round" marker-end="url(#a)"/>
+<rect x="490" y="120" width="215" height="104" rx="7" fill="#FFFFFF" stroke="#D5D9E0" stroke-width="1.3"/>
+<circle cx="513" cy="141.5" r="10.5" fill="#F7662D"/>
+<text x="513" y="145.5" font-size="11.5" fill="#FFFFFF" text-anchor="middle" font-weight="700">3</text>
+<text x="532" y="146.5" font-size="13.5" fill="#003654" text-anchor="start" font-weight="600">Count</text>
+<text x="532" y="163.8" font-size="11.3" fill="#606676" text-anchor="start" font-weight="400">day rows, grouped</text>
+<text x="532" y="179.60000000000002" font-size="11.3" fill="#606676" text-anchor="start" font-weight="400">by shift type</text>
+<path d="M 832,92 L 832,118" fill="none" stroke="#606676" stroke-width="1.4" stroke-linejoin="round" marker-end="url(#a)"/>
+<rect x="725" y="120" width="215" height="104" rx="7" fill="#FFFFFF" stroke="#D5D9E0" stroke-width="1.3"/>
+<circle cx="748" cy="141.5" r="10.5" fill="#F7662D"/>
+<text x="748" y="145.5" font-size="11.5" fill="#FFFFFF" text-anchor="middle" font-weight="700">4</text>
+<text x="767" y="146.5" font-size="13.5" fill="#003654" text-anchor="start" font-weight="600">Insert</text>
+<text x="767" y="163.8" font-size="11.3" fill="#606676" text-anchor="start" font-weight="400">one row per shift type</text>
+<text x="767" y="179.60000000000002" font-size="11.3" fill="#606676" text-anchor="start" font-weight="400">per period</text>
+<rect x="725" y="236" width="215" height="46" rx="7" fill="#F2F6F9" stroke="#006096" stroke-width="1.3"/>
+<text x="736" y="254" font-size="10.8" fill="#003654" text-anchor="start" font-weight="600" font-family="'Consolas','Cascadia Mono','Courier New',monospace">u_rate_snapshot</text>
+<text x="736" y="272" font-size="10.5" fill="#606676" text-anchor="start" font-weight="400">= the rate at this moment</text>
+<path d="M 832,224 L 832,234" fill="none" stroke="#606676" stroke-width="1.4" stroke-linejoin="round"/>
+<rect x="20" y="236" width="680" height="46" rx="7" fill="#FFFFFF" stroke="#D5D9E0" stroke-width="1.3"/>
+<text x="33" y="258.8" font-size="11.8" fill="#1A1A1A" text-anchor="start" font-weight="600">No running total exists anywhere, so nothing can drift out of step with the day records it summarises.</text>
+<text x="0" y="302" font-size="11" fill="#F7662D" text-anchor="start" font-weight="700" letter-spacing="0.6">Figure 8</text>
+<text x="58" y="302" font-size="11" fill="#606676" text-anchor="start" font-weight="400">Pay aggregation — recomputed after every day change, never incremented</text>
+</svg>
