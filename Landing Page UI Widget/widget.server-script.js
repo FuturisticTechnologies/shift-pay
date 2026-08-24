@@ -26,6 +26,40 @@
   data.reportsLinkLabel = options.reports_link_label || 'Open reports';
   data.reportsUrl = pageUrl(options.reports_page_id, 'shift_reports');
 
+  // ── Compensatory-off balance ─────────────────────────────────────────────
+  // Display only; nothing on this page writes. The count is read through
+  // ShiftPayCalendarRules rather than by querying the entitlement table here,
+  // so the tile can never disagree with what the calendar will actually let
+  // this user log. Same reason the widgets share the rule layer at all.
+  var CO_ENABLED = options.enable_co_entitlement !== false &&
+                   options.enable_co_entitlement !== 'false';
+
+  data.showCoBalance  = CO_ENABLED;
+  data.coBalanceTitle = options.co_balance_title || 'Compensatory off';
+  data.coBalance      = 0;
+  data.coNextExpiry   = '';
+
+  if (CO_ENABLED) {
+    var rules = new ShiftPayCalendarRules({
+      userId:           gs.getUserID(),
+      catalogTable:     options.catalog_table || 'u_shift_type_catalog',
+      entitlementTable: options.entitlement_table || 'u_shift_co_entitlement',
+      coEnabled:        true
+    });
+
+    var open = rules.entitlements().loadUnconsumed();
+    data.coBalance = open.length;
+
+    // Earliest window end, so the tile can say what is about to lapse rather
+    // than only how many days are owed. Dates are 'YYYY-MM-DD' and compared
+    // lexically, which is the convention everywhere else in this app.
+    for (var i = 0; i < open.length; i++) {
+      if (!data.coNextExpiry || open[i].window_end < data.coNextExpiry) {
+        data.coNextExpiry = open[i].window_end;
+      }
+    }
+  }
+
   function pageUrl(value, fallback) {
     var pageId = String(value || fallback);
     if (!/^[A-Za-z0-9_-]+$/.test(pageId)) pageId = fallback;
