@@ -15,6 +15,24 @@
       <p class="shift-home__subtitle">{{::c.data.introText}}</p>
     </header>
 
+    <div class="shift-home__balance"
+         ng-if="::c.data.showCoBalance"
+         aria-live="polite">
+      <span class="shift-home__balance-icon" aria-hidden="true">
+        <i class="fa fa-clock-o"></i>
+      </span>
+      <span class="shift-home__balance-count">{{::c.data.coBalance}}</span>
+      <span class="shift-home__balance-text">
+        <strong>{{::c.data.coBalanceTitle}}</strong>
+        <!-- Zero is a real state, not an empty one: a user who owes nothing
+             should be told so rather than shown a blank strip. -->
+        <em ng-if="::c.data.coBalance > 0">
+          earliest window closes {{::c.data.coNextExpiry}}
+        </em>
+        <em ng-if="::c.data.coBalance === 0">nothing outstanding</em>
+      </span>
+    </div>
+
     <nav class="shift-home__cards" aria-label="ShiftPay destinations">
       <a class="shift-home-card"
          ng-href="{{::c.data.calendarUrl}}"
