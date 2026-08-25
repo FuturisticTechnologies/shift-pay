@@ -194,3 +194,35 @@ data.
   and May–July day rows were reseeded for all of them. The manager cases derive
   their expectations at runtime from `manager=<me>^active=true`, so they absorb
   this — but any figure you remember from an earlier run is stale.
+
+## Harness handover (SP-104)
+
+Written on rolling off the project, 25 August 2026. Everything a run needs is
+in this repository; nothing lives on the machine of whoever built it.
+
+**Where the moving parts are**
+
+| Concern | File |
+| --- | --- |
+| Instance, credentials, run modes | `automation/playwright.config.ts` + the gitignored connection file |
+| Table API calls, sign-in, portal navigation | `automation/lib/servicenow.ts` |
+| Widget selectors and month arithmetic | `automation/lib/shiftpay.ts` |
+| Bulk fixture seeding and teardown | `automation/lib/seed.ts` |
+| The nine documented cases | `automation/specs/shiftpay-cases.spec.ts` |
+| Performance smoke, run on demand | `automation/specs/perf-smoke.spec.ts` |
+
+**Three things not to undo**
+
+1. **Selectors live in one file.** When a template changes, fix
+   `lib/shiftpay.ts` and nothing else. The moment a selector is inlined into a
+   spec, a template change becomes a hunt through nine of them.
+2. **Retries are bounded and cover waits only, never assertions.** A retry that
+   can mask a failed assertion turns a red run green for no reason, and the
+   whole value of this pack is that its red runs mean something.
+3. **The three expected failures stay red.** TC-SP-004, TC-SP-005 and TC-SP-009
+   fail because the product does. If a run goes fully green, the assertions
+   broke — check them before believing the good news.
+
+**Verified handover.** Neha ran the complete pack from a clean checkout on
+22 August, unaided, with six passing and three failing as expected. That run,
+rather than a walkthrough, is what closes SP-104.
