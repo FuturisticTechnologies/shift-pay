@@ -73,6 +73,7 @@ Each widget folder is one Service Portal widget, split into its component fields
 ### 🏠 Landing page
 - Greets the signed-in user by first name
 - Cards through to the calendar, manager approvals and reports
+- Compensatory-off balance: unused entitlements whose window has not closed (today included), with the earliest closing date. Lapsed ones are not counted
 - Every destination page ID is a widget option — no hard-coded portal links
 
 ### 🗓️ Employee calendar
@@ -366,6 +367,9 @@ Any page opens directly as `https://<instance>.service-now.com/shiftpay?id=<page
 | `calendar_title` / `calendar_description` / `calendar_link_label` / `calendar_page_id` | "My Shift Calendar" … `fill_shift` |
 | `manager_title` / `manager_description` / `manager_link_label` / `manager_page_id` | "Manager Approvals" … `manager_approval` |
 | `reports_title` / `reports_description` / `reports_link_label` / `reports_page_id` | "Reports" … `shift_reports` |
+| `enable_co_entitlement` | `true`. When off, the balance is hidden and the entitlement table is not read |
+| `co_balance_title` | "Compensatory off" |
+| `catalog_table` / `entitlement_table` | Same defaults as the employee calendar |
 
 ### Employee calendar options
 
