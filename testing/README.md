@@ -97,6 +97,16 @@ broken one.
 | TC-SP-005 | **FAIL (real)** | The weekend dropdown offers two shifts the documented rules forbid |
 | TC-SP-009 | **FAIL (introduced)** | The "Awaiting action" count contradicts the queue — a deliberate demo defect |
 
+That table is duplicated in machine-readable form in
+`automation/lib/expected-outcomes.ts`, so a run can be checked against it
+without anyone having to remember the prose. `compareRun()` reports deviations
+in **both** directions: a case that was expected to fail and passed is the more
+interesting one, because it means either a defect was fixed without the spec
+being updated, or an assertion has quietly stopped asserting. A case that did
+not run at all counts as a deviation too — a missing case is not a passing case.
+Fixing a defect means changing its entry there and in
+`TEST-CASES-SHIFTPAY.md` in the same commit.
+
 **TC-SP-004** is the serious one. `c.saveCell`, `c.clearCell` and `c.bulkApply`
 all branch on `r.data.error`; the calendar server script never sets it — all six
 refusal paths call `gs.addErrorMessage()` instead. So every server-side refusal
