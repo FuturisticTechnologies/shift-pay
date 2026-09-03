@@ -279,6 +279,28 @@ SELECTEDVALUE(DimShiftType[color_hex])
 > week rows too, and the week rows are clipped to the month, so a week straddling
 > month-end appears twice. Unfiltered, you double-count.
 
+### 5b. Reconcile before anyone acts on the numbers
+
+```bash
+SN_INSTANCE=dev227442 SN_USER=admin SN_PASSWORD=... \
+  node "Power BI/reconcile-monthly-totals.mjs" 2026 8
+```
+
+Read-only. It prints the month-row total, the week-row total and what an
+unfiltered measure would report, so the size of the double-count is visible in
+rupees rather than only described above. Then it lists month totals per user —
+compare a couple against the Manager Approval drill-in for the same month; if
+they agree to the rupee, the model is reading the right rows.
+
+It also flags the states that make a total untrustworthy rather than merely
+surprising: a user with week rows but no month row (the report shows nothing
+while their calendar shows work), an amount with no rate snapshot behind it,
+and any unexpected `u_period_type` that a `"month"` filter would silently drop.
+
+Note the month argument is 1-indexed, matching `u_month`. The widgets are
+0-indexed and convert at the table boundary; this script sits on the table side
+of that boundary.
+
 ### 6. Report pages
 
 **Pay by month** — card with `Total Pay`. Matrix: rows `DimDate[Month]`, columns
