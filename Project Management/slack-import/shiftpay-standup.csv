@@ -1,0 +1,21 @@
+timestamp,channel,username,message
+1780889700,shiftpay-standup,Rucha Joshi,Standup on SP-10: starting the calendar month grid today. Template plus client script skeleton. No blockers.
+1780889820,shiftpay-standup,Shashank Shukla,Standup on SP-62: setting up the scoped app and the portal page. Will have a deployable shell by Wednesday.
+1780889940,shiftpay-standup,Divya Maram,Standup on SP-72: creating the five tables and seeding the shift type catalogue.
+1781494560,shiftpay-standup,Rucha Joshi,Standup on SP-14: grid renders a real month from the instance. Starting single day save today.
+1781494680,shiftpay-standup,Neha Chauhan,Standup on SP-55: drafting the test case spec. Aiming for the markdown to be the only place a case is defined.
+1782099240,shiftpay-standup,Divya Maram,Standup on SP-39: starting the semantic catalogue columns. This is the one that decides whether renaming a shift type breaks behaviour.
+1782703980,shiftpay-standup,Rucha Joshi,"Standup on SP-14: save, change and clear all work with no page reload. Totals recompute on the client from the patched maps."
+1783308720,shiftpay-standup,Shashank Shukla,Standup on SP-32: extracting the aggregator and the entitlement logic out of the calendar server script. Both need to be parameterised by user.
+1784518500,shiftpay-standup,Rucha Joshi,"Standup on SP-22: starting the manager approval queue. Tabs by month, search, stat strip."
+1784518620,shiftpay-standup,Neha Chauhan,Standup on SP-49: building the Playwright harness. Target is one command per case end to end.
+1785123240,shiftpay-standup,Neha Chauhan,"Standup on SP-50: harness signs in, opens the calendar and drives a real save. Writes touch only my own calendar two months ahead and reverse themselves."
+1785123360,shiftpay-standup,Geetha Nallamada,"SP-50 — Please keep that constraint permanently. Nothing in the pack should approve, reject or correct a timesheet."
+1785727980,shiftpay-standup,Geetha Nallamada,"Standup on SP-43: starting the Power BI layer this sprint. Read-only over the same tables. It reimplements no shift or pay rule, that is a hard line."
+1786937700,shiftpay-standup,Shashank Shukla,"Standup on SP-66: this sprint I retire the legacy account from every application artifact. It should not appear as an owner, approver or in the created and updated by fields anywhere."
+1788147240,shiftpay-standup,Shashank Shukla,Standup on SP-69: the instance is moving. Retargeting the app and the test pack to dev227442 today.
+1788406380,shiftpay-standup,Rucha Joshi,"Standup on SP-57: on the P1. Server sets the error field in all six refusal paths, client stops repainting on failure. Should be ready for Neha tomorrow."
+1788406500,shiftpay-standup,Shashank Shukla,Standup on SP-75: finishing the technical document builder. Then the deployment traps section for handover.
+1788406620,shiftpay-standup,Neha Chauhan,"Standup on SP-56: re-running the pack after Rucha's fix lands, and updating the case spec if the P1 closes."
+1788406740,shiftpay-standup,Divya Maram,"Standup on SP-58: weekend catalogue fix with Neha, then the setup runbook review."
+1788406860,shiftpay-standup,Geetha Nallamada,"Standup on SP-76: handover deck. One session covering the widget contract, the three Script Includes, the deployment traps and the test pack. Aiming for the 11th."
