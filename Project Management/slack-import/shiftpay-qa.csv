@@ -1,0 +1,45 @@
+timestamp,channel,username,message
+1777610880,shiftpay-qa,Swopneel,SP-8 — Thanks. Starting with the coverage model. I would rather we agree now what we are deliberately not testing than discover it in September.
+1777874400,shiftpay-qa,Swopneel,"SP-92 — Strategy draft is up. Three layers: API contract tests on the five tables, a deliberately thin layer of widget journeys, and a nightly regression run."
+1778060400,shiftpay-qa,Swopneel,"SP-94 — Seeding goes through the Table API, not through the UI. A test that has to click its own fixtures into place fails for the wrong reason and then gets ignored."
+1778223000,shiftpay-qa,Swopneel,"SP-95 — Harness runs headless in CI and headed locally on the same code path, with screenshots and traces captured either way. Capturing on success costs nothing and gives you a last good run to compare against."
+1778559000,shiftpay-qa,Swopneel,"SP-96 — Nightly pipeline is green against the dev instance. It tests almost nothing yet, which is the point: the pipeline exists before the pressure does."
+1778834100,shiftpay-qa,Swopneel,"SP-97 — Contract tests on the five tables are in. If a column gets renamed the suite names the column, instead of the first symptom being a widget rendering blank."
+1779255900,shiftpay-qa,Swopneel,"SP-98 — Credentials never land in the repo. The harness reads them from a gitignored file and CI from runner secrets, and it fails with a readable message rather than a stack trace when the file is missing."
+1780633200,shiftpay-qa,Swopneel,"SP-8 — Harness is ready for whatever lands. Neha, once your case spec is drafted I will wire the automated cases into it rather than maintaining a parallel set."
+1781774100,shiftpay-qa,Neha Chauhan,"SP-53 — Spec format proposal: heading per case, then a pipe table of labelled metadata. The evidence generator parses it so a document can never claim an expected result the spec does not contain."
+1781774880,shiftpay-qa,Geetha Nallamada,SP-52 — That is exactly the property I want. Nothing retyped between spec and evidence.
+1781776800,shiftpay-qa,Neha Chauhan,"SP-53 — Swopneel, the spec parses now. Your suite can read the case IDs straight out of it, so a case only ever gets defined once."
+1782108300,shiftpay-qa,Neha Chauhan,SP-55 — I will add a case that renames a shift type and asserts nothing changes. That is the only way we know the property still holds in six months.
+1782453000,shiftpay-qa,Swopneel,SP-100 — Writing negative tests for every server-side refusal path. Six of them. I want to see exactly what a user sees when the server says no.
+1782814200,shiftpay-qa,Swopneel,"SP-100 — The refusal tests are not failing, and that is the problem. The server refuses the write and the calendar repaints as though it succeeded. Neha, this is yours to raise properly."
+1782816600,shiftpay-qa,Neha Chauhan,"SP-57 — First real finding. When the server refuses a write, the calendar repaints as if it succeeded. I set an invalid day deliberately and the chip appeared."
+1782818400,shiftpay-qa,Neha Chauhan,SP-57 — Raising it as P1. A silent refusal that looks like a success is worse than an error message.
+1782818700,shiftpay-qa,Neha Chauhan,SP-57 — Raised as P1. Swopneel's refusal suite is what caught it; my manual pass only confirmed what he had already found.
+1783501200,shiftpay-qa,Swopneel,"SP-99 — Building the entitlement window regression. Seven weekdays means the interesting cases are the ones straddling a weekend, so that is what I generate rather than a uniform spread."
+1784701200,shiftpay-qa,Neha Chauhan,"SP-51 — Keeping every selector and the month arithmetic in one library file. When Rucha changes a template I want it to be a one-file fix, not a hunt through nine specs."
+1784718600,shiftpay-qa,Swopneel,"SP-101 — Pinning selectors to stable hooks and adding a bounded retry on waits only, never on assertions. A flaky suite gets ignored, and an ignored suite is worse than no suite at all."
+1784869800,shiftpay-qa,Neha Chauhan,SP-23 — Careful with bulk selection. If a row is filtered out by tab or search it must not be sweepable into a bulk action. Manager clicks select all while filtered and approves the world.
+1785321300,shiftpay-qa,Neha Chauhan,SP-58 — Second finding. On a Saturday the calendar offers six shift types where the rules allow four. Two catalogue rows carry the weekend flag that should not.
+1785390600,shiftpay-qa,Neha Chauhan,"Moved SP-49 to In Review. Rucha, can you sanity check the selectors in SP-51 before I close either of them?"
+1785910800,shiftpay-qa,Swopneel,"SP-102 — Cross-browser matrix is running on Chromium and WebKit. Leaving Firefox out deliberately: the portal is not supported there, so a failure would be noise rather than a finding."
+1786084800,shiftpay-qa,Neha Chauhan,SP-52 — Evidence generator is producing Word records now. Each one merges the case definition with the run output.
+1786085280,shiftpay-qa,Geetha Nallamada,SP-54 — Can the branding be swapped without touching the generator?
+1786085580,shiftpay-qa,Neha Chauhan,"SP-54 — Yes, it is all in one module. Rebrand is one file."
+1786350900,shiftpay-qa,Neha Chauhan,SP-57 — Formalising TC-SP-004 for the P1. Expected result is that a refused write shows an error and leaves the cell unchanged. Currently it does neither.
+1786428300,shiftpay-qa,Neha Chauhan,"SP-55 — Three of the nine automated cases are expected to fail. Writing that into the testing README in bold. A fully green run means something is broken, most likely the assertions."
+1786510200,shiftpay-qa,Neha Chauhan,SP-59 — For the demo we want one defect that is unambiguously ours and safe. Suggestions?
+1786511700,shiftpay-qa,Neha Chauhan,"Logged SP-59 with the deliberate-defect note in the description itself, so nobody closes it by accident in a backlog grooming."
+1786524600,shiftpay-qa,Swopneel,"SP-59 — I have mirrored the deliberate-defect note into the suite as well. If that tile ever starts reporting the right count, the pack should be the thing that tells us."
+1786616520,shiftpay-qa,Neha Chauhan,SP-60 — So no date is ever a holiday and nothing warns. How long has that been true?
+1786945920,shiftpay-qa,Neha Chauhan,"SP-67 — Zero against the seven tables you listed, or zero across the app?"
+1787029200,shiftpay-qa,Swopneel,"SP-103 — Performance smoke done. Month load stays under two seconds with a full year of submissions seeded behind it, so nothing in the calendar scales with history."
+1787131320,shiftpay-qa,Neha Chauhan,"SP-68 — I will keep the standing check as a QA step. One query, catches a wrong-profile stamp whatever class it lands on."
+1787292600,shiftpay-qa,Swopneel,"SP-104 — Walked Neha through the harness, the seeding path and the CI wiring. Everything a run needs is in the repo. Nothing lives on my machine."
+1787395800,shiftpay-qa,Neha Chauhan,"SP-104 — Ran the whole pack from a clean checkout myself with Swopneel watching rather than the other way round. Six pass, three fail as expected. Handover accepted."
+1787827800,shiftpay-qa,Neha Chauhan,"SP-55 — Forty cases documented, nine automated. Full run: six pass, three fail, and the three that fail are the three that should."
+1788327300,shiftpay-qa,Neha Chauhan,"SP-56 — Full pack re-run on dev227442. Six pass, three fail, same three. Evidence records regenerated against the new instance."
+1788328320,shiftpay-qa,Neha Chauhan,"SP-57 — Defect status for the record. P1 on the invisible refusals is open, the weekend data fix is in progress with Divya, the lead tile is the deliberate one, and the two config findings are documented but not automated."
+1788339000,shiftpay-qa,Neha Chauhan,"SP-90 — Running a second regression pass over the six passing cases with fresh evidence records each time. One clean run after an instance move is not evidence, two is."
+1788413700,shiftpay-qa,Neha Chauhan,SP-90 — Second pass done. Six pass on both runs and the three expected failures reproduce identically. The retarget moved the pack cleanly and did not quietly change what we assert.
+1788424920,shiftpay-qa,Neha Chauhan,SP-84 — Checked it against my own calendar and the tile matches what the calendar allows me to log. Fine by me.
