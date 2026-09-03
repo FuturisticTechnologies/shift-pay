@@ -32,6 +32,48 @@ Everything below is for whoever rebuilds or extends the model.
 
 ---
 
+## Fastest rebuild: open the template
+
+`ShiftPay-Reports.pbit` in this folder is the model as a Power BI **template** —
+the seven queries, the type coercions, the relationships, the date table and 21
+measures, plus four report pages. Opening it prompts for the instance URL, runs
+the queries, and gives you a live report. **File → Save As** then produces a
+`.pbix`.
+
+```
+Open ShiftPay-Reports.pbit
+  → prompted for Instance   (default https://dev227442.service-now.com)
+  → prompted for credentials: Basic, scope = instance root
+  → four pages load
+  → File → Save As → ShiftPay.pbix
+```
+
+A template stores its model as plain JSON, which is why this one exists at all: a
+`.pbix` keeps the same model in a compressed part only Desktop can write, so it
+cannot be generated outside Desktop. That is also why the `.pbit` is committed
+and the `.pbix` is not — the template carries no data, and therefore no pay
+figures.
+
+It is generated, not hand-maintained:
+
+```powershell
+py -3 tools/build-powerbi-template.py               # with the four report pages
+py -3 tools/build-powerbi-template.py --no-visuals  # model only, four empty pages
+```
+
+Use `--no-visuals` if Desktop rejects the report layout. The model is the
+valuable half; visuals can be dragged on by hand against
+[additional-reports.md](additional-reports.md).
+
+Two deliberate omissions. **`Corrections` is not in the template** — it is
+legitimately empty until a manager corrects a day, and an empty Table API
+response carries no field names, so the query would load a zero-column table and
+block the refresh. Add it once the table has a row. And **the five original
+pages from §6 are not in it either**; the template carries the four newer pages,
+so building the rest still follows the walkthrough below.
+
+---
+
 ## Rebuilding from scratch
 
 Budget 2–3 hours the first time. Steps 1–3 are copy-paste and take about twenty
