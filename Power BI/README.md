@@ -329,6 +329,14 @@ Optionally a sixth page on `Corrections` — `date`, `previous_shift`, `new_shif
 `reason`, `changed_by`. The manager-correction audit trail, currently write-only from
 the app's point of view.
 
+Four further pages — rate integrity, submission timeliness, weekend load and the
+CO lifecycle — are specified with their measures in
+[additional-reports.md](additional-reports.md). Each answers something the
+application cannot, and each carries the caveat that makes it trustworthy: the
+weekend page overstates until SP-58 lands, and the rate page will always show
+some zero-rate shifts because the aggregator prices from active catalogue rows
+only.
+
 ### 7. Save and refresh
 
 Save the `.pbix` in this folder. The refresh loop is one button:
