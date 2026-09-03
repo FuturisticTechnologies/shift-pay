@@ -1,0 +1,14 @@
+timestamp,channel,username,message
+1785736200,shiftpay-reporting,Geetha Nallamada,"SP-45 — Two rules the model must not break. Money comes from the summary snapshot, never live catalogue rates. And every money measure filters to month rows."
+1785736680,shiftpay-reporting,Divya Maram,SP-46 — Why the month filter specifically?
+1785737040,shiftpay-reporting,Geetha Nallamada,"SP-46 — The summary table holds clipped week rows alongside month rows. Without the filter every money figure double-counts and the report is confidently wrong, which is worse than blank."
+1785737460,shiftpay-reporting,Divya Maram,SP-46 — Understood. I will put the filter in the base measure so no page-level visual can forget it.
+1785835200,shiftpay-reporting,Divya Maram,SP-44 — Queries are per table and select only the columns the report uses. A schema change then shows up as a named missing column instead of a silently empty visual.
+1787646900,shiftpay-reporting,Divya Maram,"SP-47 — Cost by shift type and cost by manager pages are done, plus a drill-through to the day detail for one employee month."
+1787724600,shiftpay-reporting,Geetha Nallamada,"SP-48 — Writing the rebuild runbook. Assumption is a machine with nothing installed and no account. Divya, does the file need a live connection to demo?"
+1787725080,shiftpay-reporting,Divya Maram,"SP-48 — No, the data is cached in the file. Desktop is free and no sign-in is needed to open it. A demo needs one install and nothing else."
+1788260400,shiftpay-reporting,Divya Maram,"SP-91 — Starting an August reconciliation before handover, report totals against what the Manager Approval widget shows for the same month. If those two disagree I would rather find it than the client."
+1788324300,shiftpay-reporting,Divya Maram,SP-91 — First pass is out by roughly double on every reportee. Checking my measures before I go blaming the data.
+1788325080,shiftpay-reporting,Geetha Nallamada,SP-46 — Roughly double is the clipped week rows counting alongside the month rows. Check the period filter is actually on the measure that visual is reading.
+1788325860,shiftpay-reporting,Divya Maram,"That was it. One visual was reading a measure that bypassed the base filter. Exactly the failure SP-46 exists to prevent, and it took ten minutes rather than a day because we already knew where to look."
+1788418800,shiftpay-reporting,Divya Maram,August reconciled across four reportees. Report and widget agree to the rupee. Closing SP-91.

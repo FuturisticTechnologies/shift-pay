@@ -92,5 +92,36 @@
     "default": "shift_reports",
     "hint": "Service Portal page ID opened by the reports card.",
     "section": "Reports card"
+  },
+  {
+    "name": "enable_co_entitlement",
+    "label": "Show compensatory-off balance",
+    "type": "boolean",
+    "default": true,
+    "hint": "When off, the balance tile is not rendered and the entitlement table is not read.",
+    "section": "Compensatory off"
+  },
+  {
+    "name": "co_balance_title",
+    "label": "Balance tile label",
+    "type": "string",
+    "default": "Compensatory off",
+    "section": "Compensatory off"
+  },
+  {
+    "name": "catalog_table",
+    "label": "Shift type catalogue table",
+    "type": "string",
+    "default": "u_shift_type_catalog",
+    "hint": "Mirrors the calendar widget option of the same name.",
+    "section": "Compensatory off"
+  },
+  {
+    "name": "entitlement_table",
+    "label": "CO entitlement table",
+    "type": "string",
+    "default": "u_shift_co_entitlement",
+    "hint": "Mirrors the calendar widget option of the same name.",
+    "section": "Compensatory off"
   }
 ]

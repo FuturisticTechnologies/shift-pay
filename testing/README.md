@@ -97,6 +97,16 @@ broken one.
 | TC-SP-005 | **FAIL (real)** | The weekend dropdown offers two shifts the documented rules forbid |
 | TC-SP-009 | **FAIL (introduced)** | The "Awaiting action" count contradicts the queue — a deliberate demo defect |
 
+That table is duplicated in machine-readable form in
+`automation/lib/expected-outcomes.ts`, so a run can be checked against it
+without anyone having to remember the prose. `compareRun()` reports deviations
+in **both** directions: a case that was expected to fail and passed is the more
+interesting one, because it means either a defect was fixed without the spec
+being updated, or an assertion has quietly stopped asserting. A case that did
+not run at all counts as a deviation too — a missing case is not a passing case.
+Fixing a defect means changing its entry there and in
+`TEST-CASES-SHIFTPAY.md` in the same commit.
+
 **TC-SP-004** is the serious one. `c.saveCell`, `c.clearCell` and `c.bulkApply`
 all branch on `r.data.error`; the calendar server script never sets it — all six
 refusal paths call `gs.addErrorMessage()` instead. So every server-side refusal
@@ -194,3 +204,35 @@ data.
   and May–July day rows were reseeded for all of them. The manager cases derive
   their expectations at runtime from `manager=<me>^active=true`, so they absorb
   this — but any figure you remember from an earlier run is stale.
+
+## Harness handover (SP-104)
+
+Written on rolling off the project, 25 August 2026. Everything a run needs is
+in this repository; nothing lives on the machine of whoever built it.
+
+**Where the moving parts are**
+
+| Concern | File |
+| --- | --- |
+| Instance, credentials, run modes | `automation/playwright.config.ts` + the gitignored connection file |
+| Table API calls, sign-in, portal navigation | `automation/lib/servicenow.ts` |
+| Widget selectors and month arithmetic | `automation/lib/shiftpay.ts` |
+| Bulk fixture seeding and teardown | `automation/lib/seed.ts` |
+| The nine documented cases | `automation/specs/shiftpay-cases.spec.ts` |
+| Performance smoke, run on demand | `automation/specs/perf-smoke.spec.ts` |
+
+**Three things not to undo**
+
+1. **Selectors live in one file.** When a template changes, fix
+   `lib/shiftpay.ts` and nothing else. The moment a selector is inlined into a
+   spec, a template change becomes a hunt through nine of them.
+2. **Retries are bounded and cover waits only, never assertions.** A retry that
+   can mask a failed assertion turns a red run green for no reason, and the
+   whole value of this pack is that its red runs mean something.
+3. **The three expected failures stay red.** TC-SP-004, TC-SP-005 and TC-SP-009
+   fail because the product does. If a run goes fully green, the assertions
+   broke — check them before believing the good news.
+
+**Verified handover.** Neha ran the complete pack from a clean checkout on
+22 August, unaided, with six passing and three failing as expected. That run,
+rather than a walkthrough, is what closes SP-104.

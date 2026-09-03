@@ -1,0 +1,39 @@
+timestamp,channel,username,message
+1777610100,shiftpay-general,Geetha Nallamada,"Swopneel joins today as SDET, a month ahead of the build team. Test engineering goes in before the first widget, not bolted on after it. (SP-8)"
+1777875240,shiftpay-general,Geetha Nallamada,"SP-92 — Agreed on all three, and keep the widget layer thin. Most of what can go wrong in this application is data and rules, not clicks."
+1778559720,shiftpay-general,Geetha Nallamada,SP-96 — This is precisely why the SDET started a month early. Nobody debugs CI during a release week now.
+1780055400,shiftpay-general,Geetha Nallamada,"Pre-build phase closed. SP-8 is done: harness, nightly pipeline and contract tests are live before a line of widget code exists. Build team ramps on 5 June."
+1780631040,shiftpay-general,Geetha Nallamada,"Kicking off ShiftPay today. Scope is the BRD as agreed: daily shift logging, CO entitlement, manager approval and pay computation. Table ACLs are explicitly out of scope for the POC, please do not add them. (SP-71)"
+1780631520,shiftpay-general,Shashank Shukla,Noted. The app runs as admin who bypasses ACLs anyway. I will make sure that is written down as a scope decision rather than a gap someone tries to close later. (SP-71)
+1780632060,shiftpay-general,Neha Chauhan,If ACLs are out of scope I want the widget-level guards treated as the real access control. I will write cases against those. (SP-71)
+1780632300,shiftpay-general,Geetha Nallamada,"Agreed, that is the right reading. Guards are in scope, ACLs are not. (SP-71)"
+1780890300,shiftpay-general,Geetha Nallamada,"Sprint 1 scope is on the board: SP-10, SP-21 and SP-71. If it is not on the board it does not get worked on this fortnight."
+1781257080,shiftpay-general,Geetha Nallamada,"BRD is out for sponsor review. Please read section 4 on the CO entitlement, that is where the rules are subtle and I want the team agreeing on it before code exists. (SP-71)"
+1781870400,shiftpay-general,Geetha Nallamada,"Sprint 1 closed. BRD signed off, landing page and the calendar month grid are in. Sprint 2 starts Monday: single day writes, bulk apply and the catalogue semantics work. (SP-71)"
+1781870700,shiftpay-general,Geetha Nallamada,"Board after sprint 1: SP-10, SP-21 and SP-71 to Done. SP-14 and SP-17 carry into sprint 2, both already estimated."
+1783079100,shiftpay-general,Geetha Nallamada,"Sprint 2 closed. Day writes, bulk apply and the data-driven semantics are in. One P1 open. Sprint 3 is the Script Include extraction, which I consider the highest risk work in the project. (SP-3)"
+1783079400,shiftpay-general,Geetha Nallamada,"Sprint 2 board: SP-14, SP-17 and SP-39 to Done. SP-57 stays open. Nobody closes a defect to tidy the board."
+1784289000,shiftpay-general,Geetha Nallamada,"Sprint 3 closed. Aggregator and entitlements are out of the widget and parameterised by user, month submission and locking work, deployment path is repeatable. Good sprint. (SP-3)"
+1785498900,shiftpay-general,Geetha Nallamada,"Sprint 4 closed. Approval queue, bulk actions with per-row guards, calendar rules extracted, harness running. Two open defects, both understood. (SP-2)"
+1785905760,shiftpay-general,Geetha Nallamada,"Constraints from the business side. Only a submitted month, approved is final and rejected is back with the employee. Reason is mandatory. And a manager may fix a mistake, not create a shift the employee could never have logged. (SP-27)"
+1785907500,shiftpay-general,Geetha Nallamada,SP-27 is thirteen points and the riskiest item in sprint 5. Splitting the guard and the audit row out as SP-28 and SP-29 so they can be reviewed separately.
+1786352220,shiftpay-general,Geetha Nallamada,Leave it failing for now and keep the case red. I would rather the pack tell the truth about a known P1 than have us quietly patch it before the demo. (SP-57)
+1786511340,shiftpay-general,Geetha Nallamada,"Approved, with one condition. Put a comment on the line saying it is deliberate, and whoever fixes it must update the test case spec in the same change or the pack goes green for no visible reason. (SP-59)"
+1786618080,shiftpay-general,Geetha Nallamada,Both are real and both are documented findings. Record them in the spec even though they are not automated. A finding that only lives in Slack is a finding we lose. (SP-60)
+1786708800,shiftpay-general,Geetha Nallamada,"Sprint 5 closed. Day correction with audit, review drill-in, Power BI model and the evidence generator. Five defects on the board, four real and one deliberate. (SP-5)"
+1787028720,shiftpay-general,Geetha Nallamada,This is the lesson worth writing down: a sweep that enumerates its targets reports success about the targets it knows. Query the base class and let the scope confine it. (SP-67)
+1787132400,shiftpay-general,Geetha Nallamada,Swopneel rolls off on the 25th. SP-104 is the harness handover to Neha and I want it done properly rather than in the last hour of the last day.
+1787306280,shiftpay-general,Geetha Nallamada,"That is the right scoping. A decision stays yours when someone changes team, and the query cannot return anyone else's decisions. (SP-30)"
+1787307240,shiftpay-general,Geetha Nallamada,"Accepted cost of keeping approval state on the timesheet row. Document it as a known limitation rather than a bug, and if the client wants a full audit trail later that is a separate table. (SP-30)"
+1787659200,shiftpay-general,Swopneel,"Last day on ShiftPay. SP-8 and SP-104 are closed and the pack runs without me. One parting request: the three expected failures stay red on purpose, so please do not let anyone tidy them away."
+1787659680,shiftpay-general,Geetha Nallamada,Thank you Swopneel. Test engineering going in a month before the first widget is the reason the defects we are handing over are documented rather than discovered by the client.
+1787918400,shiftpay-general,Geetha Nallamada,"Sprint 6 closed. History tab, server-side money stripping, reporting pages, the metadata sweep and the full case set. One sprint left before handover. (SP-6)"
+1787918700,shiftpay-general,Geetha Nallamada,"Sprint 6 closed: SP-30, SP-31, SP-47, SP-48, SP-55 and SP-66 to Done. Carrying SP-57 through SP-61 into sprint 7 as open defects."
+1788234600,shiftpay-general,Geetha Nallamada,"Pulled SP-84 into sprint 7 from the backlog. SP-80 through SP-89 stay in the backlog and are phase two, not scope creep for this one."
+1788237900,shiftpay-general,Geetha Nallamada,"Handover documents. I want the technical design and the test cases generated from source rather than written by hand, so they cannot drift from what they describe. (SP-73)"
+1788244500,shiftpay-general,Geetha Nallamada,"Pulling the CO balance tile into sprint 7. It is display only and the number already exists in the entitlements Script Include, so it is a small ask with real value in the handover demo. (SP-84)"
+1788327840,shiftpay-general,Geetha Nallamada,That is the result I wanted. The pack proves it is still testing something. (SP-56)
+1788414240,shiftpay-general,Geetha Nallamada,That is the check that matters after a move. Closing SP-90.
+1788419280,shiftpay-general,Geetha Nallamada,"Worth recording why they agree rather than just that they do. Both read the summary snapshot instead of live catalogue rates, so they cannot drift apart. That decision from sprint 5 is what is paying off here. (SP-45)"
+1788426600,shiftpay-general,Geetha Nallamada,"Board update. Five more closed today across all five of us. What is left open is the four defects, the weekend catalogue fix with Divya and the handover session on the 11th. Nothing is being closed to make the board look better. (SP-5)"
+1788429000,shiftpay-general,Geetha Nallamada,"Reminder for the handover pack. Every known defect stays on the board with its status. We hand over an honest picture, not a green one. (SP-5)"

@@ -1,0 +1,209 @@
+timestamp,channel,user,message
+1777610100,shiftpay-general,Geetha Nallamada,"Swopneel joins today as SDET, a month ahead of the build team. Test engineering goes in before the first widget, not bolted on after it. (SP-8)"
+1777610880,shiftpay-qa,Swopneel,SP-8 — Thanks. Starting with the coverage model. I would rather we agree now what we are deliberately not testing than discover it in September.
+1777874400,shiftpay-qa,Swopneel,"SP-92 — Strategy draft is up. Three layers: API contract tests on the five tables, a deliberately thin layer of widget journeys, and a nightly regression run."
+1777875240,shiftpay-general,Geetha Nallamada,"SP-92 — Agreed on all three, and keep the widget layer thin. Most of what can go wrong in this application is data and rules, not clicks."
+1778060400,shiftpay-qa,Swopneel,"SP-94 — Seeding goes through the Table API, not through the UI. A test that has to click its own fixtures into place fails for the wrong reason and then gets ignored."
+1778223000,shiftpay-qa,Swopneel,"SP-95 — Harness runs headless in CI and headed locally on the same code path, with screenshots and traces captured either way. Capturing on success costs nothing and gives you a last good run to compare against."
+1778559000,shiftpay-qa,Swopneel,"SP-96 — Nightly pipeline is green against the dev instance. It tests almost nothing yet, which is the point: the pipeline exists before the pressure does."
+1778559720,shiftpay-general,Geetha Nallamada,SP-96 — This is precisely why the SDET started a month early. Nobody debugs CI during a release week now.
+1778834100,shiftpay-qa,Swopneel,"SP-97 — Contract tests on the five tables are in. If a column gets renamed the suite names the column, instead of the first symptom being a widget rendering blank."
+1779255900,shiftpay-qa,Swopneel,"SP-98 — Credentials never land in the repo. The harness reads them from a gitignored file and CI from runner secrets, and it fails with a readable message rather than a stack trace when the file is missing."
+1780055400,shiftpay-general,Geetha Nallamada,"Pre-build phase closed. SP-8 is done: harness, nightly pipeline and contract tests are live before a line of widget code exists. Build team ramps on 5 June."
+1780631040,shiftpay-general,Geetha Nallamada,"Kicking off ShiftPay today. Scope is the BRD as agreed: daily shift logging, CO entitlement, manager approval and pay computation. Table ACLs are explicitly out of scope for the POC, please do not add them. (SP-71)"
+1780631520,shiftpay-general,Shashank Shukla,Noted. The app runs as admin who bypasses ACLs anyway. I will make sure that is written down as a scope decision rather than a gap someone tries to close later. (SP-71)
+1780632060,shiftpay-general,Neha Chauhan,If ACLs are out of scope I want the widget-level guards treated as the real access control. I will write cases against those. (SP-71)
+1780632300,shiftpay-general,Geetha Nallamada,"Agreed, that is the right reading. Guards are in scope, ACLs are not. (SP-71)"
+1780633200,shiftpay-qa,Swopneel,"SP-8 — Harness is ready for whatever lands. Neha, once your case spec is drafted I will wire the automated cases into it rather than maintaining a parallel set."
+1780648320,shiftpay-data,Divya Maram,"SP-72 — First pass at the data model: five tables. Catalogue, submission, lock, summary, CO entitlement. Posting the column list in the thread."
+1780649400,shiftpay-data,Geetha Nallamada,"SP-72 — Summary table needs a rate snapshot column. If we ever read live rates for a past month, one rate change silently rewrites payroll history."
+1780649760,shiftpay-data,Divya Maram,SP-72 — Adding rate snapshot and amount. Taken at compute time.
+1780889700,shiftpay-standup,Rucha Joshi,Standup on SP-10: starting the calendar month grid today. Template plus client script skeleton. No blockers.
+1780889820,shiftpay-standup,Shashank Shukla,Standup on SP-62: setting up the scoped app and the portal page. Will have a deployable shell by Wednesday.
+1780889940,shiftpay-standup,Divya Maram,Standup on SP-72: creating the five tables and seeding the shift type catalogue.
+1780890300,shiftpay-general,Geetha Nallamada,"Sprint 1 scope is on the board: SP-10, SP-21 and SP-71. If it is not on the board it does not get worked on this fortnight."
+1780985400,shiftpay-dev,Rucha Joshi,SP-12 — Question on the widget contract. Do I read from c.data directly in the template or copy it off at bootstrap?
+1780986120,shiftpay-dev,Shashank Shukla,"SP-12 — Copy it off at bootstrap into c.entries and c.allowedShifts. Every write re-runs the whole server script and returns fresh data, so you patch your local maps rather than reloading the page."
+1780986660,shiftpay-dev,Rucha Joshi,SP-12 — Got it. So the template only ever renders c. That keeps the refresh path clean.
+1781088300,shiftpay-dev,Rucha Joshi,SP-13 — All custom classes are namespaced shift- now. Bootstrap 3 and Font Awesome are already there from Service Portal so I am not shipping either.
+1781154000,shiftpay-data,Divya Maram,SP-40 — Catalogue seeded with the shift types from the BRD. Colours are on the row as color_hex.
+1781154840,shiftpay-dev,Rucha Joshi,"SP-11 — Can I get a pale variant for the chip background too, or do I derive it?"
+1781155260,shiftpay-data,Divya Maram,"SP-11 — Derive it. One stored colour, one tint function. Two stored colours will drift the first time someone edits one of them."
+1781257080,shiftpay-general,Geetha Nallamada,"BRD is out for sponsor review. Please read section 4 on the CO entitlement, that is where the rules are subtle and I want the team agreeing on it before code exists. (SP-71)"
+1781494560,shiftpay-standup,Rucha Joshi,Standup on SP-14: grid renders a real month from the instance. Starting single day save today.
+1781494680,shiftpay-standup,Neha Chauhan,Standup on SP-55: drafting the test case spec. Aiming for the markdown to be the only place a case is defined.
+1781596320,shiftpay-dev,Shashank Shukla,"SP-20 — Warning for everyone touching date code. Client, data.month and input.month are 0-indexed. The stored month column is 1-indexed. Conversion happens at the table boundary and nowhere else."
+1781596740,shiftpay-dev,Rucha Joshi,SP-20 — That has bitten me twice already this week. Can we put it at the top of the README so it is not tribal knowledge.
+1781596980,shiftpay-dev,Geetha Nallamada,SP-72 — Yes. Calling it the number one footgun in the doc so nobody discovers it in production.
+1781674800,shiftpay-dev,Rucha Joshi,"SP-21 — Landing page is done. Greets by first name, both destination page IDs are widget options rather than hardcoded."
+1781774100,shiftpay-qa,Neha Chauhan,"SP-53 — Spec format proposal: heading per case, then a pipe table of labelled metadata. The evidence generator parses it so a document can never claim an expected result the spec does not contain."
+1781774880,shiftpay-qa,Geetha Nallamada,SP-52 — That is exactly the property I want. Nothing retyped between spec and evidence.
+1781776800,shiftpay-qa,Neha Chauhan,"SP-53 — Swopneel, the spec parses now. Your suite can read the case IDs straight out of it, so a case only ever gets defined once."
+1781870400,shiftpay-general,Geetha Nallamada,"Sprint 1 closed. BRD signed off, landing page and the calendar month grid are in. Sprint 2 starts Monday: single day writes, bulk apply and the catalogue semantics work. (SP-71)"
+1781870700,shiftpay-general,Geetha Nallamada,"Board after sprint 1: SP-10, SP-21 and SP-71 to Done. SP-14 and SP-17 carry into sprint 2, both already estimated."
+1782099240,shiftpay-standup,Divya Maram,Standup on SP-39: starting the semantic catalogue columns. This is the one that decides whether renaming a shift type breaks behaviour.
+1782107100,shiftpay-data,Divya Maram,"SP-39 — Proposal. Shift meaning stops living in the name and moves into columns: oc_role, allow_weekday, allow_weekend_holiday, day_category, color_hex. Code keys on sys_id only."
+1782107880,shiftpay-dev,Shashank Shukla,"SP-39 — Strong yes. The alternative is string comparison against display names, and the first time someone renames a type in production we get a silent pay bug."
+1782108300,shiftpay-qa,Neha Chauhan,SP-55 — I will add a case that renames a shift type and asserts nothing changes. That is the only way we know the property still holds in six months.
+1782190200,shiftpay-data,Divya Maram,SP-40 — Columns created. Note for the record: new columns on this app's tables go in without the u_ prefix. The pre-existing u_ fields keep their names.
+1782295800,shiftpay-dev,Rucha Joshi,"SP-17 — Bulk apply is working but it happily writes CO and compound-OC shifts across a range, which cannot be right."
+1782296520,shiftpay-dev,Shashank Shukla,"SP-18 — Correct, those need the per-day entitlement transaction. I am adding a blocksBulk guard that rejects them server-side. Do not rely on hiding them in the dropdown, the server call is reachable from the browser with any payload."
+1782297060,shiftpay-dev,Rucha Joshi,"SP-18 — Understood. Client filtering is convenience, the server decides."
+1782369300,shiftpay-data,Divya Maram,"SP-41 — Backfill script for the existing catalogue rows is written. Running it as a Fix Script, not a background script, so the scope it will run in can be read back before anything executes."
+1782369840,shiftpay-dev,Shashank Shukla,"SP-41 — Good call. A background script inherits whatever scope the session happens to be in, and that has consequences that take an hour to clean up."
+1782451080,shiftpay-dev,Shashank Shukla,"SP-42 — Added validateCatalogue. If an active row has no day_category, or CO is enabled with no consuming type, the widget shows a config banner instead of behaving unpredictably."
+1782453000,shiftpay-qa,Swopneel,SP-100 — Writing negative tests for every server-side refusal path. Six of them. I want to see exactly what a user sees when the server says no.
+1782703980,shiftpay-standup,Rucha Joshi,"Standup on SP-14: save, change and clear all work with no page reload. Totals recompute on the client from the patched maps."
+1782814200,shiftpay-qa,Swopneel,"SP-100 — The refusal tests are not failing, and that is the problem. The server refuses the write and the calendar repaints as though it succeeded. Neha, this is yours to raise properly."
+1782816600,shiftpay-qa,Neha Chauhan,"SP-57 — First real finding. When the server refuses a write, the calendar repaints as if it succeeded. I set an invalid day deliberately and the chip appeared."
+1782817260,shiftpay-dev,Rucha Joshi,SP-57 — The client branches on an error field on the response. Checking whether the server ever sets it.
+1782818040,shiftpay-dev,Shashank Shukla,"SP-57 — It does not. All six refusal paths use addErrorMessage, which never reaches the widget response. So the check is dead code on both sides."
+1782818400,shiftpay-qa,Neha Chauhan,SP-57 — Raising it as P1. A silent refusal that looks like a success is worse than an error message.
+1782818700,shiftpay-qa,Neha Chauhan,SP-57 — Raised as P1. Swopneel's refusal suite is what caught it; my manual pass only confirmed what he had already found.
+1783079100,shiftpay-general,Geetha Nallamada,"Sprint 2 closed. Day writes, bulk apply and the data-driven semantics are in. One P1 open. Sprint 3 is the Script Include extraction, which I consider the highest risk work in the project. (SP-3)"
+1783079400,shiftpay-general,Geetha Nallamada,"Sprint 2 board: SP-14, SP-17 and SP-39 to Done. SP-57 stays open. Nobody closes a defect to tidy the board."
+1783308720,shiftpay-standup,Shashank Shukla,Standup on SP-32: extracting the aggregator and the entitlement logic out of the calendar server script. Both need to be parameterised by user.
+1783309500,shiftpay-dev,Shashank Shukla,Taking SP-32 and SP-34 together. Both are mine end to end so the extraction lands in one piece rather than half a refactor.
+1783314000,shiftpay-dev,Shashank Shukla,"SP-32 — Context for why this matters. The aggregation is currently inline in the calendar and hard-wired to the session user. The manager widget has to aggregate a reportee, so as it stands it cannot reuse a line of it."
+1783314480,shiftpay-dev,Geetha Nallamada,SP-32 — Extract it. Do not let anyone write a second copy for the manager side. A second copy of payroll maths that drifts is a pay bug with a delayed fuse.
+1783314900,shiftpay-dev,Shashank Shukla,SP-32 — Agreed and I will put that in the file header so it survives me.
+1783500000,shiftpay-dev,Shashank Shukla,"SP-35 — The entitlement ordering is trickier than the BRD makes it sound. The decision about which entitlement a CO consumes has to be made before the day row exists, but recorded after it is written."
+1783500720,shiftpay-dev,Divya Maram,"SP-35 — So it is a three-phase thing. Release the previous state, write the day, commit the new state, with the reservation in between."
+1783501140,shiftpay-dev,Shashank Shukla,"SP-35 — Exactly that. releasePrevious, write, commitForNew, with reserveForNew claiming what the CO needs. Any other order either loses an entitlement or grants one twice."
+1783501200,shiftpay-qa,Swopneel,"SP-99 — Building the entitlement window regression. Seven weekdays means the interesting cases are the ones straddling a weekend, so that is what I generate rather than a uniform spread."
+1783503120,shiftpay-data,Divya Maram,SP-36 — Checking the entitlement window with Geetha. The BRD says seven days. Seven calendar days or seven working days?
+1783503660,shiftpay-data,Geetha Nallamada,"SP-36 — Seven weekdays. The intent is you get a working day back, so a window that expires over a long weekend defeats the purpose. I will tighten the BRD wording."
+1783504080,shiftpay-data,Divya Maram,"SP-36 — Good, that changes the arithmetic. Counting weekdays, not adding seven to a date."
+1783576500,shiftpay-dev,Shashank Shukla,SP-64 — Deployment trap worth broadcasting. The CLI get verb ignores the sys_id parameter. It silently returns the first row of the whole table. I verified a widget push against a completely different record for twenty minutes.
+1783576980,shiftpay-dev,Neha Chauhan,SP-64 — That is a nasty one because the readback looks like it passed. Always query by sys_id in the encoded query then.
+1783577400,shiftpay-dev,Shashank Shukla,SP-64 — Yes. Adding it to the deployment notes with the other three traps.
+1783658100,shiftpay-dev,Shashank Shukla,"SP-65 — And another. Create is not idempotent and nothing warns you. I now have two active Script Includes sharing one API name, created eleven seconds apart. The platform resolves that unpredictably."
+1783658640,shiftpay-dev,Rucha Joshi,SP-65 — How do you delete one? Is there a delete verb?
+1783659060,shiftpay-dev,Shashank Shukla,"SP-65 — There is not. It tells you to use the UI. And the confirmation dialog renders inside the main iframe, so an automated click in the top frame finds nothing and silently leaves the record alive."
+1783659600,shiftpay-dev,Geetha Nallamada,SP-62 — Please write all of this down. This is the kind of thing that costs the next person a full day.
+1783928700,shiftpay-dev,Shashank Shukla,"SP-63 — Wrote a deploy helper. It builds an ASCII-escaped, newline-normalised body file and refuses to emit one that does not round-trip. A push can return HTTP 200 and store garbage, so it also prints the readback command."
+1783929240,shiftpay-dev,Rucha Joshi,SP-63 — This has already saved me. My template had a non-ASCII character in a comment and the old path stored it mangled.
+1784113800,shiftpay-dev,Divya Maram,SP-33 — Question on the aggregator. Should recompute update the existing summary rows or replace them?
+1784114340,shiftpay-dev,Shashank Shukla,"SP-33 — Replace. Delete then insert per shift type for the affected month and weeks. Incrementing drifts the moment one write fails halfway, and there is no cheap way to detect that it has."
+1784114700,shiftpay-dev,Divya Maram,"SP-33 — One known wart then. The rate map reads active catalogue rows only, so a type deactivated after being logged re-aggregates at zero."
+1784115180,shiftpay-dev,Geetha Nallamada,"SP-33 — Leave it for now and document it. The extraction should be behaviour-neutral, so fixing it in the same change makes the refactor unreviewable. Log it separately."
+1784177100,shiftpay-dev,Shashank Shukla,SP-99 — Swopneel's window cases caught an off-by-one in my weekday count before it left my branch. That suite has already paid for itself.
+1784289000,shiftpay-general,Geetha Nallamada,"Sprint 3 closed. Aggregator and entitlements are out of the widget and parameterised by user, month submission and locking work, deployment path is repeatable. Good sprint. (SP-3)"
+1784518500,shiftpay-standup,Rucha Joshi,"Standup on SP-22: starting the manager approval queue. Tabs by month, search, stat strip."
+1784518620,shiftpay-standup,Neha Chauhan,Standup on SP-49: building the Playwright harness. Target is one command per case end to end.
+1784519100,shiftpay-dev,Rucha Joshi,Assigned myself SP-22 and SP-24. SP-25 goes to Shashank since it is the server half of the same behaviour.
+1784624400,shiftpay-dev,Shashank Shukla,"SP-37 — Third Script Include going in. Calendar rules owns the catalogue read, the holiday set, the weekend classification and the composed allowed-shift list."
+1784624880,shiftpay-dev,Rucha Joshi,SP-38 — Do I construct entitlements alongside it in the manager widget or does rules give me one?
+1784625300,shiftpay-dev,Shashank Shukla,"SP-38 — Rules builds and owns it. Ask it for the instance. If you construct one alongside, the catalogue gets read twice and the two copies can disagree about semantics, which is the worst possible failure mode here."
+1784701200,shiftpay-qa,Neha Chauhan,"SP-51 — Keeping every selector and the month arithmetic in one library file. When Rucha changes a template I want it to be a one-file fix, not a hunt through nine specs."
+1784701920,shiftpay-dev,Rucha Joshi,SP-51 — Appreciated. Ping me before you pin a selector to a class I might rename and I will keep it stable.
+1784718600,shiftpay-qa,Swopneel,"SP-101 — Pinning selectors to stable hooks and adding a bounded retry on waits only, never on assertions. A flaky suite gets ignored, and an ignored suite is worse than no suite at all."
+1784799600,shiftpay-dev,Rucha Joshi,SP-24 — Design question on bulk approve. Should I issue one bulk query or loop the single-row action?
+1784800320,shiftpay-dev,Shashank Shukla,SP-24 — Loop the single-row action. A bulk query bypasses every authorisation and state guard exactly once and nobody notices until it matters. It is slower and correct.
+1784800860,shiftpay-dev,Rucha Joshi,"SP-25 — Then the single-row action needs to return its refusal rather than throw, so the bulk path can collect reasons into one summary."
+1784801160,shiftpay-dev,Shashank Shukla,"SP-57 — Yes, and note that the manager widget is now the widget that gets error reporting right. The calendar still does not."
+1784869800,shiftpay-qa,Neha Chauhan,SP-23 — Careful with bulk selection. If a row is filtered out by tab or search it must not be sweepable into a bulk action. Manager clicks select all while filtered and approves the world.
+1784870220,shiftpay-dev,Rucha Joshi,"SP-23 — Good catch. Deriving the selection from the visible rows only, not the full set."
+1785123240,shiftpay-standup,Neha Chauhan,"Standup on SP-50: harness signs in, opens the calendar and drives a real save. Writes touch only my own calendar two months ahead and reverse themselves."
+1785123360,shiftpay-standup,Geetha Nallamada,"SP-50 — Please keep that constraint permanently. Nothing in the pack should approve, reject or correct a timesheet."
+1785321300,shiftpay-qa,Neha Chauhan,SP-58 — Second finding. On a Saturday the calendar offers six shift types where the rules allow four. Two catalogue rows carry the weekend flag that should not.
+1785321840,shiftpay-data,Divya Maram,"SP-58 — Confirmed, that is a data fix not a code fix. The rule engine is doing exactly what the catalogue tells it."
+1785390600,shiftpay-qa,Neha Chauhan,"Moved SP-49 to In Review. Rucha, can you sanity check the selectors in SP-51 before I close either of them?"
+1785498900,shiftpay-general,Geetha Nallamada,"Sprint 4 closed. Approval queue, bulk actions with per-row guards, calendar rules extracted, harness running. Two open defects, both understood. (SP-2)"
+1785727980,shiftpay-standup,Geetha Nallamada,"Standup on SP-43: starting the Power BI layer this sprint. Read-only over the same tables. It reimplements no shift or pay rule, that is a hard line."
+1785736200,shiftpay-reporting,Geetha Nallamada,"SP-45 — Two rules the model must not break. Money comes from the summary snapshot, never live catalogue rates. And every money measure filters to month rows."
+1785736680,shiftpay-reporting,Divya Maram,SP-46 — Why the month filter specifically?
+1785737040,shiftpay-reporting,Geetha Nallamada,"SP-46 — The summary table holds clipped week rows alongside month rows. Without the filter every money figure double-counts and the report is confidently wrong, which is worse than blank."
+1785737460,shiftpay-reporting,Divya Maram,SP-46 — Understood. I will put the filter in the base measure so no page-level visual can forget it.
+1785835200,shiftpay-reporting,Divya Maram,SP-44 — Queries are per table and select only the columns the report uses. A schema change then shows up as a named missing column instead of a silently empty visual.
+1785905100,shiftpay-dev,Shashank Shukla,SP-27 — Starting manager day correction. This one needs care: it lets a manager change someone else's logged day.
+1785905760,shiftpay-general,Geetha Nallamada,"Constraints from the business side. Only a submitted month, approved is final and rejected is back with the employee. Reason is mandatory. And a manager may fix a mistake, not create a shift the employee could never have logged. (SP-27)"
+1785906240,shiftpay-dev,Shashank Shukla,"SP-28 — So the new shift goes through the same allowed check as the employee, evaluated for that reportee not for the manager. Plus a reportee assertion before anything is touched."
+1785906660,shiftpay-data,Divya Maram,"SP-29 — I will add the audit row. User, date, previous shift, new shift, reason, changed by, changed on."
+1785907020,shiftpay-data,Geetha Nallamada,SP-29 — Do not overwrite the employee's own comment on the day. That is their note. The reason for the change belongs in the audit row.
+1785907500,shiftpay-general,Geetha Nallamada,SP-27 is thirteen points and the riskiest item in sprint 5. Splitting the guard and the audit row out as SP-28 and SP-29 so they can be reviewed separately.
+1785910800,shiftpay-qa,Swopneel,"SP-102 — Cross-browser matrix is running on Chromium and WebKit. Leaving Firefox out deliberately: the portal is not supported there, so a failure would be noise rather than a finding."
+1786010400,shiftpay-dev,Shashank Shukla,"SP-27 — Correction runs the same three-phase entitlement transaction as the calendar. It has to, otherwise correcting a day that granted a CO leaves the entitlement dangling."
+1786084800,shiftpay-qa,Neha Chauhan,SP-52 — Evidence generator is producing Word records now. Each one merges the case definition with the run output.
+1786085280,shiftpay-qa,Geetha Nallamada,SP-54 — Can the branding be swapped without touching the generator?
+1786085580,shiftpay-qa,Neha Chauhan,"SP-54 — Yes, it is all in one module. Rebrand is one file."
+1786350900,shiftpay-qa,Neha Chauhan,SP-57 — Formalising TC-SP-004 for the P1. Expected result is that a refused write shows an error and leaves the cell unchanged. Currently it does neither.
+1786351740,shiftpay-dev,Rucha Joshi,SP-57 — I can fix the client half quickly but the server has to actually set the field. Six refusal paths to change.
+1786352220,shiftpay-general,Geetha Nallamada,Leave it failing for now and keep the case red. I would rather the pack tell the truth about a known P1 than have us quietly patch it before the demo. (SP-57)
+1786428300,shiftpay-qa,Neha Chauhan,"SP-55 — Three of the nine automated cases are expected to fail. Writing that into the testing README in bold. A fully green run means something is broken, most likely the assertions."
+1786510200,shiftpay-qa,Neha Chauhan,SP-59 — For the demo we want one defect that is unambiguously ours and safe. Suggestions?
+1786510860,shiftpay-dev,Rucha Joshi,"SP-59 — The manager lead stat tile. Bind it to the all count instead of the submitted count. It is display-only, no write path reads those counts, so it cannot touch data."
+1786511340,shiftpay-general,Geetha Nallamada,"Approved, with one condition. Put a comment on the line saying it is deliberate, and whoever fixes it must update the test case spec in the same change or the pack goes green for no visible reason. (SP-59)"
+1786511700,shiftpay-qa,Neha Chauhan,"Logged SP-59 with the deliberate-defect note in the description itself, so nobody closes it by accident in a backlog grooming."
+1786524600,shiftpay-qa,Swopneel,"SP-59 — I have mirrored the deliberate-defect note into the suite as well. If that tile ever starts reporting the right count, the pack should be the thing that tells us."
+1786616100,shiftpay-dev,Shashank Shukla,SP-60 — Found something while writing the holiday case. The system property the holiday lookup reads does not exist. No property in that namespace exists at all.
+1786616520,shiftpay-qa,Neha Chauhan,SP-60 — So no date is ever a holiday and nothing warns. How long has that been true?
+1786616880,shiftpay-dev,Shashank Shukla,SP-60 — Since the beginning. The lookup returns an empty set and every date classifies as a weekday or weekend. Recording it as TC-SP-030. Not automating it because it produces no screenshot.
+1786617600,shiftpay-dev,Shashank Shukla,"SP-61 — Related, TC-SP-031. The five default table names in the calendar server script name no table that exists. The widget only runs because the portal instance overrides all five."
+1786618080,shiftpay-general,Geetha Nallamada,Both are real and both are documented findings. Record them in the spec even though they are not automated. A finding that only lives in Slack is a finding we lose. (SP-60)
+1786618500,shiftpay-dev,Shashank Shukla,Raised SP-60 and SP-61. Both go on the board as documented findings even though neither is automated. A finding that only lives in Slack is a finding we lose.
+1786708800,shiftpay-general,Geetha Nallamada,"Sprint 5 closed. Day correction with audit, review drill-in, Power BI model and the evidence generator. Five defects on the board, four real and one deliberate. (SP-5)"
+1786937700,shiftpay-standup,Shashank Shukla,"Standup on SP-66: this sprint I retire the legacy account from every application artifact. It should not appear as an owner, approver or in the created and updated by fields anywhere."
+1786945500,shiftpay-dev,Shashank Shukla,"SP-66 — First pass done. Seven tables, 67 artifacts re-attributed. Re-running the script now reports zero."
+1786945920,shiftpay-qa,Neha Chauhan,"SP-67 — Zero against the seven tables you listed, or zero across the app?"
+1786946460,shiftpay-dev,Shashank Shukla,SP-67 — Fair challenge. Checking.
+1787027700,shiftpay-dev,Shashank Shukla,"SP-67 — Neha was right and I was wrong. 36 rows across nine other metadata classes were still stamped with the old account. Field labels, app modules, choice sets, UI lists, forms. The list looked finished and was not."
+1787028240,shiftpay-dev,Shashank Shukla,SP-67 — Rewriting it to sweep the metadata base table with a scope filter instead of enumerating classes. Then new classes are covered without editing the script.
+1787028720,shiftpay-general,Geetha Nallamada,This is the lesson worth writing down: a sweep that enumerates its targets reports success about the targets it knows. Query the base class and let the scope confine it. (SP-67)
+1787029200,shiftpay-dev,Shashank Shukla,Reopening SP-66. My first pass was wrong and the board should say so rather than showing it green.
+1787029200,shiftpay-qa,Swopneel,"SP-103 — Performance smoke done. Month load stays under two seconds with a full year of submissions seeded behind it, so nothing in the calendar scales with history."
+1787130600,shiftpay-dev,Shashank Shukla,"SP-67 — One deliberate exclusion. Deletion tombstones stay untouched. Those are records of things already gone, and rewriting who deleted what is falsifying history."
+1787131320,shiftpay-qa,Neha Chauhan,"SP-68 — I will keep the standing check as a QA step. One query, catches a wrong-profile stamp whatever class it lands on."
+1787132400,shiftpay-general,Geetha Nallamada,Swopneel rolls off on the 25th. SP-104 is the harness handover to Neha and I want it done properly rather than in the last hour of the last day.
+1787205600,shiftpay-dev,Shashank Shukla,"SP-66 — Also worth flagging. A dry run matching on the account alone offered to rewrite two unrelated widgets and a Script Include, one authored by someone else and merely touched by the retired account. Confine by scope, not by user."
+1787292600,shiftpay-qa,Swopneel,"SP-104 — Walked Neha through the harness, the seeding path and the CI wiring. Everything a run needs is in the repo. Nothing lives on my machine."
+1787305800,shiftpay-dev,Rucha Joshi,SP-30 — History tab is in. Scoped by approver equals me rather than by the current reportee list.
+1787306280,shiftpay-general,Geetha Nallamada,"That is the right scoping. A decision stays yours when someone changes team, and the query cannot return anyone else's decisions. (SP-30)"
+1787306760,shiftpay-dev,Rucha Joshi,"SP-30 — One caveat to document. It only shows decisions that still stand. Resubmission clears the approver fields, so a rejection the employee has since fixed disappears from the log."
+1787307240,shiftpay-general,Geetha Nallamada,"Accepted cost of keeping approval state on the timesheet row. Document it as a known limitation rather than a bug, and if the client wants a full audit trail later that is a separate table. (SP-30)"
+1787395800,shiftpay-qa,Neha Chauhan,"SP-104 — Ran the whole pack from a clean checkout myself with Swopneel watching rather than the other way round. Six pass, three fail as expected. Handover accepted."
+1787546700,shiftpay-dev,Rucha Joshi,SP-31 — Working on hiding pay amounts for managers without the permission. Should I hide them in the template?
+1787547180,shiftpay-dev,Shashank Shukla,"SP-31 — No. Strip them from the data server-side. A guard that lives only in the template is not a guard, the server call is reachable from the browser with any payload and the response is right there in the network tab."
+1787547600,shiftpay-dev,Rucha Joshi,SP-31 — Changing it. Money never leaves the server for a user who should not see it.
+1787646900,shiftpay-reporting,Divya Maram,"SP-47 — Cost by shift type and cost by manager pages are done, plus a drill-through to the day detail for one employee month."
+1787659200,shiftpay-general,Swopneel,"Last day on ShiftPay. SP-8 and SP-104 are closed and the pack runs without me. One parting request: the three expected failures stay red on purpose, so please do not let anyone tidy them away."
+1787659680,shiftpay-general,Geetha Nallamada,Thank you Swopneel. Test engineering going in a month before the first widget is the reason the defects we are handing over are documented rather than discovered by the client.
+1787724600,shiftpay-reporting,Geetha Nallamada,"SP-48 — Writing the rebuild runbook. Assumption is a machine with nothing installed and no account. Divya, does the file need a live connection to demo?"
+1787725080,shiftpay-reporting,Divya Maram,"SP-48 — No, the data is cached in the file. Desktop is free and no sign-in is needed to open it. A demo needs one install and nothing else."
+1787827800,shiftpay-qa,Neha Chauhan,"SP-55 — Forty cases documented, nine automated. Full run: six pass, three fail, and the three that fail are the three that should."
+1787918400,shiftpay-general,Geetha Nallamada,"Sprint 6 closed. History tab, server-side money stripping, reporting pages, the metadata sweep and the full case set. One sprint left before handover. (SP-6)"
+1787918700,shiftpay-general,Geetha Nallamada,"Sprint 6 closed: SP-30, SP-31, SP-47, SP-48, SP-55 and SP-66 to Done. Carrying SP-57 through SP-61 into sprint 7 as open defects."
+1788147240,shiftpay-standup,Shashank Shukla,Standup on SP-69: the instance is moving. Retargeting the app and the test pack to dev227442 today.
+1788155400,shiftpay-dev,Shashank Shukla,SP-69 — Credentials are not going in the repo. Instance URL and login live in a gitignored connection file that travels in the folder ZIP.
+1788156120,shiftpay-data,Divya Maram,"SP-70 — I will write the setup runbook as three independent tracks: Power BI demo, test pack, widget deployment. Each listing only its own dependencies."
+1788156600,shiftpay-data,Divya Maram,"SP-70 — And it will say explicitly that most of the repo has no build step, so nobody spends an afternoon looking for one that never existed."
+1788234600,shiftpay-general,Geetha Nallamada,"Pulled SP-84 into sprint 7 from the backlog. SP-80 through SP-89 stay in the backlog and are phase two, not scope creep for this one."
+1788237900,shiftpay-general,Geetha Nallamada,"Handover documents. I want the technical design and the test cases generated from source rather than written by hand, so they cannot drift from what they describe. (SP-73)"
+1788238440,shiftpay-dev,Shashank Shukla,"SP-74 — Two builders sharing layout helpers. BRD one is done, technical one is in progress."
+1788244500,shiftpay-general,Geetha Nallamada,"Pulling the CO balance tile into sprint 7. It is display only and the number already exists in the entitlements Script Include, so it is a small ask with real value in the handover demo. (SP-84)"
+1788245040,shiftpay-dev,Rucha Joshi,"SP-84 — Taking it. Reading the balance through rules.entitlements rather than querying the entitlement table directly, so the tile cannot disagree with what the calendar actually allows."
+1788254400,shiftpay-dev,Shashank Shukla,SP-69 — Retarget complete. App is live on the new instance and the documents point at it.
+1788260400,shiftpay-reporting,Divya Maram,"SP-91 — Starting an August reconciliation before handover, report totals against what the Manager Approval widget shows for the same month. If those two disagree I would rather find it than the client."
+1788324300,shiftpay-reporting,Divya Maram,SP-91 — First pass is out by roughly double on every reportee. Checking my measures before I go blaming the data.
+1788325080,shiftpay-reporting,Geetha Nallamada,SP-46 — Roughly double is the clipped week rows counting alongside the month rows. Check the period filter is actually on the measure that visual is reading.
+1788325860,shiftpay-reporting,Divya Maram,"That was it. One visual was reading a measure that bypassed the base filter. Exactly the failure SP-46 exists to prevent, and it took ten minutes rather than a day because we already knew where to look."
+1788327300,shiftpay-qa,Neha Chauhan,"SP-56 — Full pack re-run on dev227442. Six pass, three fail, same three. Evidence records regenerated against the new instance."
+1788327840,shiftpay-general,Geetha Nallamada,That is the result I wanted. The pack proves it is still testing something. (SP-56)
+1788328320,shiftpay-qa,Neha Chauhan,"SP-57 — Defect status for the record. P1 on the invisible refusals is open, the weekend data fix is in progress with Divya, the lead tile is the deliberate one, and the two config findings are documented but not automated."
+1788339000,shiftpay-qa,Neha Chauhan,"SP-90 — Running a second regression pass over the six passing cases with fresh evidence records each time. One clean run after an instance move is not evidence, two is."
+1788343800,shiftpay-data,Divya Maram,"SP-58 — Weekend flag fix is prepared but I want to run it as a Fix Script and have Neha re-run TC-SP-005 immediately after, so we see the case go from red to green for a reason we can name."
+1788406380,shiftpay-standup,Rucha Joshi,"Standup on SP-57: on the P1. Server sets the error field in all six refusal paths, client stops repainting on failure. Should be ready for Neha tomorrow."
+1788406500,shiftpay-standup,Shashank Shukla,Standup on SP-75: finishing the technical document builder. Then the deployment traps section for handover.
+1788406620,shiftpay-standup,Neha Chauhan,"Standup on SP-56: re-running the pack after Rucha's fix lands, and updating the case spec if the P1 closes."
+1788406740,shiftpay-standup,Divya Maram,"Standup on SP-58: weekend catalogue fix with Neha, then the setup runbook review."
+1788406860,shiftpay-standup,Geetha Nallamada,"Standup on SP-76: handover deck. One session covering the widget contract, the three Script Includes, the deployment traps and the test pack. Aiming for the 11th."
+1788413700,shiftpay-qa,Neha Chauhan,SP-90 — Second pass done. Six pass on both runs and the three expected failures reproduce identically. The retarget moved the pack cleanly and did not quietly change what we assert.
+1788414240,shiftpay-general,Geetha Nallamada,That is the check that matters after a move. Closing SP-90.
+1788418800,shiftpay-reporting,Divya Maram,August reconciled across four reportees. Report and widget agree to the rupee. Closing SP-91.
+1788419280,shiftpay-general,Geetha Nallamada,"Worth recording why they agree rather than just that they do. Both read the summary snapshot instead of live catalogue rates, so they cannot drift apart. That decision from sprint 5 is what is paying off here. (SP-45)"
+1788421200,shiftpay-dev,Shashank Shukla,"Technical document builder is finished. I checked the output page by page against the markdown source, no section dropped and no heading level lost. Closing SP-75."
+1788421920,shiftpay-dev,Geetha Nallamada,"And I regenerated both documents from a clean checkout and diffed them against the committed PDFs. Identical, so the build is reproducible rather than something that happened to work on Shashank's machine. SP-73 closed."
+1788424500,shiftpay-dev,Rucha Joshi,"SP-84 — CO balance tile is on the landing page and closed. It renders correctly for a user holding no entitlement, which was the case I expected to get wrong."
+1788424920,shiftpay-qa,Neha Chauhan,SP-84 — Checked it against my own calendar and the tile matches what the calendar allows me to log. Fine by me.
+1788426600,shiftpay-general,Geetha Nallamada,"Board update. Five more closed today across all five of us. What is left open is the four defects, the weekend catalogue fix with Divya and the handover session on the 11th. Nothing is being closed to make the board look better. (SP-5)"
+1788429000,shiftpay-general,Geetha Nallamada,"Reminder for the handover pack. Every known defect stays on the board with its status. We hand over an honest picture, not a green one. (SP-5)"
