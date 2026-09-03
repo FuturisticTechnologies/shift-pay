@@ -1,0 +1,509 @@
+<!--
+  Service Portal Widget: ShiftPay Reporting
+  =========================================
+  Six reports over the summary, timesheet and entitlement tables, on tabs:
+  cost & volume trend, shift-type mix, per-person comparison, a person-by-month
+  activity heatmap, submission/approval timeliness, CO entitlement health.
+
+  Design notes (inherited from the calendar and approval widgets):
+   - Ink (#0F172A) is the only emphasis colour. There is no brand accent.
+   - Colour means SHIFT TYPE and nothing else. The mix donut is the one chart
+     that uses hue, and it uses the catalogue's own color_hex so a slice matches
+     the chip on the calendar. Everything else is ink and slate.
+   - Red is reserved for error and for genuine failure states — here, only the
+     expired-unused CO figure.
+
+  Every chart is paired with the numbers it draws. A canvas that fails to render
+  (no library, blocked CDN) must never take the data down with it, so the tables
+  and stat tiles below each chart are the source of record and the chart is the
+  illustration.
+
+  Classes are namespaced `shift-rep-` so nothing collides with `shift-` (the
+  calendar) or `shift-mgr-` (approvals).
+-->
+<div class="shift-rep" ng-class="{'shift-rep--busy': c.loading}">
+
+  <!-- Header ==================================================== -->
+  <div class="shift-rep__header">
+    <div>
+      <h2 class="shift-rep__title">{{::c.options.title || 'ShiftPay Reporting'}}</h2>
+      <p class="shift-rep__subtitle">
+        {{c.data.periodLabel}}
+        <span ng-if="c.data.totals.people">
+          · {{c.data.totals.people}} {{c.data.totals.people === 1 ? 'person' : 'people'}}
+        </span>
+        <span ng-if="!c.data.showPay"> · pay amounts hidden</span>
+      </p>
+    </div>
+
+    <div class="shift-rep__headeractions">
+      <!-- Scope. Only the scopes the SERVER says this user may ask for are
+           listed; requesting another one is refused and falls back to 'me'. -->
+      <div class="shift-rep__seg" role="group" aria-label="Reporting scope"
+           ng-if="c.data.scopes.length > 1">
+        <button type="button" class="shift-rep__segbtn"
+                ng-repeat="s in c.data.scopes"
+                ng-class="{'shift-rep__segbtn--on': c.data.scope === s.key}"
+                ng-click="c.setScope(s.key)"
+                ng-disabled="c.loading"
+                title="{{s.hint}}">{{s.label}}</button>
+      </div>
+
+      <div class="shift-rep__monthnav">
+        <button type="button" class="shift-rep__navbtn" ng-click="c.prevMonth()"
+                ng-disabled="c.loading" aria-label="Previous month">
+          <i class="fa fa-chevron-left" aria-hidden="true"></i>
+        </button>
+        <span class="shift-rep__monthlabel">{{c.data.monthLabel}}</span>
+        <button type="button" class="shift-rep__navbtn" ng-click="c.nextMonth()"
+                ng-disabled="c.loading" aria-label="Next month">
+          <i class="fa fa-chevron-right" aria-hidden="true"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Config error, straight from ShiftPayCalendarRules ========== -->
+  <div class="shift-rep__banner shift-rep__banner--bad" ng-if="c.data.configError" role="alert">
+    <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+    <span>{{c.data.configError}}</span>
+  </div>
+
+  <!-- Charting library unavailable =============================== -->
+  <!-- Deliberately not an empty state: the figures are all still on screen. -->
+  <div class="shift-rep__banner" ng-if="c.libError" role="status">
+    <i class="fa fa-area-chart" aria-hidden="true"></i>
+    <span>{{c.libError}}</span>
+    <button type="button" class="shift-rep__linkbtn" ng-click="c.retryLib()">Try again</button>
+  </div>
+
+  <!-- Stat strip ================================================= -->
+  <div class="shift-rep__strip">
+    <div class="shift-rep__stat shift-rep__stat--lead" ng-if="c.data.showPay">
+      <span class="shift-rep__statk">Total cost</span>
+      <span class="shift-rep__statv">{{c.money(c.data.totals.amount)}}</span>
+      <span class="shift-rep__statn">over {{c.data.trendMonths}} months</span>
+    </div>
+    <div class="shift-rep__stat" ng-class="{'shift-rep__stat--lead': !c.data.showPay}">
+      <span class="shift-rep__statk">Shifts logged</span>
+      <span class="shift-rep__statv">{{c.data.totals.shifts}}</span>
+      <span class="shift-rep__statn">{{c.data.periodLabel}}</span>
+    </div>
+    <div class="shift-rep__stat">
+      <span class="shift-rep__statk">On-call shifts</span>
+      <span class="shift-rep__statv shift-rep__statv--quiet">{{c.data.totals.onCall}}</span>
+      <span class="shift-rep__statn">{{c.share(c.data.totals.onCall)}}% of all shifts</span>
+    </div>
+    <div class="shift-rep__stat" ng-if="c.data.coEnabled && c.data.co">
+      <span class="shift-rep__statk">CO expired unused</span>
+      <span class="shift-rep__statv"
+            ng-class="{'shift-rep__statv--bad': c.data.co.expired > 0,
+                       'shift-rep__statv--quiet': !c.data.co.expired}">{{c.data.co.expired}}</span>
+      <span class="shift-rep__statn">of {{c.data.co.earned}} earned</span>
+    </div>
+    <div class="shift-rep__stat">
+      <span class="shift-rep__statk">Awaiting approval</span>
+      <span class="shift-rep__statv shift-rep__statv--quiet">{{c.data.approval.submitted}}</span>
+      <span class="shift-rep__statn">{{c.data.approval.approved}} approved · {{c.data.approval.rejected}} rejected</span>
+    </div>
+  </div>
+
+  <!-- Nothing to report ========================================== -->
+  <div class="shift-rep__empty" ng-if="!c.data.hasData">
+    <i class="fa fa-bar-chart" aria-hidden="true"></i>
+    <div class="shift-rep__empty-title">No shifts in this period</div>
+    <p class="shift-rep__empty-body">
+      Nothing has been aggregated for {{c.data.periodLabel}} in this scope.
+      <span ng-if="c.isFuture()">This month is still in the future.</span>
+      <span ng-if="!c.isFuture()">Shifts appear here once they are logged on the calendar.</span>
+    </p>
+  </div>
+
+  <div ng-if="c.data.hasData">
+
+    <!-- Tabs ==================================================== -->
+    <div class="shift-rep__tabs" role="tablist">
+      <button type="button" class="shift-rep__tab"
+              ng-repeat="t in c.visibleTabs"
+              ng-class="{'shift-rep__tab--on': c.tab === t.key}"
+              ng-click="c.setTab(t.key)"
+              role="tab" aria-selected="{{c.tab === t.key}}">
+        <i class="fa {{t.icon}}" aria-hidden="true"></i>
+        <span>{{t.label}}</span>
+      </button>
+    </div>
+
+    <!-- ============================== Cost & volume ============= -->
+    <div class="shift-rep__panel" ng-if="c.tab === 'trend'">
+      <div class="shift-rep__panelhead">
+        <div>
+          <h3 class="shift-rep__panelt">Cost and volume by month</h3>
+          <p class="shift-rep__panels">
+            <span ng-if="c.data.showPay">Bars are cost from the rate snapshot taken when each month was aggregated; the line is shift count.</span>
+            <span ng-if="!c.data.showPay">Bars are shift count; the line is the on-call subset.</span>
+          </p>
+        </div>
+        <div class="shift-rep__seg shift-rep__seg--sm" role="group" aria-label="Months shown">
+          <button type="button" class="shift-rep__segbtn"
+                  ng-repeat="n in c.data.spanOptions"
+                  ng-class="{'shift-rep__segbtn--on': c.data.trendMonths === n}"
+                  ng-click="c.setSpan(n)" ng-disabled="c.loading">{{n}}m</button>
+        </div>
+      </div>
+
+      <div class="shift-rep__chart">
+        <canvas class="shift-rep__canvas shift-rep__canvas--trend"></canvas>
+      </div>
+
+      <!-- The numbers behind the chart. Not a fallback — the record. -->
+      <div class="shift-rep__tablewrap">
+        <table class="shift-rep__table">
+          <thead>
+            <tr>
+              <th>Month</th>
+              <th class="shift-rep__num">Shifts</th>
+              <th class="shift-rep__num">On-call</th>
+              <th class="shift-rep__num" ng-if="c.data.showTeam">People</th>
+              <th class="shift-rep__num" ng-if="c.data.showPay">Cost</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr ng-repeat="t in c.data.trend" ng-class="{'shift-rep__row--zero': !t.shifts}">
+              <td class="shift-rep__cellk">{{t.label}}</td>
+              <td class="shift-rep__num">{{t.shifts}}</td>
+              <td class="shift-rep__num shift-rep__num--quiet">{{t.onCall}}</td>
+              <td class="shift-rep__num shift-rep__num--quiet" ng-if="c.data.showTeam">{{t.people}}</td>
+              <td class="shift-rep__num" ng-if="c.data.showPay">{{c.money(t.amount)}}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="shift-rep__note" ng-if="c.data.approval.latestPending">
+        <i class="fa fa-info-circle" aria-hidden="true"></i>
+        {{c.data.approval.latestPending}} timesheet(s) for {{c.data.monthLabel}} are still awaiting
+        approval, so the final month may yet move.
+      </p>
+    </div>
+
+    <!-- ============================== Shift mix ================= -->
+    <div class="shift-rep__panel" ng-if="c.tab === 'mix'">
+      <div class="shift-rep__panelhead">
+        <div>
+          <h3 class="shift-rep__panelt">Shift-type mix</h3>
+          <p class="shift-rep__panels">
+            Every shift logged in {{c.data.periodLabel}}, by type. Slice colours are the
+            catalogue's own, so they match the chips on the calendar.
+          </p>
+        </div>
+      </div>
+
+      <div class="shift-rep__split">
+        <div class="shift-rep__chart shift-rep__chart--half">
+          <canvas class="shift-rep__canvas shift-rep__canvas--mix"></canvas>
+        </div>
+
+        <div class="shift-rep__tablewrap shift-rep__tablewrap--half">
+          <table class="shift-rep__table">
+            <thead>
+              <tr>
+                <th>Shift type</th>
+                <th class="shift-rep__num">Shifts</th>
+                <th class="shift-rep__num">Share</th>
+                <th class="shift-rep__num" ng-if="c.data.showPay">Cost</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr ng-repeat="m in c.data.mix">
+                <td>
+                  <span class="shift-rep__chip"
+                        ng-style="{'background': m.color_hex || '#CBD5E1'}"></span>
+                  <span class="shift-rep__cellk">{{m.name}}</span>
+                  <span class="shift-rep__cellsub" ng-if="m.description">{{m.description}}</span>
+                </td>
+                <td class="shift-rep__num">{{m.count}}</td>
+                <td class="shift-rep__num shift-rep__num--quiet">{{c.share(m.count)}}%</td>
+                <td class="shift-rep__num" ng-if="c.data.showPay">{{c.money(m.amount)}}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================== Team ====================== -->
+    <div class="shift-rep__panel" ng-if="c.tab === 'team'">
+      <div class="shift-rep__panelhead">
+        <div>
+          <h3 class="shift-rep__panelt">Per-person comparison</h3>
+          <p class="shift-rep__panels">
+            Each bar is one person's total for {{c.data.periodLabel}}; the pale segment is
+            the part that fell on a weekend or a declared holiday.
+          </p>
+        </div>
+      </div>
+
+      <div class="shift-rep__chart shift-rep__chart--tall">
+        <canvas class="shift-rep__canvas shift-rep__canvas--team"></canvas>
+      </div>
+
+      <div class="shift-rep__tablewrap">
+        <table class="shift-rep__table">
+          <thead>
+            <tr>
+              <th>Person</th>
+              <th class="shift-rep__num">Shifts</th>
+              <th class="shift-rep__num">On-call</th>
+              <th class="shift-rep__num">On-call share</th>
+              <th class="shift-rep__num" ng-if="c.data.showPay">Cost</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr ng-repeat="p in c.data.team">
+              <td>
+                <span class="shift-rep__avatar">{{p.initials}}</span>
+                <span class="shift-rep__cellk">{{p.name}}</span>
+                <span class="shift-rep__cellsub" ng-if="p.employeeId">{{p.employeeId}}</span>
+              </td>
+              <td class="shift-rep__num">{{p.shifts}}</td>
+              <td class="shift-rep__num shift-rep__num--quiet">{{p.onCall}}</td>
+              <td class="shift-rep__num shift-rep__num--quiet">{{c.onCallShare(p)}}%</td>
+              <td class="shift-rep__num" ng-if="c.data.showPay">{{c.money(p.amount)}}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="shift-rep__note" ng-if="c.data.teamTruncated">
+        <i class="fa fa-info-circle" aria-hidden="true"></i>
+        Showing the top {{c.data.teamLimit}} people only. Narrow the scope or the month
+        range to see the rest.
+      </p>
+    </div>
+
+    <!-- ============================== Activity =================== -->
+    <!--
+      A CSS grid, not a canvas. Chart.js has no native matrix chart and the
+      plugin that adds one is a second CDN dependency; a grid of divs is crisper
+      at this size, selectable, and needs no library at all.
+    -->
+    <div class="shift-rep__panel" ng-if="c.tab === 'activity'">
+      <div class="shift-rep__panelhead">
+        <div>
+          <h3 class="shift-rep__panelt">Who worked when</h3>
+          <p class="shift-rep__panels">
+            One row per person, one cell per month, darkest where most shifts were
+            worked. Ranked by total over {{c.data.periodLabel}} — the trend chart
+            flattens people and the team chart flattens months; this keeps both.
+          </p>
+        </div>
+        <div class="shift-rep__seg shift-rep__seg--sm" role="group" aria-label="Months shown">
+          <button type="button" class="shift-rep__segbtn"
+                  ng-repeat="n in c.data.spanOptions"
+                  ng-class="{'shift-rep__segbtn--on': c.data.trendMonths === n}"
+                  ng-click="c.setSpan(n)" ng-disabled="c.loading">{{n}}m</button>
+        </div>
+      </div>
+
+      <div class="shift-rep__heatwrap">
+        <table class="shift-rep__heat">
+          <thead>
+            <tr>
+              <th class="shift-rep__heatname">Person</th>
+              <th class="shift-rep__heatm" ng-repeat="m in c.data.activity.months">{{m.label}}</th>
+              <th class="shift-rep__num">Total</th>
+              <th class="shift-rep__num">On-call</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr ng-repeat="p in c.data.activity.rows">
+              <td class="shift-rep__heatname">
+                <span class="shift-rep__avatar">{{p.initials}}</span>
+                <span class="shift-rep__cellk">{{p.name}}</span>
+              </td>
+              <td class="shift-rep__heatcell" ng-repeat="h in p.heat">
+                <span class="shift-rep__heatbox"
+                      ng-class="{'shift-rep__heatbox--strong': h.strong}"
+                      ng-style="h.style"
+                      title="{{p.name}} · {{c.data.activity.months[$index].label}} · {{h.v}} shifts">
+                  {{h.v || ''}}
+                </span>
+              </td>
+              <td class="shift-rep__num shift-rep__num--total">{{p.total}}</td>
+              <td class="shift-rep__num shift-rep__num--quiet">{{p.onCall}}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="shift-rep__heatlegend">
+        <span class="shift-rep__statk">Fewer</span>
+        <span class="shift-rep__heatkey shift-rep__heatkey--0"></span>
+        <span class="shift-rep__heatkey shift-rep__heatkey--1"></span>
+        <span class="shift-rep__heatkey shift-rep__heatkey--2"></span>
+        <span class="shift-rep__heatkey shift-rep__heatkey--3"></span>
+        <span class="shift-rep__heatkey shift-rep__heatkey--4"></span>
+        <span class="shift-rep__statk">More ({{c.data.activity.max}} busiest month)</span>
+      </div>
+      <p class="shift-rep__note" ng-if="c.data.teamTruncated">
+        <i class="fa fa-info-circle" aria-hidden="true"></i>
+        Showing the top {{c.data.teamLimit}} people by shifts worked.
+      </p>
+    </div>
+
+    <!-- ============================== Timeliness ================= -->
+    <div class="shift-rep__panel" ng-if="c.tab === 'timeliness'">
+      <div class="shift-rep__panelhead">
+        <div>
+          <h3 class="shift-rep__panelt">Submission and approval turnaround</h3>
+          <p class="shift-rep__panels">
+            How long after each month closed the timesheets arrived, and how long
+            managers then took to action them. The one chart here where a taller
+            bar is worse.
+          </p>
+        </div>
+      </div>
+
+      <div class="shift-rep__strip shift-rep__strip--inline">
+        <div class="shift-rep__stat shift-rep__stat--lead">
+          <span class="shift-rep__statk">Avg days to submit</span>
+          <span class="shift-rep__statv">{{c.lagLabel(c.data.approval.avgSubmitLag)}}</span>
+          <span class="shift-rep__statn">after the month closes</span>
+        </div>
+        <div class="shift-rep__stat">
+          <span class="shift-rep__statk">Avg days to decide</span>
+          <span class="shift-rep__statv shift-rep__statv--quiet">{{c.lagLabel(c.data.approval.avgDecisionLag)}}</span>
+          <span class="shift-rep__statn">from submission to approve/reject</span>
+        </div>
+        <div class="shift-rep__stat">
+          <span class="shift-rep__statk">Still awaiting action</span>
+          <span class="shift-rep__statv"
+                ng-class="{'shift-rep__statv--quiet': !c.data.approval.submitted}">{{c.data.approval.submitted}}</span>
+          <span class="shift-rep__statn">across {{c.data.periodLabel}}</span>
+        </div>
+      </div>
+
+      <div class="shift-rep__chart">
+        <canvas class="shift-rep__canvas shift-rep__canvas--timeliness"></canvas>
+      </div>
+
+      <div class="shift-rep__tablewrap">
+        <table class="shift-rep__table">
+          <thead>
+            <tr>
+              <th>Month</th>
+              <th class="shift-rep__num">To submit</th>
+              <th class="shift-rep__num">To decide</th>
+              <th class="shift-rep__num">Submitted</th>
+              <th class="shift-rep__num">Approved</th>
+              <th class="shift-rep__num">Rejected</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr ng-repeat="m in c.data.approval.months"
+                ng-class="{'shift-rep__row--zero': !m.submitted && !m.approved && !m.rejected}">
+              <td class="shift-rep__cellk">{{m.label}}</td>
+              <td class="shift-rep__num">{{c.lagLabel(m.submitLag)}}</td>
+              <td class="shift-rep__num shift-rep__num--quiet">{{c.lagLabel(m.decisionLag)}}</td>
+              <td class="shift-rep__num shift-rep__num--quiet">{{m.submitted}}</td>
+              <td class="shift-rep__num shift-rep__num--quiet">{{m.approved}}</td>
+              <td class="shift-rep__num"
+                  ng-class="{'shift-rep__num--bad': m.rejected > 0, 'shift-rep__num--quiet': !m.rejected}">{{m.rejected}}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="shift-rep__note">
+        <i class="fa fa-info-circle" aria-hidden="true"></i>
+        A dash means there was nothing to measure that month. Negative days mean the
+        timesheet arrived before the month closed, which the submission window allows.
+      </p>
+    </div>
+
+    <!-- ============================== CO health ================= -->
+    <div class="shift-rep__panel" ng-if="c.tab === 'co'">
+      <div class="shift-rep__panelhead">
+        <div>
+          <h3 class="shift-rep__panelt">Compensatory-off health</h3>
+          <p class="shift-rep__panels">
+            Entitlements earned by on-call shifts worked in {{c.data.periodLabel}}. Each one
+            must be taken within seven weekdays; an expired entitlement is a day someone
+            earned and lost.
+          </p>
+        </div>
+      </div>
+
+      <div class="shift-rep__split">
+        <div class="shift-rep__chart shift-rep__chart--half">
+          <canvas class="shift-rep__canvas shift-rep__canvas--co"></canvas>
+        </div>
+
+        <div class="shift-rep__cofigs">
+          <div class="shift-rep__cofig">
+            <span class="shift-rep__statk">Earned</span>
+            <span class="shift-rep__statv">{{c.data.co.earned}}</span>
+          </div>
+          <div class="shift-rep__cofig">
+            <span class="shift-rep__statk">Used</span>
+            <span class="shift-rep__statv shift-rep__statv--quiet">
+              {{c.data.co.consumed}} <em>{{c.coPercent(c.data.co.consumed)}}%</em>
+            </span>
+          </div>
+          <div class="shift-rep__cofig">
+            <span class="shift-rep__statk">Open</span>
+            <span class="shift-rep__statv shift-rep__statv--quiet">
+              {{c.data.co.open}} <em>{{c.coPercent(c.data.co.open)}}%</em>
+            </span>
+          </div>
+          <div class="shift-rep__cofig">
+            <span class="shift-rep__statk">Expired unused</span>
+            <span class="shift-rep__statv"
+                  ng-class="{'shift-rep__statv--bad': c.data.co.expired > 0,
+                             'shift-rep__statv--quiet': !c.data.co.expired}">
+              {{c.data.co.expired}} <em>{{c.coPercent(c.data.co.expired)}}%</em>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- The actionable half: open windows, soonest deadline first. -->
+      <div class="shift-rep__tablewrap" ng-if="c.data.co.soon.length">
+        <h4 class="shift-rep__subhead">Windows closing soonest</h4>
+        <table class="shift-rep__table">
+          <thead>
+            <tr>
+              <th>Person</th>
+              <th>On-call worked</th>
+              <th>Take by</th>
+              <th class="shift-rep__num">Time left</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr ng-repeat="e in c.data.co.soon">
+              <td>
+                <span class="shift-rep__avatar">{{e.initials}}</span>
+                <span class="shift-rep__cellk">{{e.name}}</span>
+              </td>
+              <td class="shift-rep__mono">{{e.ocDate}}</td>
+              <td class="shift-rep__mono">{{e.windowEnd || '—'}}</td>
+              <td class="shift-rep__num"
+                  ng-class="{'shift-rep__num--bad': e.daysLeft !== null && e.daysLeft <= 2}">
+                {{c.daysLeftLabel(e.daysLeft)}}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="shift-rep__note" ng-if="!c.data.co.soon.length && c.data.co.earned">
+        <i class="fa fa-check-circle" aria-hidden="true"></i>
+        No entitlement windows are currently open.
+      </div>
+      <div class="shift-rep__note" ng-if="!c.data.co.earned">
+        <i class="fa fa-info-circle" aria-hidden="true"></i>
+        No compensatory-off entitlements were earned in this period.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Busy veil ================================================== -->
+  <div class="shift-rep__veil" ng-if="c.loading" aria-hidden="true"></div>
+</div>
