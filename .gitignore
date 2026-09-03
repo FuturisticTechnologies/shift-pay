@@ -32,3 +32,9 @@ __pycache__/
 # Generated Word documents. The build script is the source; a .docx can
 # always be rebuilt from it, and binary churn in review is noise.
 /*.docx
+.claude/settings.local.json
+
+# Generated PDF deliverables. Same reasoning as the .docx above: the build
+# script is the source, and BRD-ShiftPay.pdf rebuilds from BRD-ShiftPay.md with
+#   node tools/build-brd-pdf.mjs
+/*.pdf

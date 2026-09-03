@@ -1,0 +1,18 @@
+timestamp,channel,username,message
+1780648320,shiftpay-data,Divya Maram,"SP-72 — First pass at the data model: five tables. Catalogue, submission, lock, summary, CO entitlement. Posting the column list in the thread."
+1780649400,shiftpay-data,Geetha Nallamada,"SP-72 — Summary table needs a rate snapshot column. If we ever read live rates for a past month, one rate change silently rewrites payroll history."
+1780649760,shiftpay-data,Divya Maram,SP-72 — Adding rate snapshot and amount. Taken at compute time.
+1781154000,shiftpay-data,Divya Maram,SP-40 — Catalogue seeded with the shift types from the BRD. Colours are on the row as color_hex.
+1781155260,shiftpay-data,Divya Maram,"SP-11 — Derive it. One stored colour, one tint function. Two stored colours will drift the first time someone edits one of them."
+1782107100,shiftpay-data,Divya Maram,"SP-39 — Proposal. Shift meaning stops living in the name and moves into columns: oc_role, allow_weekday, allow_weekend_holiday, day_category, color_hex. Code keys on sys_id only."
+1782190200,shiftpay-data,Divya Maram,SP-40 — Columns created. Note for the record: new columns on this app's tables go in without the u_ prefix. The pre-existing u_ fields keep their names.
+1782369300,shiftpay-data,Divya Maram,"SP-41 — Backfill script for the existing catalogue rows is written. Running it as a Fix Script, not a background script, so the scope it will run in can be read back before anything executes."
+1783503120,shiftpay-data,Divya Maram,SP-36 — Checking the entitlement window with Geetha. The BRD says seven days. Seven calendar days or seven working days?
+1783503660,shiftpay-data,Geetha Nallamada,"SP-36 — Seven weekdays. The intent is you get a working day back, so a window that expires over a long weekend defeats the purpose. I will tighten the BRD wording."
+1783504080,shiftpay-data,Divya Maram,"SP-36 — Good, that changes the arithmetic. Counting weekdays, not adding seven to a date."
+1785321840,shiftpay-data,Divya Maram,"SP-58 — Confirmed, that is a data fix not a code fix. The rule engine is doing exactly what the catalogue tells it."
+1785906660,shiftpay-data,Divya Maram,"SP-29 — I will add the audit row. User, date, previous shift, new shift, reason, changed by, changed on."
+1785907020,shiftpay-data,Geetha Nallamada,SP-29 — Do not overwrite the employee's own comment on the day. That is their note. The reason for the change belongs in the audit row.
+1788156120,shiftpay-data,Divya Maram,"SP-70 — I will write the setup runbook as three independent tracks: Power BI demo, test pack, widget deployment. Each listing only its own dependencies."
+1788156600,shiftpay-data,Divya Maram,"SP-70 — And it will say explicitly that most of the repo has no build step, so nobody spends an afternoon looking for one that never existed."
+1788343800,shiftpay-data,Divya Maram,"SP-58 — Weekend flag fix is prepared but I want to run it as a Fix Script and have Neha re-run TC-SP-005 immediately after, so we see the case go from red to green for a reason we can name."
