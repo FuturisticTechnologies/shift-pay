@@ -152,7 +152,7 @@ The result is delivered to the browser as a map of date → permitted shift type
 
 ### 4.4 Configuration validation
 
-The catalogue is validated on every load. A banner is shown, and the interface degrades safely, if any active shift type is missing `day_category`, or if CO entitlement is enabled but no shift type carries `consumes_co` — a configuration in which the entitlement feature would silently do nothing.
+The catalogue is validated on every load. A banner is shown, and the interface degrades safely, if any active shift type is missing `day_category`, or if CO entitlement is enabled but no shift type carries `consumes_co` — a configuration in which the entitlement feature would silently do nothing. It is equally a fault for two shift types to carry `consumes_co`: the rules would follow whichever sorts last, so the banner names both.
 
 ---
 

@@ -912,7 +912,8 @@ holds — the snapshot, not today's catalogue rate.
 | **Status** | PENDING |
 
 **Why it matters**
-- `_deriveSemantics` keeps the **last** `consumes_co` row it sees, ordered by name. A second one would silently change which shift the CO rules apply to, with no error anywhere.
+- `_deriveSemantics` keeps the **last** `consumes_co` row it sees, ordered by name. A second one would silently change which shift the CO rules apply to.
+- Since SP-118, `configError()` names both rows in the calendar banner. This case still asserts the data itself, because a banner only helps once somebody opens the calendar.
 
 ---
 
