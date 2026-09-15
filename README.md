@@ -247,7 +247,8 @@ Configuration table defining available shift types and their pay rates.
 > CO-entitlement behaviour all come from the columns above — never from the `name` string.
 > Renaming a shift type is purely cosmetic. Adding one only requires setting these columns.
 > The widget shows a config-error banner if an active row is missing `day_category`, or if CO
-> entitlement is enabled but no row has `oc_role = consumes_co`. To backfill existing rows,
+> entitlement is enabled and anything other than exactly one row has `oc_role = consumes_co` —
+> none leaves the feature inert, two leave it following the alphabet. To backfill existing rows,
 > run [`One Time Scripts/backfill-shift-type-semantics.js`](One%20Time%20Scripts/backfill-shift-type-semantics.js).
 
 **Active shift types (9 rows):**

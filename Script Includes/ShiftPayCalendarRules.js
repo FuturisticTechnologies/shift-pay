@@ -152,20 +152,31 @@ ShiftPayCalendarRules.prototype = {
    */
   configError: function () {
     var problems = [];
-    var hasConsumer = false;
+    var consumers = [];
     var cat = this.catalogue();
     for (var i = 0; i < cat.length; i++) {
       if (!cat[i].day_category) {
         problems.push('Shift type "' + cat[i].name + '" is missing a day category.');
       }
-      if (cat[i].oc_role === 'consumes_co') hasConsumer = true;
+      if (cat[i].oc_role === 'consumes_co') consumers.push('"' + cat[i].name + '"');
     }
-    if (this.coEnabled && !hasConsumer) {
+    if (this.coEnabled && !consumers.length) {
       problems.push('CO entitlement is enabled but no shift type has the "consumes_co" role.');
+    }
+    // SP-118. Two consumers is as broken as none, only quieter: the rules would
+    // follow whichever row sorts last (see _deriveSemantics) and nothing would
+    // say so. Only a fault while CO is enabled — with it off, consumes_co rows
+    // are ordinary shifts and nothing depends on which one is picked.
+    if (this.coEnabled && consumers.length > 1) {
+      problems.push('CO entitlement needs exactly one shift type with the "consumes_co" role; ' +
+                    consumers.length + ' have it: ' + consumers.join(', ') + '.');
     }
     return problems.length ? problems.join(' ') : '';
   },
 
+  // With more than one consumes_co row the last one read wins. That is left as
+  // it is on purpose: configError reports the duplicate, and quietly preferring
+  // a different row here would change which shift an existing CO consumes.
   _deriveSemantics: function () {
     if (this._compoundOcIds) return;
     this._compoundOcIds = {};
