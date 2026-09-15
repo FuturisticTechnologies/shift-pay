@@ -429,10 +429,11 @@ def build(path):
          "calendar and the number the manager approved. Recomputing from current "
          "rates would produce a figure that is arithmetically defensible and "
          "different, and a pay figure that disagrees between two screens is read "
-         "as a defect no matter which one is right. There is also a known wart "
-         "in the aggregator: its rate map reads active catalogue rows only, so a "
-         "shift type deactivated after being logged already re-aggregates at "
-         "zero. The snapshot and the live rate are not interchangeable.")
+         "as a defect no matter which one is right. Until SP-80 the aggregator "
+         "priced from active catalogue rows only, so a shift type deactivated "
+         "after being logged re-aggregated at zero; a period written that way "
+         "keeps its zero until it is next recomputed. The snapshot and the live "
+         "rate are not interchangeable.")
 
     note(doc,
          "The summary table holds week rows as well as month rows, and the week "

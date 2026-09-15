@@ -11,8 +11,9 @@ var ShiftPayAggregator = Class.create();
  * user; the manager widget never does. Hard-wiring gs.getUserID() — which the
  * original did — is exactly what made it unusable from the manager side.
  *
- * Behaviour is intentionally identical to the original. See the note on
- * _getRateMap about active-only catalogue rows before "fixing" anything here.
+ * Behaviour matched the original exactly until SP-80, which changed one thing
+ * on purpose: a deactivated shift type keeps its rate instead of re-pricing at
+ * 0. See _getRateMap and _writeSummary for the order rates are taken in.
  *
  * Scoped-app constraints: ES5 only (Rhino) — no let/const, arrow functions or
  * template literals.
@@ -106,15 +107,24 @@ ShiftPayAggregator.prototype = {
   /**
    * Delete-then-insert one period's rows: one row per shift type with a
    * non-zero count, each carrying the rate snapshot taken right now.
+   *
+   * SP-80. The rows about to be replaced are read first: for a shift type
+   * whose catalogue row has been deleted outright, they are the only place its
+   * rate still exists. Pricing, in order: the catalogue row, active or not;
+   * else the snapshot on the row being replaced; else 0.
    */
   _writeSummary: function (type, periodStart, year, month, winStart, winEnd, rateMap) {
-    var del = new GlideRecord(this.summaryTable);
-    del.addQuery('u_user',         this.userId);
-    del.addQuery('u_period_type',  type);
-    del.addQuery('u_period_start', periodStart);
-    del.addQuery('u_year',         year);
-    del.addQuery('u_month',        month + 1); // stored 1-indexed
-    del.deleteMultiple();
+    var previous = {};
+    var old = this._periodRows(type, periodStart, year, month);
+    old.query();
+    while (old.next()) {
+      previous[old.getValue('u_shift_type')] = {
+        rate:     old.getValue('u_rate_snapshot') || '0',
+        currency: old.getValue('u_currency')      || 'INR'
+      };
+    }
+
+    this._periodRows(type, periodStart, year, month).deleteMultiple();
 
     var gr = new GlideRecord(this.dayTable);
     gr.addQuery('u_user', this.userId);
@@ -131,7 +141,7 @@ ShiftPayAggregator.prototype = {
     for (var shiftId in counts) {
       var cnt = counts[shiftId];
       if (!cnt) continue;
-      var rm     = rateMap[shiftId] || { rate: '0', currency: 'INR' };
+      var rm     = rateMap[shiftId] || previous[shiftId] || { rate: '0', currency: 'INR' };
       var amount = cnt * parseFloat(rm.rate || 0);
 
       var ins = new GlideRecord(this.summaryTable);
@@ -151,18 +161,33 @@ ShiftPayAggregator.prototype = {
   },
 
   /**
+   * One user's summary rows for one period, as an unqueried GlideRecord.
+   * _writeSummary reads and then deletes through this, so the two can never
+   * disagree about which rows a period owns.
+   */
+  _periodRows: function (type, periodStart, year, month) {
+    var gr = new GlideRecord(this.summaryTable);
+    gr.addQuery('u_user',         this.userId);
+    gr.addQuery('u_period_type',  type);
+    gr.addQuery('u_period_start', periodStart);
+    gr.addQuery('u_year',         year);
+    gr.addQuery('u_month',        month + 1); // stored 1-indexed
+    return gr;
+  },
+
+  /**
    * sys_id -> { rate, currency }, loaded once per instance.
    *
-   * NOTE: this reads ACTIVE catalogue rows only, matching the original widget
-   * exactly. That means a shift type deactivated after being logged aggregates
-   * at rate 0 on the next recompute. Preserved here on purpose so this refactor
-   * is behaviour-neutral — it is a real issue, but it is a separate decision.
+   * Reads EVERY catalogue row, active or not (SP-80). Deactivating a shift type
+   * stops it being logged; it does not make the days already worked worth
+   * nothing. Until SP-80 this read active rows only — kept deliberately so the
+   * extraction from the widget stayed behaviour-neutral — and a deactivated
+   * type re-aggregated at 0 on the next recompute.
    */
   _getRateMap: function () {
     if (this._rateMap) return this._rateMap;
     var map = {};
     var gr = new GlideRecord(this.catalogTable);
-    gr.addQuery('active', true);
     gr.query();
     while (gr.next()) {
       map[gr.getUniqueValue()] = {
