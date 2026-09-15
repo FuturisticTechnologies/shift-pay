@@ -364,11 +364,12 @@ Two things update sets are known for dropping:
   refuses to run — `validateCatalogue` raises a `configError` banner the moment
   the catalogue is empty or missing a `day_category`.
 - **`sp_instance` records carry the widget options**, and for the employee
-  calendar those options are load-bearing rather than cosmetic. Its five default
-  table names **name no table** (TC-SP-031) — the widget works only because the
-  instance parameters override all five with the real `x_1995110_shift_0_*`
-  names. Lose the `sp_instance` row and the calendar fails with a
-  table-not-found, not a legible error. Confirm all five overrides came across
+  calendar those options are load-bearing rather than cosmetic. Until SP-61 its
+  five default table names **named no table** (TC-SP-031), so the widget worked
+  only because the instance parameters override all five with the real
+  `x_1995110_shift_0_*` names. The source now defaults to the real names, but a
+  copy deployed before SP-61 still carries the old ones — lose the `sp_instance`
+  row there and the calendar fails with a table-not-found, not a legible error. Confirm all five overrides came across
   before blaming anything else.
 
 ### D2 — check the scope sys_id changed

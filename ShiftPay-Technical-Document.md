@@ -815,7 +815,7 @@ Playwright automation + Python evidence generator
 | **P1** | Server-side refusals in the employee calendar are invisible to the user, and the interface repaints as if the write succeeded. The controller branches on an error field the server never sets, using a platform message channel instead. The manager component demonstrates the correct pattern. Note the *data* is correct in every case — the refusal is enforced; only its reporting is lost. |
 | **P2** | Two shift types (`L`, `Not Eligible`) carry `allow_weekend_holiday = true`, so a weekend offers six shift types where the business rules allow four. A data fix — untick the flag on those two catalogue rows. |
 | — | The system property naming the holiday schedule does not exist, so no date resolves as a holiday and nothing warns. Weekend detection is unaffected. |
-| — | The employee calendar's default table-name options name no table; it runs on its instance-level overrides. |
+| — | The employee calendar's default table-name options named no table, so it ran on its instance-level overrides. Fixed in source (SP-61); a deployed copy keeps the old defaults until it is redeployed. |
 | — | The pay rate map reads active catalogue rows only, so a shift type deactivated after being logged re-aggregates at zero (§8.4). |
 | — | Documentation elsewhere states the entitlement window excludes holidays; the implementation excludes weekends only (§6.2). |
 
