@@ -112,7 +112,7 @@
     "name": "catalog_table",
     "label": "Shift type catalogue table",
     "type": "string",
-    "default": "u_shift_type_catalog",
+    "default": "x_1995110_shift_0_shift_type",
     "hint": "Mirrors the calendar widget option of the same name.",
     "section": "Compensatory off"
   },
@@ -120,7 +120,7 @@
     "name": "entitlement_table",
     "label": "CO entitlement table",
     "type": "string",
-    "default": "u_shift_co_entitlement",
+    "default": "x_1995110_shift_0_shift_co_entitlement",
     "hint": "Mirrors the calendar widget option of the same name.",
     "section": "Compensatory off"
   }

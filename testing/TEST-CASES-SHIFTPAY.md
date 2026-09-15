@@ -891,6 +891,10 @@ holds — the snapshot, not today's catalogue rate.
 **Fix**
 - Ship the fully-qualified names as the defaults, as the Manager Approval server script already does. Its header comment even documents the discrepancy; the calendar's does not.
 
+**Fix status**
+- Fixed in source by SP-61: `option-schema.json` and the server-script fallbacks both carry the `x_1995110_shift_0_*` names, and `testing/unit/widget-table-defaults.test.mjs` holds every widget to it. The Landing Page widget had the same fault on its two table options and is fixed in the same change.
+- The status above stands until the widget is redeployed. The instance still runs the old defaults.
+
 ### TC-SP-039 — Every semantic catalogue column is populated
 
 | | |

@@ -32,7 +32,7 @@
     "name": "shift_table",
     "label": "Day-entry table",
     "type": "string",
-    "default": "u_shift_submission",
+    "default": "x_1995110_shift_0_u_shift_submission",
     "hint": "Table name. Must have columns u_user, u_date, u_shift_type (reference to catalogue), u_comment.",
     "section": "Data"
   },
@@ -40,7 +40,7 @@
     "name": "lock_table",
     "label": "Month-lock table",
     "type": "string",
-    "default": "u_shift_submission_lock",
+    "default": "x_1995110_shift_0_monthly_timesheet",
     "hint": "Table name. Must have columns u_user, u_year, u_month, u_submitted_on.",
     "section": "Data"
   },
@@ -48,7 +48,7 @@
     "name": "catalog_table",
     "label": "Shift catalogue table",
     "type": "string",
-    "default": "u_shift_type_catalog",
+    "default": "x_1995110_shift_0_shift_type",
     "hint": "Table name. Active rows are loaded live on every loadMonth. Must have columns name, description, rate, currency, effective_date, active, valid_till, color_hex, plus the semantic columns oc_role (none|grants_co|consumes_co), allow_weekday, allow_weekend_holiday, day_category (regular|off|holiday).",
     "section": "Data"
   },
@@ -56,7 +56,7 @@
     "name": "summary_table",
     "label": "Aggregate summary table",
     "type": "string",
-    "default": "u_shift_submission_summary",
+    "default": "x_1995110_shift_0_shift_submission_summary",
     "hint": "Table name. Stores weekly and monthly shift-type counts with rate snapshots. See README for full schema.",
     "section": "Data"
   },
@@ -64,7 +64,7 @@
     "name": "entitlement_table",
     "label": "CO entitlement table",
     "type": "string",
-    "default": "u_shift_co_entitlement",
+    "default": "x_1995110_shift_0_shift_co_entitlement",
     "hint": "Table name. Tracks CO rights earned by compound OC shifts. See README for full schema.",
     "section": "Data"
   }
