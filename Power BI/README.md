@@ -313,9 +313,11 @@ SELECTEDVALUE(DimShiftType[color_hex])
 > point: it records the rate as it stood when the month was computed. A recomputing
 > measure will quietly disagree with what the employee saw on their calendar, and a pay
 > figure that differs between two screens is the one defect nobody forgives. Note also
-> that `ShiftPayAggregator._getRateMap` reads *active* catalogue rows only, so a shift
-> type deactivated after being logged already aggregates at ₹0 — another reason the
-> snapshot and the live rate are not interchangeable.
+> that until SP-80 `ShiftPayAggregator._getRateMap` read *active* catalogue rows only,
+> so a shift type deactivated after being logged re-aggregated at ₹0. The source is
+> fixed; the instance keeps the old behaviour until the Script Include is redeployed,
+> and a period already written at ₹0 stays there until it is next recomputed — another
+> reason the snapshot and the live rate are not interchangeable.
 >
 > **Every money measure filters `u_period_type = "month"`.** The summary table holds
 > week rows too, and the week rows are clipped to the month, so a week straddling
@@ -375,9 +377,9 @@ Four further pages — rate integrity, submission timeliness, weekend load and t
 CO lifecycle — are specified with their measures in
 [additional-reports.md](additional-reports.md). Each answers something the
 application cannot, and each carries the caveat that makes it trustworthy: the
-weekend page overstates until SP-58 lands, and the rate page will always show
-some zero-rate shifts because the aggregator prices from active catalogue rows
-only.
+weekend page overstates until SP-58 lands, and the rate page shows some
+zero-rate shifts until SP-80 is deployed and the affected months recomputed,
+because the aggregator priced from active catalogue rows only.
 
 ### 7. Save and refresh
 

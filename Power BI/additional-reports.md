@@ -60,10 +60,11 @@ of `DimShiftType[name]`, `FactPay[u_rate_snapshot]`, `DimShiftType[rate]`,
 `Shifts Paid`, `Total Pay`, filtered to `Rate Drift Rows > 0`.
 
 **Expect `Shifts At Zero Rate` to be non-zero, and know why before you
-investigate.** `ShiftPayAggregator._getRateMap` reads *active* catalogue rows
-only, so a shift type deactivated after being logged re-aggregates at ₹0. That
-is a known wart, preserved deliberately so the Script Include extraction stayed
-behaviour-neutral, and it is tracked as SP-80. Unpaid shift types also sit at ₹0
+investigate.** Until SP-80, `ShiftPayAggregator._getRateMap` read *active*
+catalogue rows only, so a shift type deactivated after being logged
+re-aggregated at ₹0. SP-80 fixes the source; the instance keeps the old
+behaviour until the Script Include is redeployed, and a period already written
+at ₹0 stays there until it is next recomputed. Unpaid shift types also sit at ₹0
 legitimately. Separate the two by checking `DimShiftType[active]`.
 
 ---
