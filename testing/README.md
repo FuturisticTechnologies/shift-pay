@@ -143,7 +143,8 @@ TEST-CASES-SHIFTPAY.md too**, or the pack goes green for no visible reason.
 Two further real findings are recorded but not automated, because neither
 produces a screenshot: **TC-SP-030** (no holiday schedule is configured, so no
 date is ever a holiday and the whole holiday branch is inert) and **TC-SP-031**
-(the calendar widget's five default table names name no table).
+(the calendar widget's five default table names name no table — fixed in
+source by SP-61, still true of the deployed widget until it is redeployed).
 
 ---
 
@@ -177,7 +178,8 @@ data.
 - **Never take a table name from the widget source.** The employee calendar's
   option defaults (`u_shift_submission`, `u_shift_type_catalog`, …) name no table
   at all — it runs only because the `sp_instance` `widget_parameters` override
-  all five. `lib/servicenow.ts` holds the real names. This is TC-SP-031.
+  all five. `lib/servicenow.ts` holds the real names. This is TC-SP-031, fixed
+  in source by SP-61 but live on the instance until the widget is redeployed.
 - **Angular bootstraps after DOMContentLoaded**, then fetches the month in a
   second call. Wait on `.shift-cal__grid .shift-cell` or the manager table, never
   a fixed delay.

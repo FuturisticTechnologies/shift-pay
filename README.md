@@ -370,15 +370,16 @@ Any page opens directly as `https://<instance>.service-now.com/shiftpay?id=<page
 | `subtitle` | "India ops · Logging shifts worked…" | Context line |
 | `tooltip` | "Log the shift you worked each day…" | Info icon tooltip |
 | `enable_co_entitlement` | `true` | When off, skips all CO entitlement logic; CO/compound-OC behave as ordinary shifts. |
-| `shift_table` | `u_shift_submission` | Day-entry table |
-| `lock_table` | `u_shift_submission_lock` | Month-lock table |
-| `catalog_table` | `u_shift_type_catalog` | Shift catalogue table |
-| `summary_table` | `u_shift_submission_summary` | Aggregate summary table |
-| `entitlement_table` | `u_shift_co_entitlement` | CO entitlement table |
+| `shift_table` | `x_1995110_shift_0_u_shift_submission` | Day-entry table |
+| `lock_table` | `x_1995110_shift_0_monthly_timesheet` | Month-lock table (the monthly timesheet) |
+| `catalog_table` | `x_1995110_shift_0_shift_type` | Shift catalogue table |
+| `summary_table` | `x_1995110_shift_0_shift_submission_summary` | Aggregate summary table |
+| `entitlement_table` | `x_1995110_shift_0_shift_co_entitlement` | CO entitlement table |
 
-> ⚠ **These five table defaults name no table on the instance.** The real names are the
-> `x_1995110_shift_0_*` ones in [Data Model](#data-model); this widget runs only on its
-> `sp_instance` overrides. See [TC-SP-031](#known-defects--open-findings).
+> Until SP-61 these five defaults were `u_`-prefixed names that named no table, and the widget
+> ran only on its `sp_instance` overrides ([TC-SP-031](#known-defects--open-findings)). The source
+> now ships the real names; a copy deployed before SP-61 keeps the old ones until it is redeployed.
+> `testing/unit/widget-table-defaults.test.mjs` holds every widget's defaults to a real table.
 
 ### Manager approval options
 
@@ -696,7 +697,7 @@ Recorded in [`testing/TEST-CASES-SHIFTPAY.md`](testing/TEST-CASES-SHIFTPAY.md), 
 | **TC-SP-004** | P1 | Every server-side refusal in the calendar is invisible **and** the client repaints as if the write succeeded. `c.saveCell` / `c.clearCell` / `c.bulkApply` branch on `r.data.error`; the server sets it nowhere, using `gs.addErrorMessage()` in all six refusal paths. The Manager Approval widget's `fail()` shows the correct pattern. |
 | **TC-SP-005** | P2 | `L` and `Not Eligible` carry `allow_weekend_holiday = true`, so a Saturday offers six shifts where the business rules allow four. A data fix — untick the flag on those two catalogue rows. |
 | **TC-SP-030** | — | `x_shiftpay.holiday_schedule` does not exist — no `x_shiftpay.*` property does — so `holidays()` returns `{}`, no date is ever a holiday, and nothing warns. Not automated: it produces no screenshot. |
-| **TC-SP-031** | — | The employee calendar's five default option table names name no table. It runs only on its `sp_instance` overrides. Not automated, for the same reason. |
+| **TC-SP-031** | — | The employee calendar's five default option table names name no table. It runs only on its `sp_instance` overrides. Not automated, for the same reason. Fixed in source by SP-61, with the Landing Page's two; open on the instance until the widgets are redeployed. |
 | **TC-SP-009** | P2 | **A deliberate demo defect.** The `.shift-mgr__stat--lead` tile in the Manager Approval template is bound to `c.data.counts.all` instead of `c.data.counts.submitted`. Display-only — no write path reads `data.counts`. **Fixing it requires updating `TEST-CASES-SHIFTPAY.md` in the same change**, or the pack goes green for no visible reason. |
 
 ---

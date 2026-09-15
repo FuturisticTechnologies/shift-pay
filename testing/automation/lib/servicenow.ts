@@ -6,11 +6,11 @@ import { SN_INSTANCE, TOKEN_STATE, PORTAL } from '../playwright.config';
  * The ShiftPay tables, fully qualified.
  *
  * These are the REAL table names on the instance. The employee calendar widget
- * ships `u_`-prefixed option defaults (`u_shift_submission`, `u_shift_type_catalog`,
- * …) that name no table at all — it runs only because the sp_instance
- * widget_parameters override all five. That discrepancy is itself a recorded
- * finding; see TEST-CASES-SHIFTPAY.md. Never take a table name from the widget
- * source.
+ * as deployed ships `u_`-prefixed option defaults (`u_shift_submission`,
+ * `u_shift_type_catalog`, …) that name no table at all — it runs only because
+ * the sp_instance widget_parameters override all five. That is TC-SP-031; it is
+ * fixed in source by SP-61, but the deployed copy keeps it until redeployed.
+ * Never take a table name from the widget source.
  */
 export const TABLES = {
   day: 'x_1995110_shift_0_u_shift_submission',

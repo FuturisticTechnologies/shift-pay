@@ -2,12 +2,14 @@
   /**
    * My Shift Submissions — Server Script
    * =====================================
-   * Tables (all names configurable via widget options):
-   *   u_shift_type_catalog        catalogue of shift types (confirm exact name)
-   *   u_shift_submission          per-day shift log
-   *   u_shift_submission_lock     per-month submission lock
-   *   u_shift_submission_summary  weekly/monthly aggregates for payroll
-   *   u_shift_co_entitlement      tracks which compound-OC entries have granted CO rights
+   * Tables (all names configurable via widget options). The defaults are the
+   * real tables — until SP-61 they were u_-prefixed names that named no table,
+   * and the widget ran only because its sp_instance overrode all five:
+   *   x_1995110_shift_0_shift_type                catalogue of shift types
+   *   x_1995110_shift_0_u_shift_submission        per-day shift log
+   *   x_1995110_shift_0_monthly_timesheet         per-month lock + approval state
+   *   x_1995110_shift_0_shift_submission_summary  weekly/monthly aggregates for payroll
+   *   x_1995110_shift_0_shift_co_entitlement      which compound-OC entries granted CO rights
    *
    * Holiday dates come from a cmn_schedule record whose sys_id is stored in
    * system property x_shiftpay.holiday_schedule.
@@ -17,11 +19,11 @@
    *   stored u_month in lock/summary tables   →  1-indexed (1 = January)
    */
 
-  var TABLE_DAY  = options.shift_table       || 'u_shift_submission';
-  var TABLE_LOCK = options.lock_table        || 'u_shift_submission_lock';
-  var TABLE_CAT  = options.catalog_table     || 'u_shift_type_catalog';
-  var TABLE_SUM  = options.summary_table     || 'u_shift_submission_summary';
-  var TABLE_ENT  = options.entitlement_table || 'u_shift_co_entitlement';
+  var TABLE_DAY  = options.shift_table       || 'x_1995110_shift_0_u_shift_submission';
+  var TABLE_LOCK = options.lock_table        || 'x_1995110_shift_0_monthly_timesheet';
+  var TABLE_CAT  = options.catalog_table     || 'x_1995110_shift_0_shift_type';
+  var TABLE_SUM  = options.summary_table     || 'x_1995110_shift_0_shift_submission_summary';
+  var TABLE_ENT  = options.entitlement_table || 'x_1995110_shift_0_shift_co_entitlement';
   var HOLIDAY_PROP = 'x_shiftpay.holiday_schedule';
   var USER_ID    = gs.getUserID();
 
