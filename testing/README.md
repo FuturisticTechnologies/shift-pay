@@ -7,6 +7,7 @@ Test cases, automated execution, and branded Word evidence records.
 |---|---|
 | [TEST-CASES-SHIFTPAY.md](TEST-CASES-SHIFTPAY.md) | 40 cases — employee calendar, manager approval, configuration |
 | [automation/](automation/) | Playwright harness (TypeScript) |
+| [unit/](unit/) | Offline unit tests for the Script Includes — no instance, no install |
 | [evidence-generator/](evidence-generator/) | Python + python-docx → one .docx per case |
 | [evidence-packs/](evidence-packs/) | Generated Word documents (git-ignored output) |
 
@@ -64,6 +65,17 @@ Not in PowerShell:
 cd testing/automation
 node run-case.mjs TC-SP-003
 ```
+
+### Unit tests — no instance needed
+
+```powershell
+node --test "testing/unit/*.test.mjs"
+```
+
+The Script Includes are loaded byte for byte into a Node `vm` with `Class`,
+`gs` and `GlideRecord` stubbed, so the tests run the deployed source rather than
+a copy of it. Nothing to install beyond Node 22+. They cover the rules, not the
+widgets — the Playwright cases below still prove the deployed screens obey them.
 
 ### First-time setup
 
