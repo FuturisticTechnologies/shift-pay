@@ -597,6 +597,10 @@ guard that stops the two getting out of step.
 - CLAUDE.md records this as a known wart, preserved deliberately so the Script Include extraction stayed behaviour-neutral. It is written up as a case because it is visible to a manager approving pay, not because it is news.
 - Pending because it mutates the shared catalogue and needs a recompute to undo.
 
+**Fix status**
+- Fixed in source by SP-80: the rate map reads every catalogue row, active or not, and a type whose row has been deleted keeps the snapshot on the summary row being replaced. `testing/unit/aggregator.test.mjs` pins both.
+- Stays PENDING until the Script Include is redeployed. A period already written at ₹0 keeps that until something recomputes it.
+
 ---
 
 # Manager Approval

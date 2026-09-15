@@ -74,7 +74,8 @@ node --test "testing/unit/*.test.mjs"
 
 The Script Includes are loaded byte for byte into a Node `vm` with `Class`,
 `gs` and `GlideRecord` stubbed, so the tests run the deployed source rather than
-a copy of it. Nothing to install beyond Node 22+. They cover the rules, not the
+a copy of it. `fake-glide.mjs` gives the aggregator an in-memory table to read
+and write. Nothing to install beyond Node 22+. They cover the rules, not the
 widgets — the Playwright cases below still prove the deployed screens obey them.
 
 ### First-time setup

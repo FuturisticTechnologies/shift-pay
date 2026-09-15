@@ -619,9 +619,11 @@ Weekend/holiday detection reads a `cmn_schedule` (via `cmn_schedule_span`) whose
 
 Edit the `shift_type` catalogue to add types, change rates, or activate/deactivate. Because semantics are data-driven, adding a shift type needs no code change — set `oc_role`, `allow_weekday`, `allow_weekend_holiday`, `day_category` and `color_hex` and it appears in the calendar, the legend, the approval cost breakdown and the reports.
 
-> Known wart, preserved deliberately so the Script Include extraction stayed behaviour-neutral:
-> the aggregator's rate map reads **active catalogue rows only**, so a shift type deactivated
-> after being logged re-aggregates at 0.
+> Until SP-80 the aggregator's rate map read **active catalogue rows only** — a wart kept so the
+> Script Include extraction stayed behaviour-neutral — so a shift type deactivated after being
+> logged re-aggregated at 0. It now prices from every catalogue row, active or not, and a type
+> whose row has been deleted keeps its last snapshot. The deployed Script Include keeps the old
+> behaviour until it is redeployed.
 
 ### Turning CO off
 
