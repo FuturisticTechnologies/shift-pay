@@ -14,7 +14,6 @@ rather than changed there.
 
 Requires python-docx, which the test pack already depends on.
 """
-
 import sys
 from pathlib import Path
 
