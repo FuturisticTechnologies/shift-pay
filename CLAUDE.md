@@ -42,7 +42,11 @@ A **ServiceNow scoped application** (scope `x_1995110_shift_0`, portal `/shiftpa
 - `u_shift_submission_summary` — weekly + monthly aggregates with **rate snapshot** taken at compute time
 - `u_shift_co_entitlement` — maps a compound-OC shift to the CO right it grants
 
+<<<<<<< HEAD
 **Shift semantics are data-driven, keyed by `sys_id` — never by the catalogue `name`.** The display `name`/`description` are cosmetic; renaming a shift type changes no behaviour. Meaning comes from catalogue columns: `oc_role` (`none`/`grants_co`/`consumes_co` → server `compoundOcIds`, `coSysId`), `allow_weekday` + `allow_weekend_holiday` (→ `baseAllowedSysIds`), `day_category` (`regular`/`off`/`holiday` → client grouping/legend), and `color_hex` (chip colour; the pale tint is derived in `buildShiftTypes` via `softTint`, not stored). When adding a shift type or changing the catalogue, set these columns — there are no name strings to keep in sync. `validateCatalogue` sets `data.configError` (shown as a banner) if any active row lacks `day_category`, or if CO is enabled but no `consumes_co` row exists. To backfill existing rows after adding the columns, run `One Time Scripts/backfill-shift-type-semantics.js`.
+=======
+**Shift semantics are data-driven, keyed by `sys_id` — never by the catalogue `name`.** The display `name`/`description` are cosmetic; renaming a shift type changes no behaviour. Meaning comes from catalogue columns: `oc_role` (`none`/`grants_co`/`consumes_co` → server `compoundOcIds`, `coSysId`), `allow_weekday` + `allow_weekend_holiday` (→ `baseAllowedSysIds`), `day_category` (`regular`/`off`/`holiday` → client grouping/legend), and `color_hex` (chip colour; the pale tint is derived in `buildShiftTypes` via `softTint`, not stored). When adding a shift type or changing the catalogue, set these columns — there are no name strings to keep in sync. `validateCatalogue` sets `data.configError` (shown as a banner) if any active row lacks `day_category`, or if CO is enabled and the catalogue has anything other than exactly one `consumes_co` row (SP-118 — a second one used to pass silently while `_deriveSemantics` kept whichever sorted last). To backfill existing rows after adding the columns, run `One Time Scripts/backfill-shift-type-semantics.js`.
+>>>>>>> 14c1cbc784fa2c3107e9a0e592218644929a626a
 
 **CO entitlement flow** (server `handleAction` → `ShiftPayEntitlements`) — gated by the `enable_co_entitlement` option (default `true`; when `false` every entitlement branch is skipped and CO/compound-OC act as ordinary shifts): logging a `grants_co` shift inserts an entitlement row with a window of 7 *weekdays* (`_nthWeekdayAfter`). The `consumes_co` shift is only selectable on a weekday covered by an unconsumed entitlement window (`computeAllowedShifts` → `hasUnconsumedFor`). Saving it consumes the earliest eligible entitlement; clearing/changing an entry releases or deletes the entitlement, and the server **blocks** removing an OC entry that a CO still depends on. `consumes_co`/`grants_co` shifts are deliberately rejected in `bulkSave` (`blocksBulk`).
 
@@ -50,7 +54,11 @@ A day change is a **three-phase transaction** that must bracket the day write, b
 
 **Allowed-shifts are computed server-side, enforced client-side.** `data.allowedShifts` is `{ 'YYYY-MM-DD': [sys_id,...] }` from `ShiftPayCalendarRules.allowedForMonth`; the client's `c.isAllowed` filters dropdowns. Weekend/holiday detection uses a `cmn_schedule` whose sys_id is in system property `x_shiftpay.holiday_schedule` (read via `cmn_schedule_span`). Client-side filtering is convenience only — any server action that writes a day must gate on `isAllowedOn` itself, because `c.server.get()` is callable from the browser with any payload.
 
+<<<<<<< HEAD
 **Aggregates are recomputed, not incremented.** After any day change, `new ShiftPayAggregator({...}).recompute(dates)` deletes and rewrites the affected month row and each affected week row (delete-then-insert per shift type), snapshotting the current rate. The widget's `recomputeAggregates` is a thin delegation to it. Known wart, preserved deliberately so the extraction stayed behaviour-neutral: the rate map reads **active catalogue rows only**, so a shift type deactivated after being logged re-aggregates at ₹0.
+=======
+**Aggregates are recomputed, not incremented.** After any day change, `new ShiftPayAggregator({...}).recompute(dates)` deletes and rewrites the affected month row and each affected week row (delete-then-insert per shift type), snapshotting the current rate. The widget's `recomputeAggregates` is a thin delegation to it. The rate map reads **every** catalogue row, active or not (SP-80): deactivating a shift type stops it being logged, not paid. A type whose catalogue row is gone keeps the snapshot on the summary row being replaced; only a type with no rate anywhere aggregates at ₹0. Until SP-80 the map was active-only — a wart kept so the extraction stayed behaviour-neutral — and the deployed Script Include stays that way until it is redeployed.
+>>>>>>> 14c1cbc784fa2c3107e9a0e592218644929a626a
 
 **Approval state lives on the monthly-timesheet row**, not a separate table: `status` (submitted/approved/rejected), `approver`, `actioned_on`, `manager_comment`. A month is locked when a row exists **and** `status != 'rejected'` — rejection reopens it for editing, and `submitMonth` reuses the existing row on resubmission rather than inserting a second one.
 
@@ -102,6 +110,10 @@ PowerShell note for reading results back: `$_.field + "text"` throws on the PSOb
 
 - `testing/TEST-CASES-SHIFTPAY.md` — **the single source of truth for what a case is.** 40 cases, 9 automated. The Word documents merge this definition with the run's JSON; nothing is retyped between them, so a document cannot claim an expected result the spec does not contain. Its heading and `| **Label** | value |` metadata format is parsed by `evidence-generator/case_parser.py` — keep the shape when adding cases.
 - `testing/automation/` — Playwright. `lib/servicenow.ts` (Table API), `lib/shiftpay.ts` (widget selectors and date maths), `lib/evidence.ts` (structured capture), `specs/shiftpay-cases.spec.ts`.
+<<<<<<< HEAD
+=======
+- `testing/unit/` — offline unit tests for the Script Includes: `node --test "testing/unit/*.test.mjs"`. `load-script-include.mjs` runs the real source files in a `vm` with `Class`/`gs`/`GlideRecord` stubbed; its default `GlideRecord` throws, so a rule test that reaches a table fails rather than passing on an empty result. `fake-glide.mjs` is an in-memory `GlideRecord` for Script Includes that genuinely read and write, such as the aggregator. Run these after any Script Include change — they need no instance.
+>>>>>>> 14c1cbc784fa2c3107e9a0e592218644929a626a
 - `testing/evidence-generator/` — Python; `branding.py` is Futuristic Technologies house style and is the only file to touch for a rebrand.
 
 **Three of the nine automated cases are expected to FAIL. A green run is the broken one.** Do not "fix" a red case without reading `testing/README.md`:
@@ -110,7 +122,11 @@ PowerShell note for reading results back: `$_.field + "text"` throws on the PSOb
 - **TC-SP-005 (real, P2)** — `L` and `Not Eligible` carry `allow_weekend_holiday = true`, so a Saturday offers six shifts where README §Business Rules allows four. A data fix, not a code fix.
 - **TC-SP-009 (introduced, P2)** — **a deliberate demo defect**: the `.shift-mgr__stat--lead` tile in `Manager Approval UI Widget/widget.template.html` is bound to `c.data.counts.all` instead of `c.data.counts.submitted`. The line carries a comment saying so. Chosen because `data.counts` is display-only — no write path reads it — so it cannot affect data. **Fixing it requires updating TEST-CASES-SHIFTPAY.md in the same change**, or the pack goes green for no visible reason.
 
+<<<<<<< HEAD
 Two further real findings are recorded but not automated, because neither produces a screenshot: **TC-SP-030** (`x_shiftpay.holiday_schedule` does not exist — no `x_shiftpay.*` property does — so `holidays()` returns `{}`, no date is ever a holiday, and nothing warns) and **TC-SP-031** (the calendar's five default option table names name no table; it runs only on the `sp_instance` overrides).
+=======
+Two further real findings are recorded but not automated, because neither produces a screenshot: **TC-SP-030** (`x_shiftpay.holiday_schedule` does not exist — no `x_shiftpay.*` property does — so `holidays()` returns `{}`, no date is ever a holiday, and nothing warns) and **TC-SP-031** (the calendar's five default option table names name no table; it runs only on the `sp_instance` overrides). TC-SP-031 is fixed in source by SP-61 — the Landing Page's two table defaults had the same fault and went with it — but the deployed widgets keep the old defaults until they are redeployed, so the case stays open until then.
+>>>>>>> 14c1cbc784fa2c3107e9a0e592218644929a626a
 
 Writing cases touch only the signed-in account's own calendar, two months ahead, and reverse themselves. Nothing in the pack approves, rejects or corrects a timesheet.
 
@@ -125,7 +141,11 @@ What this does *not* license: the widget-level guards are the real access contro
 - Server script is a single IIFE in ES5 (ServiceNow Rhino) — no `let`/`const`/arrow functions/template literals there. Client script targets AngularJS 1.x.
 - Dates are passed across the wire as `'YYYY-MM-DD'` strings and compared lexically (string comparison is intentional and relied upon, e.g. window checks).
 - CSS classes are BEM-light, all prefixed `shift-`; Bootstrap 3 (`.btn`, `.panel`, etc.) and Font Awesome are assumed present from Service Portal.
+<<<<<<< HEAD
 - When adding a widget option that names a table, mirror the default in `option-schema.json` *and* the `options.x || 'default'` fallback at the top of the server script.
+=======
+- When adding a widget option that names a table, mirror the default in `option-schema.json` *and* the `options.x || 'default'` fallback at the top of the server script. Both must be a real `x_1995110_shift_0_*` table — `testing/unit/widget-table-defaults.test.mjs` fails otherwise, and finds new widget folders on its own.
+>>>>>>> 14c1cbc784fa2c3107e9a0e592218644929a626a
 - **New columns on this scoped app's custom tables are created without the `u_` prefix** (e.g. `color_hex`, `oc_role`, not `u_color_hex`). Pre-existing `u_`-prefixed fields (e.g. `u_shift_type`, `u_date` on the submission table) keep their names; this convention applies only to fields we add going forward.
 - Git workflow: commit locally when requested or useful, but do not push to any remote unless the user explicitly asks for a push.
 - **Never delete remote/GitHub branches** (no `git push origin --delete`, no branch deletion via `gh`). The user keeps merged branches for future reference. Deleting the local copy of a merged branch is fine; the remote branch must stay.

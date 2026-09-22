@@ -152,7 +152,11 @@ The result is delivered to the browser as a map of date → permitted shift type
 
 ### 4.4 Configuration validation
 
+<<<<<<< HEAD
 The catalogue is validated on every load. A banner is shown, and the interface degrades safely, if any active shift type is missing `day_category`, or if CO entitlement is enabled but no shift type carries `consumes_co` — a configuration in which the entitlement feature would silently do nothing.
+=======
+The catalogue is validated on every load. A banner is shown, and the interface degrades safely, if any active shift type is missing `day_category`, or if CO entitlement is enabled but no shift type carries `consumes_co` — a configuration in which the entitlement feature would silently do nothing. It is equally a fault for two shift types to carry `consumes_co`: the rules would follow whichever sorts last, so the banner names both.
+>>>>>>> 14c1cbc784fa2c3107e9a0e592218644929a626a
 
 ---
 
@@ -260,9 +264,15 @@ Any downstream consumer — the dashboard, an export, an external reporting tool
 1. **Money comes from `u_amount` / `u_rate_snapshot`**, never from live catalogue rates.
 2. **Money measures must filter `u_period_type = 'month'`.** Week rows are clipped to the month at its edges; summing both period types double-counts.
 
+<<<<<<< HEAD
 ### 8.4 Known limitation
 
 The rate map is built from **active** catalogue rows. A shift type deactivated after being logged will re-aggregate at zero. This is preserved deliberately and recorded here rather than silently patched, because changing it would alter historical figures.
+=======
+### 8.4 Deactivated shift types
+
+Until SP-80 the rate map was built from **active** catalogue rows only, so a shift type deactivated after being logged re-aggregated at zero. It was preserved deliberately while the aggregator was extracted, because changing it alters historical figures — and SP-80 makes that change on purpose. The rate map now reads every catalogue row, and a shift type whose catalogue row has been deleted keeps the snapshot on the summary row being replaced. A period already written at zero is repaired the next time it is recomputed, and not before: nothing sweeps history. The deployed Script Include keeps the old behaviour until it is redeployed.
+>>>>>>> 14c1cbc784fa2c3107e9a0e592218644929a626a
 
 ---
 
@@ -815,8 +825,13 @@ Playwright automation + Python evidence generator
 | **P1** | Server-side refusals in the employee calendar are invisible to the user, and the interface repaints as if the write succeeded. The controller branches on an error field the server never sets, using a platform message channel instead. The manager component demonstrates the correct pattern. Note the *data* is correct in every case — the refusal is enforced; only its reporting is lost. |
 | **P2** | Two shift types (`L`, `Not Eligible`) carry `allow_weekend_holiday = true`, so a weekend offers six shift types where the business rules allow four. A data fix — untick the flag on those two catalogue rows. |
 | — | The system property naming the holiday schedule does not exist, so no date resolves as a holiday and nothing warns. Weekend detection is unaffected. |
+<<<<<<< HEAD
 | — | The employee calendar's default table-name options name no table; it runs on its instance-level overrides. |
 | — | The pay rate map reads active catalogue rows only, so a shift type deactivated after being logged re-aggregates at zero (§8.4). |
+=======
+| — | The employee calendar's default table-name options named no table, so it ran on its instance-level overrides. Fixed in source (SP-61); a deployed copy keeps the old defaults until it is redeployed. |
+| — | The pay rate map read active catalogue rows only, so a shift type deactivated after being logged re-aggregated at zero (§8.4). Fixed in source (SP-80); the deployed Script Include keeps it until redeployed. |
+>>>>>>> 14c1cbc784fa2c3107e9a0e592218644929a626a
 | — | Documentation elsewhere states the entitlement window excludes holidays; the implementation excludes weekends only (§6.2). |
 
 ---

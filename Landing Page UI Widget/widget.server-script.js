@@ -42,8 +42,13 @@
   if (CO_ENABLED) {
     var rules = new ShiftPayCalendarRules({
       userId:           gs.getUserID(),
+<<<<<<< HEAD
       catalogTable:     options.catalog_table || 'u_shift_type_catalog',
       entitlementTable: options.entitlement_table || 'u_shift_co_entitlement',
+=======
+      catalogTable:     options.catalog_table || 'x_1995110_shift_0_shift_type',
+      entitlementTable: options.entitlement_table || 'x_1995110_shift_0_shift_co_entitlement',
+>>>>>>> 14c1cbc784fa2c3107e9a0e592218644929a626a
       coEnabled:        true
     });
 

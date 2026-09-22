@@ -7,6 +7,10 @@ Test cases, automated execution, and branded Word evidence records.
 |---|---|
 | [TEST-CASES-SHIFTPAY.md](TEST-CASES-SHIFTPAY.md) | 40 cases — employee calendar, manager approval, configuration |
 | [automation/](automation/) | Playwright harness (TypeScript) |
+<<<<<<< HEAD
+=======
+| [unit/](unit/) | Offline unit tests for the Script Includes — no instance, no install |
+>>>>>>> 14c1cbc784fa2c3107e9a0e592218644929a626a
 | [evidence-generator/](evidence-generator/) | Python + python-docx → one .docx per case |
 | [evidence-packs/](evidence-packs/) | Generated Word documents (git-ignored output) |
 
@@ -65,6 +69,21 @@ cd testing/automation
 node run-case.mjs TC-SP-003
 ```
 
+<<<<<<< HEAD
+=======
+### Unit tests — no instance needed
+
+```powershell
+node --test "testing/unit/*.test.mjs"
+```
+
+The Script Includes are loaded byte for byte into a Node `vm` with `Class`,
+`gs` and `GlideRecord` stubbed, so the tests run the deployed source rather than
+a copy of it. `fake-glide.mjs` gives the aggregator an in-memory table to read
+and write. Nothing to install beyond Node 22+. They cover the rules, not the
+widgets — the Playwright cases below still prove the deployed screens obey them.
+
+>>>>>>> 14c1cbc784fa2c3107e9a0e592218644929a626a
 ### First-time setup
 
 ```powershell
@@ -131,7 +150,12 @@ TEST-CASES-SHIFTPAY.md too**, or the pack goes green for no visible reason.
 Two further real findings are recorded but not automated, because neither
 produces a screenshot: **TC-SP-030** (no holiday schedule is configured, so no
 date is ever a holiday and the whole holiday branch is inert) and **TC-SP-031**
+<<<<<<< HEAD
 (the calendar widget's five default table names name no table).
+=======
+(the calendar widget's five default table names name no table — fixed in
+source by SP-61, still true of the deployed widget until it is redeployed).
+>>>>>>> 14c1cbc784fa2c3107e9a0e592218644929a626a
 
 ---
 
@@ -165,7 +189,12 @@ data.
 - **Never take a table name from the widget source.** The employee calendar's
   option defaults (`u_shift_submission`, `u_shift_type_catalog`, …) name no table
   at all — it runs only because the `sp_instance` `widget_parameters` override
+<<<<<<< HEAD
   all five. `lib/servicenow.ts` holds the real names. This is TC-SP-031.
+=======
+  all five. `lib/servicenow.ts` holds the real names. This is TC-SP-031, fixed
+  in source by SP-61 but live on the instance until the widget is redeployed.
+>>>>>>> 14c1cbc784fa2c3107e9a0e592218644929a626a
 - **Angular bootstraps after DOMContentLoaded**, then fetches the month in a
   second call. Wait on `.shift-cal__grid .shift-cell` or the manager table, never
   a fixed delay.

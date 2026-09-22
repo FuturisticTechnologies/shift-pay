@@ -597,6 +597,13 @@ guard that stops the two getting out of step.
 - CLAUDE.md records this as a known wart, preserved deliberately so the Script Include extraction stayed behaviour-neutral. It is written up as a case because it is visible to a manager approving pay, not because it is news.
 - Pending because it mutates the shared catalogue and needs a recompute to undo.
 
+<<<<<<< HEAD
+=======
+**Fix status**
+- Fixed in source by SP-80: the rate map reads every catalogue row, active or not, and a type whose row has been deleted keeps the snapshot on the summary row being replaced. `testing/unit/aggregator.test.mjs` pins both.
+- Stays PENDING until the Script Include is redeployed. A period already written at ₹0 keeps that until something recomputes it.
+
+>>>>>>> 14c1cbc784fa2c3107e9a0e592218644929a626a
 ---
 
 # Manager Approval
@@ -891,6 +898,13 @@ holds — the snapshot, not today's catalogue rate.
 **Fix**
 - Ship the fully-qualified names as the defaults, as the Manager Approval server script already does. Its header comment even documents the discrepancy; the calendar's does not.
 
+<<<<<<< HEAD
+=======
+**Fix status**
+- Fixed in source by SP-61: `option-schema.json` and the server-script fallbacks both carry the `x_1995110_shift_0_*` names, and `testing/unit/widget-table-defaults.test.mjs` holds every widget to it. The Landing Page widget had the same fault on its two table options and is fixed in the same change.
+- The status above stands until the widget is redeployed. The instance still runs the old defaults.
+
+>>>>>>> 14c1cbc784fa2c3107e9a0e592218644929a626a
 ### TC-SP-039 — Every semantic catalogue column is populated
 
 | | |
@@ -912,7 +926,12 @@ holds — the snapshot, not today's catalogue rate.
 | **Status** | PENDING |
 
 **Why it matters**
+<<<<<<< HEAD
 - `_deriveSemantics` keeps the **last** `consumes_co` row it sees, ordered by name. A second one would silently change which shift the CO rules apply to, with no error anywhere.
+=======
+- `_deriveSemantics` keeps the **last** `consumes_co` row it sees, ordered by name. A second one would silently change which shift the CO rules apply to.
+- Since SP-118, `configError()` names both rows in the calendar banner. This case still asserts the data itself, because a banner only helps once somebody opens the calendar.
+>>>>>>> 14c1cbc784fa2c3107e9a0e592218644929a626a
 
 ---
 

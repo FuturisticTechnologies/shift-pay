@@ -247,7 +247,12 @@ Configuration table defining available shift types and their pay rates.
 > CO-entitlement behaviour all come from the columns above — never from the `name` string.
 > Renaming a shift type is purely cosmetic. Adding one only requires setting these columns.
 > The widget shows a config-error banner if an active row is missing `day_category`, or if CO
+<<<<<<< HEAD
 > entitlement is enabled but no row has `oc_role = consumes_co`. To backfill existing rows,
+=======
+> entitlement is enabled and anything other than exactly one row has `oc_role = consumes_co` —
+> none leaves the feature inert, two leave it following the alphabet. To backfill existing rows,
+>>>>>>> 14c1cbc784fa2c3107e9a0e592218644929a626a
 > run [`One Time Scripts/backfill-shift-type-semantics.js`](One%20Time%20Scripts/backfill-shift-type-semantics.js).
 
 **Active shift types (9 rows):**
@@ -369,11 +374,144 @@ Any page opens directly as `https://<instance>.service-now.com/shiftpay?id=<page
 | `subtitle` | "India ops · Logging shifts worked…" | Context line |
 | `tooltip` | "Log the shift you worked each day…" | Info icon tooltip |
 | `enable_co_entitlement` | `true` | When off, skips all CO entitlement logic; CO/compound-OC behave as ordinary shifts. |
+<<<<<<< HEAD
 | `shift_table` | `u_shift_submission` | Day-entry table |
 | `lock_table` | `u_shift_submission_lock` | Month-lock table |
 | `catalog_table` | `u_shift_type_catalog` | Shift catalogue table |
 | `summary_table` | `u_shift_submission_summary` | Aggregate summary table |
 | `entitlement_table` | `u_shift_co_entitlement` | CO entitlement table |
+=======
+| `shift_table` | `x_1995110_shift_0_u_shift_submission` | Day-entry table |
+| `lock_table` | `x_1995110_shift_0_monthly_timesheet` | Month-lock table (the monthly timesheet) |
+| `catalog_table` | `x_1995110_shift_0_shift_type` | Shift catalogue table |
+| `summary_table` | `x_1995110_shift_0_shift_submission_summary` | Aggregate summary table |
+| `entitlement_table` | `x_1995110_shift_0_shift_co_entitlement` | CO entitlement table |
+
+> Until SP-61 these five defaults were `u_`-prefixed names that named no table, and the widget
+> ran only on its `sp_instance` overrides ([TC-SP-031](#known-defects--open-findings)). The source
+> now ships the real names; a copy deployed before SP-61 keeps the old ones until it is redeployed.
+> `testing/unit/widget-table-defaults.test.mjs` holds every widget's defaults to a real table.
+
+### Manager approval options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `title` | "Team Timesheet Approvals" | Widget heading |
+| `subtitle` | "Review and approve your team's monthly shift submissions" | Context line |
+| `show_pay_amounts` | `true` | When off, **no** monetary value is sent to the browser. Enforced server-side. |
+| `manager_field` | `manager` | Field on `sys_user` holding the approving manager |
+| `history_limit` | `100` | Decisions loaded by the History tab, newest first |
+| `enable_co_entitlement` | `true` | Must match the calendar's setting — the two screens disagreeing is worse than either alone |
+| `shift_table` | `x_1995110_shift_0_u_shift_submission` | Day-entry table |
+| `lock_table` | `x_1995110_shift_0_monthly_timesheet` | Monthly timesheet table |
+| `catalog_table` | `x_1995110_shift_0_shift_type` | Shift catalogue table |
+| `summary_table` | `x_1995110_shift_0_shift_submission_summary` | Aggregate summary table |
+| `audit_table` | `x_1995110_shift_0_shift_day_change` | Day-change audit table |
+| `entitlement_table` | `x_1995110_shift_0_shift_co_entitlement` | CO entitlement table |
+
+### Reports options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `title` | "ShiftPay Reporting" | Widget heading |
+| `chart_lib_url` | jsDelivr Chart.js 4.4.1 | Loaded only if `window.Chart` is undefined. Prefer an `sp_dependency`; point at a local UI Script for portals with no CDN access. |
+| `trend_months` | `12` | Months in the trend, clamped server-side to 1–36 |
+| `team_limit` | `25` | Bars in the per-person comparison, clamped to 1–100 |
+| `show_pay_amounts` | `true` | When off, money never reaches the browser and the team ranking switches to shift count so the ordering cannot leak it |
+| `enable_co_entitlement` | `true` | When off, the CO health tab is not offered and the entitlement table is never read |
+| `manager_field` | `manager` | Decides who may select "My team" and whose data it covers |
+| `default_scope` | `org` | A preference, not a permission — the requested scope is re-checked server-side |
+| `org_role` | `x_1995110_shift_0.admin` | Role required for organisation scope |
+| `summary_table` / `catalog_table` / `entitlement_table` / `lock_table` | fully-qualified `x_1995110_shift_0_*` names | Data sources |
+
+---
+
+## Reporting
+
+A dedicated Service Portal widget renders four reports with **Chart.js v4**, deliberately
+independent of ServiceNow's reporting engine.
+
+### Reports
+
+| Tab | What it shows | Source |
+|-----|---------------|--------|
+| **Cost & volume** | Cost bars and shift-count line, month by month over the selected window (3/6/12/24 months) | Monthly summary rows |
+| **Shift mix** | Doughnut + table of every shift type logged in the window, with share and cost | Monthly summary rows |
+| **Team** | Stacked horizontal bars per person — weekday work and the on-call part of it | Monthly summary rows |
+| **Activity** | Person × month heatmap — who carried the shifts, and when. Ranked by total | Monthly summary rows |
+| **Timeliness** | Days from month-end to submission, and from submission to a manager's decision | Monthly timesheet rows |
+| **CO health** | Entitlements earned vs used vs open vs **expired unused**, plus the windows closing soonest | CO entitlement table |
+
+The Activity heatmap is a CSS grid rather than a canvas: Chart.js has no native matrix
+chart, the plugin that adds one is a second CDN dependency, and a table of coloured cells is
+crisper at this size, selectable, and keeps the person/month relationship in real table
+headers for screen readers. Cell intensity is ink at varying alpha — never a hue — scaled
+against the busiest single person-month, so the darkest cell is always a real observation.
+
+Timeliness is the one report where a taller bar is worse. Lags are whole days and may be
+**negative**, which is reported rather than clamped: the submission window opens on the last
+weekday of the month, so arriving a day early is legitimate and clamping would quietly turn
+early submitters into on-the-day submitters. A month with nothing to measure sends `null`
+and leaves a gap, because a month nobody submitted did not have a zero-day turnaround.
+
+### Scope
+
+The scope selector offers only what the signed-in user is entitled to, and the entitlement
+is decided **server-side on every request** — the selector is a convenience, not the control.
+
+| Scope | Offered to | Data |
+|-------|-----------|------|
+| **My data** | Everyone | Own shifts only |
+| **My team** | Anyone with at least one direct reportee | Direct reportees, via the configurable manager field |
+| **Organisation** | Holders of `x_1995110_shift_0.admin` (configurable) | Everyone — the only scope that queries with no user filter |
+
+### Design notes
+
+- **Reads the summary table, not the day table.** `u_amount` and `u_rate_snapshot` were
+  frozen when each month was aggregated, so a later rate change cannot retroactively rewrite
+  a chart. Re-deriving pay at read time would make the reports disagree with what managers
+  approved.
+- **On-call is derived, not named.** A shift type counts as on-call load when
+  `allow_weekend_holiday` is set and `allow_weekday` is not — the same data-driven semantics
+  the calendar uses. Renaming or adding a weekend-only shift type moves the figure with no
+  code change.
+- **Every chart is paired with its numbers.** The tables under each chart are the record and
+  the chart is the illustration, so a browser that cannot reach the CDN loses the picture and
+  never the data.
+- **`show_pay_amounts` strips money server-side.** When off, no monetary value reaches the
+  browser at all, and the team ranking switches from cost to shift count so the ordering
+  cannot leak what was withheld.
+- **Colour rule inherited from the other widgets:** hue means shift type. The mix doughnut
+  uses the catalogue's own `color_hex` so a slice matches the chip on the calendar; every
+  other chart is ink and slate. Red appears only on expired-unused CO.
+
+### The chart library
+
+Chart.js v4.4.1 is wired as a Service Portal dependency: an `sp_js_include` (Source = URL,
+jsDelivr) on the `sp_dependency` **ShiftPay Charts**, attached to the reporting widget. If
+that dependency is ever removed, the widget injects the `chart_lib_url` option itself the
+first time a chart is drawn, so the page keeps working either way.
+
+> **The widget never trusts `window.Chart`.** ServiceNow ships its own Chart.js at
+> `/scripts/thirdparty/angular-chart/chart.js` — a v1/v2 build behind the platform's OOB
+> `chart.js` dependency — and its options API is incompatible with v4 in ways that fail
+> silently. The widget keeps its own reference on `window.__shiftPayChart`, adopts the global
+> only if `Chart.version >= 3`, and restores whatever was there before when it loads v4
+> itself.
+
+For an instance that cannot reach a CDN, upload the minified library as a `sys_ui_script`,
+point the `sp_js_include` at it, and set `chart_lib_url` to its `/scripts/...` path. That is
+a configuration change; no widget code changes.
+
+### Portal pages
+
+| Page ID | Title | Widget |
+|---------|-------|--------|
+| `shiftpay_home` | ShiftPay Home | ShiftPay Landing UI (portal homepage) |
+| `fill_shift` | Fill Shift | Fill Shift Calendar UI |
+| `manager_approval` | Manager Approvals | Manager Approval UI |
+| `shift_reports` | ShiftPay Reports | ShiftPay Reporting UI |
+>>>>>>> 14c1cbc784fa2c3107e9a0e592218644929a626a
 
 > ⚠ **These five table defaults name no table on the instance.** The real names are the
 > `x_1995110_shift_0_*` ones in [Data Model](#data-model); this widget runs only on its
@@ -617,9 +755,17 @@ Weekend/holiday detection reads a `cmn_schedule` (via `cmn_schedule_span`) whose
 
 Edit the `shift_type` catalogue to add types, change rates, or activate/deactivate. Because semantics are data-driven, adding a shift type needs no code change — set `oc_role`, `allow_weekday`, `allow_weekend_holiday`, `day_category` and `color_hex` and it appears in the calendar, the legend, the approval cost breakdown and the reports.
 
+<<<<<<< HEAD
 > Known wart, preserved deliberately so the Script Include extraction stayed behaviour-neutral:
 > the aggregator's rate map reads **active catalogue rows only**, so a shift type deactivated
 > after being logged re-aggregates at 0.
+=======
+> Until SP-80 the aggregator's rate map read **active catalogue rows only** — a wart kept so the
+> Script Include extraction stayed behaviour-neutral — so a shift type deactivated after being
+> logged re-aggregated at 0. It now prices from every catalogue row, active or not, and a type
+> whose row has been deleted keeps its last snapshot. The deployed Script Include keeps the old
+> behaviour until it is redeployed.
+>>>>>>> 14c1cbc784fa2c3107e9a0e592218644929a626a
 
 ### Turning CO off
 
@@ -695,7 +841,11 @@ Recorded in [`testing/TEST-CASES-SHIFTPAY.md`](testing/TEST-CASES-SHIFTPAY.md), 
 | **TC-SP-004** | P1 | Every server-side refusal in the calendar is invisible **and** the client repaints as if the write succeeded. `c.saveCell` / `c.clearCell` / `c.bulkApply` branch on `r.data.error`; the server sets it nowhere, using `gs.addErrorMessage()` in all six refusal paths. The Manager Approval widget's `fail()` shows the correct pattern. |
 | **TC-SP-005** | P2 | `L` and `Not Eligible` carry `allow_weekend_holiday = true`, so a Saturday offers six shifts where the business rules allow four. A data fix — untick the flag on those two catalogue rows. |
 | **TC-SP-030** | — | `x_shiftpay.holiday_schedule` does not exist — no `x_shiftpay.*` property does — so `holidays()` returns `{}`, no date is ever a holiday, and nothing warns. Not automated: it produces no screenshot. |
+<<<<<<< HEAD
 | **TC-SP-031** | — | The employee calendar's five default option table names name no table. It runs only on its `sp_instance` overrides. Not automated, for the same reason. |
+=======
+| **TC-SP-031** | — | The employee calendar's five default option table names name no table. It runs only on its `sp_instance` overrides. Not automated, for the same reason. Fixed in source by SP-61, with the Landing Page's two; open on the instance until the widgets are redeployed. |
+>>>>>>> 14c1cbc784fa2c3107e9a0e592218644929a626a
 | **TC-SP-009** | P2 | **A deliberate demo defect.** The `.shift-mgr__stat--lead` tile in the Manager Approval template is bound to `c.data.counts.all` instead of `c.data.counts.submitted`. Display-only — no write path reads `data.counts`. **Fixing it requires updating `TEST-CASES-SHIFTPAY.md` in the same change**, or the pack goes green for no visible reason. |
 
 ---
