@@ -23,7 +23,6 @@
  */
 
 const SUMMARY = 'x_1995110_shift_0_shift_submission_summary';
-
 const instance = process.env.SN_INSTANCE;
 const user = process.env.SN_USER;
 const password = process.env.SN_PASSWORD;
@@ -93,6 +92,7 @@ if (monthTotal > 0) {
   const factor = (monthTotal + weekTotal) / monthTotal;
   console.log(`  overstatement        ${factor.toFixed(2)}x`);
 }
+
 
 // Per-user, so a mismatch names the person rather than the month.
 const byUser = new Map();
