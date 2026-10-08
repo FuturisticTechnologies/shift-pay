@@ -38,3 +38,6 @@ __pycache__/
 # script is the source, and BRD-ShiftPay.pdf rebuilds from BRD-ShiftPay.md with
 #   node tools/build-brd-pdf.mjs
 /*.pdf
+#IDE files
+.idea/
+*.iml
