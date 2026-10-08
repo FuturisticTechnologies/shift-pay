@@ -1,0 +1,4 @@
+app:
+  security:
+    jwt:
+      secret: ${JWT_SECRET}   # min 32 characters, set as an environment variable
