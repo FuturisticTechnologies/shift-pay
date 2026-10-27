@@ -164,6 +164,9 @@
     else if (action === 'submitMonth') {
       submitMonth(inp.year, inp.month);
     }
+    else if (action === 'requestPayout') {
+      handlePayoutRequest(inp);
+    }
   }
 
 
@@ -344,6 +347,35 @@
       gr.insert();
       gs.addInfoMessage('Shift submissions for ' + y + '-' + pad(m + 1) + ' submitted for approval.');
     }
+  }
+
+  function handlePayoutRequest(inp) {
+    var withdrawalAmount = parseFloat(inp.withdrawalAmount);
+    if (!withdrawalAmount || withdrawalAmount <= 0) {
+      gs.addErrorMessage('Please enter a valid withdrawal amount.');
+      return;
+    }
+
+    var config = new GlideScopedPreferences();
+    var feePercent = parseFloat(config.getValue('x_shiftpay.transaction_fee_percent')) || 2.5;
+    var feeCap = parseFloat(config.getValue('x_shiftpay.transaction_fee_cap')) || 50;
+
+    var grossPayout = withdrawalAmount;
+    var transactionFee = (grossPayout * feePercent / 100);
+    if (feeCap > 0 && transactionFee > feeCap) {
+      transactionFee = feeCap;
+    }
+    transactionFee = Math.round(transactionFee * 100) / 100;
+    
+    var netPayout = grossPayout - transactionFee;
+
+    data.payoutSummary = {
+      grossPayout: grossPayout,
+      transactionFee: transactionFee,
+      netPayout: netPayout,
+      feePercent: feePercent,
+      currency: inp.currency || 'INR'
+    };
   }
 
 
