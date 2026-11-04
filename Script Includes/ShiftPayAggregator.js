@@ -11,9 +11,14 @@ var ShiftPayAggregator = Class.create();
  * user; the manager widget never does. Hard-wiring gs.getUserID() — which the
  * original did — is exactly what made it unusable from the manager side.
  *
+<<<<<<< HEAD
+ * Behaviour is intentionally identical to the original. See the note on
+ * _getRateMap about active-only catalogue rows before "fixing" anything here.
+=======
  * Behaviour matched the original exactly until SP-80, which changed one thing
  * on purpose: a deactivated shift type keeps its rate instead of re-pricing at
  * 0. See _getRateMap and _writeSummary for the order rates are taken in.
+>>>>>>> 14c1cbc784fa2c3107e9a0e592218644929a626a
  *
  * Scoped-app constraints: ES5 only (Rhino) — no let/const, arrow functions or
  * template literals.
@@ -107,6 +112,17 @@ ShiftPayAggregator.prototype = {
   /**
    * Delete-then-insert one period's rows: one row per shift type with a
    * non-zero count, each carrying the rate snapshot taken right now.
+<<<<<<< HEAD
+   */
+  _writeSummary: function (type, periodStart, year, month, winStart, winEnd, rateMap) {
+    var del = new GlideRecord(this.summaryTable);
+    del.addQuery('u_user',         this.userId);
+    del.addQuery('u_period_type',  type);
+    del.addQuery('u_period_start', periodStart);
+    del.addQuery('u_year',         year);
+    del.addQuery('u_month',        month + 1); // stored 1-indexed
+    del.deleteMultiple();
+=======
    *
    * SP-80. The rows about to be replaced are read first: for a shift type
    * whose catalogue row has been deleted outright, they are the only place its
@@ -125,6 +141,7 @@ ShiftPayAggregator.prototype = {
     }
 
     this._periodRows(type, periodStart, year, month).deleteMultiple();
+>>>>>>> 14c1cbc784fa2c3107e9a0e592218644929a626a
 
     var gr = new GlideRecord(this.dayTable);
     gr.addQuery('u_user', this.userId);
@@ -141,7 +158,11 @@ ShiftPayAggregator.prototype = {
     for (var shiftId in counts) {
       var cnt = counts[shiftId];
       if (!cnt) continue;
+<<<<<<< HEAD
+      var rm     = rateMap[shiftId] || { rate: '0', currency: 'INR' };
+=======
       var rm     = rateMap[shiftId] || previous[shiftId] || { rate: '0', currency: 'INR' };
+>>>>>>> 14c1cbc784fa2c3107e9a0e592218644929a626a
       var amount = cnt * parseFloat(rm.rate || 0);
 
       var ins = new GlideRecord(this.summaryTable);
@@ -161,6 +182,14 @@ ShiftPayAggregator.prototype = {
   },
 
   /**
+<<<<<<< HEAD
+   * sys_id -> { rate, currency }, loaded once per instance.
+   *
+   * NOTE: this reads ACTIVE catalogue rows only, matching the original widget
+   * exactly. That means a shift type deactivated after being logged aggregates
+   * at rate 0 on the next recompute. Preserved here on purpose so this refactor
+   * is behaviour-neutral — it is a real issue, but it is a separate decision.
+=======
    * One user's summary rows for one period, as an unqueried GlideRecord.
    * _writeSummary reads and then deletes through this, so the two can never
    * disagree about which rows a period owns.
@@ -183,11 +212,16 @@ ShiftPayAggregator.prototype = {
    * nothing. Until SP-80 this read active rows only — kept deliberately so the
    * extraction from the widget stayed behaviour-neutral — and a deactivated
    * type re-aggregated at 0 on the next recompute.
+>>>>>>> 14c1cbc784fa2c3107e9a0e592218644929a626a
    */
   _getRateMap: function () {
     if (this._rateMap) return this._rateMap;
     var map = {};
     var gr = new GlideRecord(this.catalogTable);
+<<<<<<< HEAD
+    gr.addQuery('active', true);
+=======
+>>>>>>> 14c1cbc784fa2c3107e9a0e592218644929a626a
     gr.query();
     while (gr.next()) {
       map[gr.getUniqueValue()] = {

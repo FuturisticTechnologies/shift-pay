@@ -152,12 +152,26 @@ ShiftPayCalendarRules.prototype = {
    */
   configError: function () {
     var problems = [];
+<<<<<<< HEAD
+    var hasConsumer = false;
+=======
     var consumers = [];
+>>>>>>> 14c1cbc784fa2c3107e9a0e592218644929a626a
     var cat = this.catalogue();
     for (var i = 0; i < cat.length; i++) {
       if (!cat[i].day_category) {
         problems.push('Shift type "' + cat[i].name + '" is missing a day category.');
       }
+<<<<<<< HEAD
+      if (cat[i].oc_role === 'consumes_co') hasConsumer = true;
+    }
+    if (this.coEnabled && !hasConsumer) {
+      problems.push('CO entitlement is enabled but no shift type has the "consumes_co" role.');
+    }
+    return problems.length ? problems.join(' ') : '';
+  },
+
+=======
       if (cat[i].oc_role === 'consumes_co') consumers.push('"' + cat[i].name + '"');
     }
     if (this.coEnabled && !consumers.length) {
@@ -177,6 +191,7 @@ ShiftPayCalendarRules.prototype = {
   // With more than one consumes_co row the last one read wins. That is left as
   // it is on purpose: configError reports the duplicate, and quietly preferring
   // a different row here would change which shift an existing CO consumes.
+>>>>>>> 14c1cbc784fa2c3107e9a0e592218644929a626a
   _deriveSemantics: function () {
     if (this._compoundOcIds) return;
     this._compoundOcIds = {};

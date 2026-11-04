@@ -48,7 +48,11 @@
     "name": "catalog_table",
     "label": "Shift catalogue table",
     "type": "string",
+<<<<<<< HEAD
+    "default": "u_shift_type_catalog",
+=======
     "default": "x_1995110_shift_0_shift_type",
+>>>>>>> 14c1cbc784fa2c3107e9a0e592218644929a626a
     "hint": "Table name. Active rows are loaded live on every loadMonth. Must have columns name, description, rate, currency, effective_date, active, valid_till, color_hex, plus the semantic columns oc_role (none|grants_co|consumes_co), allow_weekday, allow_weekend_holiday, day_category (regular|off|holiday).",
     "section": "Data"
   },
