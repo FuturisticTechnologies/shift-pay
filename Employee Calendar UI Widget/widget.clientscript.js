@@ -119,6 +119,12 @@ api.controller = function ($scope, $element, $timeout) {
   c.dropdownOpen        = false;
   c.groupedDropdownList = [];
 
+  // ───── Withdrawal / Instant Wage Advance State ────────────────────────────
+  c.withdrawalAmount    = null;
+  c.payoutSummary       = null;
+  c.payoutModalOpen     = false;
+  c.currencySymbol      = '₹';
+
   // ───── Public API for the template ────────────────────────────────────────
 
   /** Returns true when sysId is selectable on the given dateKey. */
@@ -200,6 +206,68 @@ api.controller = function ($scope, $element, $timeout) {
     c.draftComment = '';
     c.saveError    = '';
     c.dropdownOpen = false;
+  };
+
+  c.calculatePayout = function () {
+    if (!c.withdrawalAmount || c.withdrawalAmount <= 0) {
+      c.payoutSummary = null;
+      return;
+    }
+
+    var withdrawalAmount = parseFloat(c.withdrawalAmount);
+    var feePercent = 2.5;
+    var feeCap = 50;
+
+    var grossPayout = withdrawalAmount;
+    var transactionFee = (grossPayout * feePercent / 100);
+    if (transactionFee > feeCap) {
+      transactionFee = feeCap;
+    }
+    transactionFee = Math.round(transactionFee * 100) / 100;
+    
+    var netPayout = grossPayout - transactionFee;
+
+    c.payoutSummary = {
+      grossPayout: grossPayout,
+      transactionFee: transactionFee,
+      netPayout: netPayout,
+      feePercent: feePercent,
+      currency: '₹'
+    };
+  };
+
+  c.openPayoutModal = function () {
+    if (!c.payoutSummary) {
+      c.calculatePayout();
+    }
+    c.payoutModalOpen = true;
+  };
+
+  c.closePayoutModal = function () {
+    c.payoutModalOpen = false;
+  };
+
+  c.confirmPayout = function () {
+    if (!c.payoutSummary) return;
+    
+    c.saving = true;
+    c.server.get({
+      action: 'requestPayout',
+      withdrawalAmount: c.withdrawalAmount,
+      currency: c.payoutSummary.currency
+    }).then(function (r) {
+      c.saving = false;
+      if (r.data.error) {
+        gs.addErrorMessage(r.data.error);
+        return;
+      }
+      
+      if (r.data.payoutSummary) {
+        c.payoutSummary = r.data.payoutSummary;
+        c.closePayoutModal();
+        gs.addInfoMessage('Withdrawal of ' + c.payoutSummary.currency + ' ' + c.payoutSummary.netPayout + ' confirmed! Funds will be transferred within 15 minutes.');
+      }
+    });
   };
 
   c.saveCell = function () {

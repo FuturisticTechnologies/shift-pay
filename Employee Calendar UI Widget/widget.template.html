@@ -8,6 +8,216 @@
   Bootstrap 3 (.btn, .btn-default, .btn-primary, .panel) is available
   on every Service Portal page, so we lean on it for buttons.
 -->
+<style>
+.shift-widget__withdrawal {
+  border-top: 1px solid #e0e0e0;
+  padding: 20px 24px;
+  background-color: #f9fafb;
+}
+.shift-withdrawal__header {
+  margin-bottom: 16px;
+}
+.shift-withdrawal__header h3 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  color: #1a1a1a;
+}
+.shift-withdrawal__header i {
+  color: #2d86fd;
+  margin-right: 6px;
+}
+.shift-withdrawal__subtitle {
+  margin: 0;
+  font-size: 13px;
+  color: #6b7280;
+}
+.shift-withdrawal__content {
+  max-width: 360px;
+}
+.shift-withdrawal__input-group {
+  margin-bottom: 16px;
+}
+.shift-withdrawal__label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+}
+.shift-withdrawal__input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.shift-withdrawal__currency-symbol {
+  position: absolute;
+  left: 10px;
+  font-size: 16px;
+  color: #6b7280;
+  pointer-events: none;
+}
+.shift-withdrawal__input {
+  width: 100%;
+  padding: 10px 12px 10px 28px;
+  font-size: 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  transition: border-color 0.2s;
+}
+.shift-withdrawal__input:focus {
+  outline: none;
+  border-color: #2d86fd;
+  box-shadow: 0 0 0 3px rgba(45, 134, 253, 0.1);
+}
+.shift-withdrawal__breakdown {
+  background-color: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+  display: none;
+}
+.shift-withdrawal__breakdown.show {
+  display: block;
+}
+.shift-withdrawal__row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: 14px;
+}
+.shift-withdrawal__row--fee {
+  color: #6b7280;
+}
+.shift-withdrawal__row--net {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 10px;
+  font-weight: 600;
+  color: #10b981;
+}
+.shift-withdrawal__label {
+  color: #374151;
+}
+.shift-withdrawal__value {
+  font-weight: 500;
+  font-family: monospace;
+}
+.shift-withdrawal__btn {
+  width: 100%;
+  padding: 12px;
+  font-size: 15px;
+  font-weight: 500;
+}
+.shift-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+}
+.shift-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%;
+  max-width: 420px;
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  z-index: 1001;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.shift-modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+.shift-modal__header h2 {
+  margin: 0;
+  font-size: 18px;
+  color: #1a1a1a;
+}
+.shift-modal__close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+}
+.shift-modal__close:hover {
+  color: #374151;
+}
+.shift-modal__body {
+  padding: 20px;
+}
+.shift-modal__summary {
+  background-color: #f9fafb;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.shift-modal__summary-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  font-size: 15px;
+  border-bottom: 1px solid #e5e7eb;
+}
+.shift-modal__summary-row:last-child {
+  border-bottom: none;
+}
+.shift-modal__summary-row--net {
+  font-weight: 600;
+  color: #10b981;
+}
+.shift-modal__summary-row--net .shift-modal__value {
+  color: #059669;
+}
+.shift-modal__label {
+  color: #374151;
+}
+.shift-modal__value {
+  font-family: monospace;
+  font-weight: 500;
+}
+.shift-modal__note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px;
+  background-color: #eff6ff;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #1e40af;
+  line-height: 1.5;
+}
+.shift-modal__note i {
+  margin-top: 2px;
+  color: #3b82f6;
+}
+.shift-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 20px;
+  border-top: 1px solid #e5e7eb;
+}
+.shift-modal__btn {
+  padding: 8px 16px;
+  font-size: 14px;
+}
+.shift-modal__btn--confirm {
+  background-color: #2d86fd;
+}
+</style>
 <div class="panel panel-default shift-widget" tabindex="0" ng-keydown="c.onKeydown($event)">
 
   <!-- Header ===================================================== -->
@@ -356,6 +566,98 @@
       <div class="shift-widget__submithint"
            ng-if="c.submitHint"
            ng-bind="c.submitHint"></div>
+    </div>
+  </div>
+
+  <!-- Instant Wage Advance / Withdrawal Section ================== -->
+  <div class="shift-widget__withdrawal">
+    <div class="shift-withdrawal__header">
+      <h3><i class="fa fa-university"></i> Instant Wage Advance</h3>
+      <p class="shift-withdrawal__subtitle">Request your earned wages before payday</p>
+    </div>
+    <div class="shift-withdrawal__content">
+      <div class="shift-withdrawal__input-group">
+        <label for="withdrawalAmount" class="shift-withdrawal__label">Withdrawal Amount</label>
+        <div class="shift-withdrawal__input-wrapper">
+          <span class="shift-withdrawal__currency-symbol">{{c.currencySymbol || '₹'}}</span>
+          <input type="number"
+                 id="withdrawalAmount"
+                 class="shift-withdrawal__input"
+                 ng-model="c.withdrawalAmount"
+                 ng-model-options="{ updateOn: 'blur' }"
+                 placeholder="Enter amount"
+                 min="0"
+                 step="0.01"
+                 ng-change="c.calculatePayout()"/>
+        </div>
+      </div>
+
+      <div class="shift-withdrawal__breakdown" ng-if="c.payoutSummary">
+        <div class="shift-withdrawal__row">
+          <span class="shift-withdrawal__label">Gross Payout:</span>
+          <span class="shift-withdrawal__value">{{c.payoutSummary.currency}} {{c.payoutSummary.grossPayout | number:'2.2'}}</span>
+        </div>
+        <div class="shift-withdrawal__row shift-withdrawal__row--fee">
+          <span class="shift-withdrawal__label">Fixed Transaction Fee ({{c.payoutSummary.feePercent}}%):</span>
+          <span class="shift-withdrawal__value">{{c.payoutSummary.currency}} {{c.payoutSummary.transactionFee | number:'2.2'}}</span>
+        </div>
+        <div class="shift-withdrawal__row shift-withdrawal__row--net">
+          <span class="shift-withdrawal__label">Net Payout:</span>
+          <span class="shift-withdrawal__value">{{c.payoutSummary.currency}} {{c.payoutSummary.netPayout | number:'2.2'}}</span>
+        </div>
+      </div>
+
+      <button type="button"
+              class="btn btn-primary shift-withdrawal__btn"
+              ng-click="c.openPayoutModal()"
+              ng-disabled="!c.withdrawalAmount || c.withdrawalAmount <= 0 || c.saving">
+        <i class="fa fa-spinner fa-spin" ng-if="c.saving"></i>
+        <span ng-bind="c.saving ? 'Processing...' : 'Request Payout'"></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Payout Confirmation Modal ================================== -->
+  <div class="shift-modal-backdrop"
+       ng-if="c.payoutModalOpen"
+       ng-click="c.closePayoutModal()"></div>
+  <div class="shift-modal shift-modal--withdrawal"
+       ng-if="c.payoutModalOpen"
+       role="dialog"
+       aria-modal="true"
+       aria-labelledby="payoutModalTitle">
+    <div class="shift-modal__header">
+      <h2 id="payoutModalTitle">Confirm Withdrawal</h2>
+      <button type="button" class="shift-modal__close" ng-click="c.closePayoutModal()" aria-label="Close">
+        <i class="fa fa-times"></i>
+      </button>
+    </div>
+    <div class="shift-modal__body">
+      <div class="shift-modal__summary">
+        <div class="shift-modal__summary-row">
+          <span class="shift-modal__label">Gross Payout Amount:</span>
+          <span class="shift-modal__value">{{c.payoutSummary.currency}} {{c.payoutSummary.grossPayout | number:'2.2'}}</span>
+        </div>
+        <div class="shift-modal__summary-row">
+          <span class="shift-modal__label">Fixed Transaction Fee:</span>
+          <span class="shift-modal__value">{{c.payoutSummary.currency}} {{c.payoutSummary.transactionFee | number:'2.2'}}</span>
+        </div>
+        <div class="shift-modal__summary-row shift-modal__summary-row--net">
+          <span class="shift-modal__label">Net Payout:</span>
+          <span class="shift-modal__value">{{c.payoutSummary.currency}} {{c.payoutSummary.netPayout | number:'2.2'}}</span>
+        </div>
+      </div>
+      <div class="shift-modal__note">
+        <i class="fa fa-info-circle"></i>
+        <span>By confirming, you acknowledge that the net payout will be transferred to your registered bank account within 15 minutes.</span>
+      </div>
+    </div>
+    <div class="shift-modal__footer">
+      <button type="button" class="btn btn-default shift-modal__btn" ng-click="c.closePayoutModal()">Cancel</button>
+      <button type="button" class="btn btn-primary shift-modal__btn shift-modal__btn--confirm" ng-click="c.confirmPayout()" ng-disabled="c.saving">
+        <i class="fa fa-spinner fa-spin" ng-if="c.saving"></i>
+        <span ng-bind="c.saving ? 'Processing...' : 'Confirm'"></span>
+      </button>
     </div>
   </div>
 
