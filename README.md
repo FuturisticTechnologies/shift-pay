@@ -662,6 +662,30 @@ Set `enable_co_entitlement = false` on the calendar, approval **and** reports wi
 
 ---
 
+### Payroll export notifications
+
+NF-5, NF-6 and FR-X7. These are standard ServiceNow notifications, so re-template, re-route or deactivate them under **System Notification > Email > Notifications**.
+
+| Notification | Sent when | Default recipient groups |
+|---|---|---|
+| `ShiftPay: payroll export completed` | A CSV was generated and attached to a record | `ShiftPay Payroll`, `ShiftPay Administrators` |
+| `ShiftPay: payroll export needs attention` | The export failed, had no record to attach to, found no approved timesheets, or excluded any | `ShiftPay Administrators` |
+
+A run that succeeds but excludes timesheets sends both. The excluded list goes only in the administrator's message: submitted, rejected, and logged but never submitted.
+
+> **Nothing sends these yet.** The export job is not in this repository. It must call `new ShiftPayExportNotifier().report(run, result)` once on every path, including its `catch` block; the Script Include header shows how. It cannot report a job that never starts.
+
+To install:
+
+1. Create the export run table `x_1995110_shift_0_export_run` with the columns `period_label` (String 40), `target_record` (String 100), `exception_summary` (String 200), `exception_detail` (String 4000), `excluded_count` (Integer) and `excluded_list` (String 65000).
+2. Create the two groups above and add members who have email addresses.
+3. Deploy `ShiftPayExportNotifier`.
+4. Run `One Time Scripts/install-export-notifications.js` as a Fix Script in the ShiftPay scope. Re-running it keeps customised wording, recipients and active flags.
+
+Outbound email must be enabled on the instance.
+
+---
+
 ## Business Rules
 
 ### Shift availability (intended)
