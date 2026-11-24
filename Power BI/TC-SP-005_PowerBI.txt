@@ -1,0 +1,85 @@
+TC-SP-005 POWER BI SETUP
+========================
+I cannot produce a .pbix file from here, so this is everything you need to
+build the report in Power BI Desktop in about 10 minutes.
+
+----------------------------------------------------------------------
+STEP 1  Get data  (pick the source that applies; all feed ONE table)
+----------------------------------------------------------------------
+SQL database : Home > Get data > SQL Server > run:
+               SELECT shift_type_id, shift_code, shift_name,
+                      allow_weekend_holiday, is_active
+               FROM dbo.shift_type_catalogue
+Excel        : Get data > Excel workbook > TC-SP-005_Shift_Catalogue.xlsx > Catalogue
+CSV          : Get data > Text/CSV > shift_type_catalogue.csv
+API          : Get data > Web (JSON) > your catalogue endpoint
+Logs         : Get data > Folder/Text > filter lines containing "Saturday"
+
+----------------------------------------------------------------------
+STEP 2  Power Query (Transform data > Advanced Editor), Excel example
+----------------------------------------------------------------------
+let
+    Source   = Excel.Workbook(File.Contents("C:\Data\TC-SP-005_Shift_Catalogue.xlsx"), null, true),
+    Catalogue_Sheet = Source{[Item="Catalogue", Kind="Sheet"]}[Data],
+    Promoted = Table.PromoteHeaders(Catalogue_Sheet, [PromoteAllScalars=true]),
+    Typed    = Table.TransformColumnTypes(Promoted, {
+                  {"shift_type_id", Int64.Type},
+                  {"shift_code", type text},
+                  {"shift_name", type text},
+                  {"allow_weekend_holiday", type logical},
+                  {"approved_for_weekend", type logical},
+                  {"is_active", type logical}})
+in
+    Typed
+
+Name the query:  ShiftCatalogue
+
+Web/JSON API variant:
+let
+    Source = Json.Document(Web.Contents("https://YOUR-API/shift-types")),
+    ToTable = Table.FromList(Source, Splitter.SplitByNothing()),
+    Expanded = Table.ExpandRecordColumn(ToTable, "Column1",
+                 {"shift_type_id","shift_code","shift_name","allow_weekend_holiday","is_active"})
+in
+    Expanded
+
+----------------------------------------------------------------------
+STEP 3  DAX measures (Modeling > New measure)
+----------------------------------------------------------------------
+Saturday Offered =
+CALCULATE ( COUNTROWS ( ShiftCatalogue ),
+            ShiftCatalogue[is_active] = TRUE (),
+            ShiftCatalogue[allow_weekend_holiday] = TRUE () )
+
+Saturday Allowed (Rules) =
+CALCULATE ( COUNTROWS ( ShiftCatalogue ),
+            ShiftCatalogue[is_active] = TRUE (),
+            ShiftCatalogue[approved_for_weekend] = TRUE () )
+
+Variance = [Saturday Offered] - [Saturday Allowed (Rules)]
+
+Mismatched Rows =
+CALCULATE ( COUNTROWS ( ShiftCatalogue ),
+            ShiftCatalogue[allow_weekend_holiday] = TRUE (),
+            ShiftCatalogue[approved_for_weekend] = FALSE () )
+
+TC-SP-005 Status =
+IF ( [Variance] = 0, "PASS", "FAIL" )
+
+Calculated column (for row-level flag):
+Mismatch Flag =
+IF ( ShiftCatalogue[allow_weekend_holiday] = TRUE ()
+     && ShiftCatalogue[approved_for_weekend] = FALSE (), "FIX", "OK" )
+
+----------------------------------------------------------------------
+STEP 4  Report page layout
+----------------------------------------------------------------------
+Cards (top row) : Saturday Offered | Saturday Allowed (Rules) | Variance | TC-SP-005 Status
+Table           : shift_code, shift_name, allow_weekend_holiday,
+                  approved_for_weekend, Mismatch Flag
+                  Conditional formatting: Mismatch Flag = "FIX" -> red fill
+Bar chart       : Axis = shift_code, Values = count, Legend = Mismatch Flag
+Slicer          : is_active
+
+Before fix : Offered 6, Allowed 4, Variance 2, FAIL
+After fix  : Offered 4, Allowed 4, Variance 0, PASS

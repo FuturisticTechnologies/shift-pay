@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-21",
+  "day": "Saturday",
+  "shift_types": [
+    {"shift_code": "EARLY", "shift_name": "Early shift"},
+    {"shift_code": "DAY", "shift_name": "Day shift"},
+    {"shift_code": "LATE", "shift_name": "Late shift"},
+    {"shift_code": "NIGHT", "shift_name": "Night shift"},
+    {"shift_code": "ADMIN", "shift_name": "Office hours"},
+    {"shift_code": "TRAIN", "shift_name": "Training shift"}
+  ]
+}
