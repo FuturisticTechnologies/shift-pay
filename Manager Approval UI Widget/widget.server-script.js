@@ -20,6 +20,9 @@
    * before any write, because `c.server.get({...})` is callable from the
    * browser with any payload the user cares to type.
    *
+   * Money. Totals are lists of {currency, amount}, built by ShiftPayMoney, so
+   * different currencies are never added together (BR-X6).
+   *
    * Shared logic. Nothing about shift rules or pay is reimplemented here:
    *   ShiftPayCalendarRules  what a reportee may legally log on a date
    *   ShiftPayEntitlements   the CO lifecycle (obtained via the rules object)
@@ -99,6 +102,10 @@
   var catalogById = CATALOGUE_RULES.catalogById();
   data.shiftCatalogue = projectCatalogue(catalogue);
   data.configError    = CATALOGUE_RULES.configError();
+
+  // Labels a total of nothing; every other currency comes off the summary rows.
+  var MONEY         = new ShiftPayMoney();
+  var ZERO_CURRENCY = MONEY.sharedCurrency(catalogue);
 
   // ── Actions run before the re-read, so the response is already fresh ─────
   data.actionError = '';
@@ -505,10 +512,14 @@
   function loadQueueInto(out, y, m) {
     out.rows = [];
     out.counts = { submitted: 0, approved: 0, rejected: 0, notSubmitted: 0, all: 0 };
-    out.totals = { pendingAmount: 0, approvedAmount: 0, currency: 'INR' };
+    out.totals = null;
+    var pending = {}, approved = {};
     out.weekdaysInMonth = weekdaysIn(y, m);
 
-    if (!reportees.length) return;
+    if (!reportees.length) {
+      if (SHOW_PAY) out.totals = queueTotals(pending, approved);
+      return;
+    }
 
     var ids = [];
     for (var i = 0; i < reportees.length; i++) ids.push(reportees[i].userId);
@@ -521,7 +532,7 @@
     for (var r = 0; r < reportees.length; r++) {
       var rep = reportees[r];
       var ts  = timesheets[rep.userId] || null;
-      var sum = summaries[rep.userId]  || { mix: [], totalShifts: 0, totalAmount: 0, currency: 'INR' };
+      var sum = summaries[rep.userId]  || { mix: [], totalShifts: 0, money: {} };
       var cov = coverage[rep.userId]   || { weekdaysLogged: 0 };
 
       var status = ts ? ts.status : '';
@@ -542,10 +553,7 @@
         // Only a submitted timesheet is actionable — BR-M1.
         canAction:      status === 'submitted'
       };
-      if (SHOW_PAY) {
-        row.totalAmount = sum.totalAmount;
-        row.currency    = sum.currency;
-      }
+      if (SHOW_PAY) row.totalAmounts = moneyList(sum.money);
       out.rows.push(row);
 
       out.counts.all++;
@@ -555,13 +563,23 @@
       else                             out.counts.notSubmitted++;
 
       if (SHOW_PAY) {
-        if (status === 'submitted')     out.totals.pendingAmount  += sum.totalAmount;
-        else if (status === 'approved') out.totals.approvedAmount += sum.totalAmount;
-        if (sum.currency) out.totals.currency = sum.currency;
+        if (status === 'submitted')     addBag(pending,  sum.money);
+        else if (status === 'approved') addBag(approved, sum.money);
       }
     }
 
-    if (!SHOW_PAY) out.totals = null;
+    if (SHOW_PAY) out.totals = queueTotals(pending, approved);
+  }
+
+  function queueTotals(pending, approved) {
+    return { pendingAmounts: moneyList(pending), approvedAmounts: moneyList(approved) };
+  }
+
+  function moneyList(bag) { return MONEY.toList(bag, ZERO_CURRENCY); }
+
+  /** Fold one per-currency bag into another, currency by currency. */
+  function addBag(into, from) {
+    for (var code in from) MONEY.add(into, code, from[code]);
   }
 
   function readTimesheets(idList, y, m) {
@@ -603,7 +621,7 @@
     gr.query();
     while (gr.next()) {
       var uid = gr.getValue('u_user');
-      if (!map[uid]) map[uid] = { mix: [], totalShifts: 0, totalAmount: 0, currency: 'INR' };
+      if (!map[uid]) map[uid] = { mix: [], totalShifts: 0, money: {} };
       var bucket  = map[uid];
       var shiftId = gr.getValue('u_shift_type');
       var cat     = catalogById[shiftId] || {};
@@ -617,13 +635,13 @@
         count:     count
       };
       if (SHOW_PAY) {
-        entry.rate   = gr.getValue('u_rate_snapshot') || '0';
-        entry.amount = amount;
+        entry.rate     = gr.getValue('u_rate_snapshot') || '0';
+        entry.amount   = amount;
+        entry.currency = gr.getValue('u_currency') || '';
       }
       bucket.mix.push(entry);
       bucket.totalShifts += count;
-      if (SHOW_PAY) bucket.totalAmount += amount;
-      bucket.currency = gr.getValue('u_currency') || bucket.currency;
+      if (SHOW_PAY) MONEY.add(bucket.money, entry.currency, amount);
     }
 
     // Present the mix in catalogue order so every row's chips line up.
@@ -731,13 +749,10 @@
     if (monthly) {
       detail.ledger      = monthly.mix;
       detail.totalShifts = monthly.totalShifts;
-      if (SHOW_PAY) {
-        detail.totalAmount = monthly.totalAmount;
-        detail.currency    = monthly.currency;
-      }
+      if (SHOW_PAY) detail.totalAmounts = moneyList(monthly.money);
     } else {
       detail.totalShifts = 0;
-      if (SHOW_PAY) { detail.totalAmount = 0; detail.currency = 'INR'; }
+      if (SHOW_PAY) detail.totalAmounts = moneyList({});
     }
 
     // ── weekly split, from the same snapshotted summary rows ──
@@ -752,15 +767,16 @@
     while (wk.next()) {
       var ps = wk.getValue('u_period_start');
       if (!weekMap[ps]) {
-        weekMap[ps] = { periodStart: ps, count: 0, amount: 0 };
+        weekMap[ps] = { periodStart: ps, count: 0, money: {} };
         weekOrder.push(ps);
       }
       weekMap[ps].count += parseInt(wk.getValue('u_count'), 10) || 0;
-      if (SHOW_PAY) weekMap[ps].amount += parseFloat(wk.getValue('u_amount')) || 0;
+      if (SHOW_PAY) MONEY.add(weekMap[ps].money, wk.getValue('u_currency'), wk.getValue('u_amount'));
     }
     for (var w = 0; w < weekOrder.length; w++) {
       var row = weekMap[weekOrder[w]];
-      if (!SHOW_PAY) row.amount = null;
+      row.amounts = SHOW_PAY ? moneyList(row.money) : null;
+      delete row.money;
       detail.weeks.push(row);
     }
 
@@ -842,12 +858,9 @@
       rows[i].initials   = p.initials;
       rows[i].employeeId = p.employeeId;
       var t = totals[periodKey(rows[i].userId, rows[i].year, rows[i].month)] ||
-              { totalShifts: 0, totalAmount: 0, currency: 'INR' };
+              { totalShifts: 0, money: {} };
       rows[i].totalShifts = t.totalShifts;
-      if (SHOW_PAY) {
-        rows[i].totalAmount = t.totalAmount;
-        rows[i].currency    = t.currency;
-      }
+      if (SHOW_PAY) rows[i].totalAmounts = moneyList(t.money);
     }
     return rows;
   }
@@ -902,10 +915,9 @@
                           parseInt(gr.getValue('u_year'), 10),
                           parseInt(gr.getValue('u_month'), 10) - 1);
       if (!wanted[key]) continue;
-      if (!map[key]) map[key] = { totalShifts: 0, totalAmount: 0, currency: 'INR' };
+      if (!map[key]) map[key] = { totalShifts: 0, money: {} };
       map[key].totalShifts += parseInt(gr.getValue('u_count'), 10) || 0;
-      if (SHOW_PAY) map[key].totalAmount += parseFloat(gr.getValue('u_amount')) || 0;
-      map[key].currency = gr.getValue('u_currency') || map[key].currency;
+      if (SHOW_PAY) MONEY.add(map[key].money, gr.getValue('u_currency'), gr.getValue('u_amount'));
     }
     return map;
   }

@@ -104,7 +104,7 @@ ShiftPayCalendarRules.prototype = {
         name:           gr.getValue('name')           || '',
         description:    gr.getValue('description')    || '',
         rate:           gr.getValue('rate')           || '0',
-        currency:       gr.getValue('currency')       || 'INR',
+        currency:       gr.getValue('currency')       || '',
         effective_date: gr.getValue('effective_date') || '',
         color_hex:      gr.getValue('color_hex')      || '',
         // Semantic columns — the contract the code branches on.
@@ -157,6 +157,11 @@ ShiftPayCalendarRules.prototype = {
     for (var i = 0; i < cat.length; i++) {
       if (!cat[i].day_category) {
         problems.push('Shift type "' + cat[i].name + '" is missing a day category.');
+      }
+      // No currency is assumed on the catalogue's behalf (PC-2), so a paid
+      // shift type without one produces amounts nobody can read.
+      if (!cat[i].currency && parseFloat(cat[i].rate) > 0) {
+        problems.push('Shift type "' + cat[i].name + '" has a rate but no currency.');
       }
       if (cat[i].oc_role === 'consumes_co') consumers.push('"' + cat[i].name + '"');
     }

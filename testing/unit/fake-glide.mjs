@@ -4,11 +4,11 @@
  *   const tables = { sum: [], day: [{ sys_id: 'd1', u_user: 'emp-1', ... }] };
  *   loadScriptInclude(['ShiftPayAggregator'], { GlideRecord: fakeGlide(tables) });
  *
- * Models only what the Script Includes call: addQuery with =, >= and <=,
- * query/next, getValue/getUniqueValue, deleteMultiple, and
- * initialize/setValue/insert. Anything else is absent, so a Script Include that
- * starts relying on more of the API fails here rather than being quietly
- * mis-simulated.
+ * Models only what the code under test calls: addQuery with =, >=, <= and IN,
+ * orderBy (ascending), query/next, getValue/getDisplayValue/getUniqueValue,
+ * deleteMultiple, and initialize/setValue/insert. Anything else is absent, so
+ * code that starts relying on more of the API fails here rather than being
+ * quietly mis-simulated.
  *
  * Values are compared as strings, like getValue returns them. That is what
  * makes the 'YYYY-MM-DD' range queries work lexically, exactly as on the
@@ -29,7 +29,9 @@ export function fakeGlide(tables) {
       '=': (a, b) => a === b,
       '>=': (a, b) => a >= b,
       '<=': (a, b) => a <= b,
+      IN: (a, b) => b.split(',').includes(a),
     };
+    let sortField = null;
     const matches = (row) =>
       filters.every(([field, op, value]) => OPS[op](String(row[field] ?? ''), value));
 
@@ -40,6 +42,9 @@ export function fakeGlide(tables) {
     };
     this.query = () => {
       results = rows.filter(matches);
+      if (sortField) {
+        results.sort((a, b) => String(a[sortField] ?? '').localeCompare(String(b[sortField] ?? '')));
+      }
       cursor = -1;
     };
     this.next = () => {
@@ -47,7 +52,11 @@ export function fakeGlide(tables) {
       return current !== null;
     };
     this.getValue = (field) => (current[field] == null ? null : String(current[field]));
-    this.getUniqueValue = () => current.sys_id;
+    this.getDisplayValue = (field) => this.getValue(field);
+    this.orderBy = (field) => {
+      sortField = field;
+    };
+    this.getUniqueValue =() => current.sys_id;
     this.deleteMultiple = () => {
       for (const row of rows.filter(matches)) rows.splice(rows.indexOf(row), 1);
     };

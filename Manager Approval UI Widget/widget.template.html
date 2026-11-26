@@ -107,11 +107,11 @@
       </div>
       <div class="shift-mgr__stat" ng-if="c.data.showPay">
         <span class="shift-mgr__statk">Pending cost</span>
-        <span class="shift-mgr__statv">{{c.money(c.data.totals.pendingAmount, c.data.totals.currency)}}</span>
+        <span class="shift-mgr__statv">{{c.moneyList(c.data.totals.pendingAmounts)}}</span>
       </div>
       <div class="shift-mgr__stat" ng-if="c.data.showPay">
         <span class="shift-mgr__statk">Approved cost</span>
-        <span class="shift-mgr__statv shift-mgr__statv--quiet">{{c.money(c.data.totals.approvedAmount, c.data.totals.currency)}}</span>
+        <span class="shift-mgr__statv shift-mgr__statv--quiet">{{c.moneyList(c.data.totals.approvedAmounts)}}</span>
       </div>
     </div>
 
@@ -212,7 +212,7 @@
             </td>
 
             <td class="shift-mgr__num" ng-if="c.data.showPay">
-              {{c.money(row.totalAmount, row.currency)}}
+              {{c.moneyList(row.totalAmounts)}}
             </td>
 
             <td>
@@ -306,7 +306,7 @@
               </span>
             </td>
             <td class="shift-mgr__num">{{h.totalShifts}}</td>
-            <td class="shift-mgr__num" ng-if="c.data.showPay">{{c.money(h.totalAmount, h.currency)}}</td>
+            <td class="shift-mgr__num" ng-if="c.data.showPay">{{c.moneyList(h.totalAmounts)}}</td>
             <td>
               <span class="shift-mgr__reason" ng-if="h.managerComment"
                     title="{{h.managerComment}}">{{h.managerComment}}</span>
@@ -450,8 +450,8 @@
             <tr ng-repeat="l in c.data.detail.ledger track by l.shiftId">
               <td><span class="shift-mgr__chip" ng-style="c.chipStyle(l.color_hex)">{{l.name}}</span></td>
               <td class="shift-mgr__num">{{l.count}}</td>
-              <td class="shift-mgr__num shift-mgr__muted" ng-if="c.data.showPay">{{c.money(l.rate, c.data.detail.currency)}}</td>
-              <td class="shift-mgr__num" ng-if="c.data.showPay">{{c.money(l.amount, c.data.detail.currency)}}</td>
+              <td class="shift-mgr__num shift-mgr__muted" ng-if="c.data.showPay">{{c.money(l.rate, l.currency)}}</td>
+              <td class="shift-mgr__num" ng-if="c.data.showPay">{{c.money(l.amount, l.currency)}}</td>
             </tr>
             <tr ng-if="!c.data.detail.ledger.length">
               <td colspan="4" class="shift-mgr__muted">Nothing aggregated for this month.</td>
@@ -460,7 +460,7 @@
               <td>Total</td>
               <td class="shift-mgr__num">{{c.data.detail.totalShifts}}</td>
               <td class="shift-mgr__num shift-mgr__muted" ng-if="c.data.showPay">—</td>
-              <td class="shift-mgr__num" ng-if="c.data.showPay">{{c.money(c.data.detail.totalAmount, c.data.detail.currency)}}</td>
+              <td class="shift-mgr__num" ng-if="c.data.showPay">{{c.moneyList(c.data.detail.totalAmounts)}}</td>
             </tr>
           </tbody>
         </table>
@@ -478,7 +478,7 @@
               <tr ng-repeat="wk in c.data.detail.weeks track by wk.periodStart">
                 <td class="shift-mgr__muted">Week of {{wk.periodStart}}</td>
                 <td class="shift-mgr__num">{{wk.count}}</td>
-                <td class="shift-mgr__num" ng-if="c.data.showPay">{{c.money(wk.amount, c.data.detail.currency)}}</td>
+                <td class="shift-mgr__num" ng-if="c.data.showPay">{{c.moneyList(wk.amounts)}}</td>
               </tr>
             </tbody>
           </table>

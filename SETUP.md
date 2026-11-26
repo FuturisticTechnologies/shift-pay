@@ -354,7 +354,7 @@ Order matters here, because each step assumes the one above it.
 From the working instance — dev227442 as of 2026-08-20 — capture the scoped app:
 the five tables plus `x_1995110_shift_0_shift_day_change`, every column added
 since (`oc_role`, `allow_weekday`, `allow_weekend_holiday`, `day_category`,
-`color_hex`), the four widgets, the three Script Includes, and the four portal
+`color_hex`), the four widgets, the four Script Includes, and the four portal
 pages (`shiftpay_home`, `fill_shift`, `manager_approval`, `shift_reports`).
 
 Two things update sets are known for dropping:
