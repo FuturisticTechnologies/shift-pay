@@ -44,7 +44,11 @@ api.controller = function ($scope, $element, $timeout) {
   // data.team         [{userId, name, initials, employeeId, shifts, onCall, weekday, amount}]
   // data.co           {earned, consumed, open, expired, soon[]} | null
   // data.approval     {submitted, approved, rejected, latestPending}
-  // data.totals       {shifts, onCall, amount, people, currency}
+  // data.totals       {shifts, onCall, amount, amounts, people}
+  //                   amounts is [{currency, amount}]; trend, mix and team rows
+  //                   carry the same pair, with amount null when mixed
+  // data.currency     the window's one currency, or ''
+  // data.mixedCurrency boolean - the window spans more than one currency
   // data.showPay      boolean — false means amounts were never sent
   // data.showTeam     boolean — false in the 'me' scope
   // data.hasData      boolean
@@ -125,10 +129,29 @@ api.controller = function ($scope, $element, $timeout) {
            (c.data.year === now.getFullYear() && c.data.month > now.getMonth());
   };
 
+  /**
+   * One amount in its own currency. A code with no symbol here is printed as
+   * the code, and a missing one as a bare number — never as some other currency.
+   */
   c.money = function (amount, currency) {
     if (amount === null || amount === undefined) return '';
-    var sym = CURRENCY[currency || (c.data.totals && c.data.totals.currency) || 'INR'] || '';
-    return sym + groupDigits(Math.round(Number(amount) || 0));
+    var n = groupDigits(Math.round(Number(amount) || 0));
+    if (!currency) return n;
+    return CURRENCY[currency] ? CURRENCY[currency] + n : currency + ' ' + n;
+  };
+
+  /** A total: one subtotal per currency, side by side and never added (BR-X6). */
+  c.moneyList = function (list) {
+    if (!list) return '';
+    return list.map(function (t) {
+      var text = c.money(t.amount, t.currency);
+      return (!t.currency && list.length > 1) ? text + ' (no currency)' : text;
+    }).join(' + ');
+  };
+
+  /** Can cost share one axis? Not when hidden, and not across currencies. */
+  c.chartsMoney = function () {
+    return !!c.data.showPay && !c.data.mixedCurrency;
   };
 
   /** Share of the window's shifts, as a rounded percentage. */
@@ -421,7 +444,7 @@ api.controller = function ($scope, $element, $timeout) {
       x: { grid: { display: false }, ticks: { color: AXIS_TEXT, font: { size: 11 } } }
     };
 
-    if (c.data.showPay) {
+    if (c.chartsMoney()) {
       datasets.push({
         type: 'bar', label: 'Cost', data: amounts,
         backgroundColor: INK, borderRadius: 3, maxBarThickness: 34,
@@ -456,9 +479,9 @@ api.controller = function ($scope, $element, $timeout) {
         plugins: {
           legend: legend(),
           tooltip: tooltip(function (ctx) {
-            var isMoney = c.data.showPay && ctx.dataset.label === 'Cost';
+            var isMoney = c.chartsMoney() && ctx.dataset.label === 'Cost';
             return ctx.dataset.label + ': ' +
-                   (isMoney ? c.money(ctx.parsed.y) : ctx.parsed.y);
+                   (isMoney ? c.money(ctx.parsed.y, c.data.currency) : ctx.parsed.y);
           })
         }
       })
@@ -504,7 +527,7 @@ api.controller = function ($scope, $element, $timeout) {
           tooltip: tooltip(function (ctx) {
             var row = c.data.mix[ctx.dataIndex] || {};
             var line = ctx.label + ': ' + ctx.parsed + ' shifts (' + c.share(ctx.parsed) + '%)';
-            if (c.data.showPay && row.amount !== null) line += ' · ' + c.money(row.amount);
+            if (c.data.showPay && row.amounts) line += ' · ' + c.moneyList(row.amounts);
             return line;
           })
         }
@@ -553,8 +576,8 @@ api.controller = function ($scope, $element, $timeout) {
           tooltip: tooltip(function (ctx) {
             var row = c.data.team[ctx.dataIndex] || {};
             var line = ctx.dataset.label + ': ' + ctx.parsed.x;
-            if (ctx.datasetIndex === 1 && c.data.showPay && row.amount !== null) {
-              line += ' · month total ' + c.money(row.amount);
+            if (ctx.datasetIndex === 1 && c.data.showPay && row.amounts) {
+              line += ' · month total ' + c.moneyList(row.amounts);
             }
             return line;
           })
@@ -674,7 +697,7 @@ api.controller = function ($scope, $element, $timeout) {
         color: AXIS_TEXT,
         font: { size: 11 },
         precision: money ? undefined : 0,
-        callback: function (v) { return money ? c.money(v) : v; }
+        callback: function (v) { return money ? c.money(v, c.data.currency) : v; }
       }
     };
   }

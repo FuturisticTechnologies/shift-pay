@@ -18,6 +18,12 @@
    * so a rate change would silently rewrite history and the charts would stop
    * agreeing with what the manager approved. Read the snapshot.
    *
+   * MONEY (BR-X6). Different currencies are never added together. Every money
+   * figure carries `amounts`, a list of {currency, amount} built by
+   * ShiftPayMoney, and a scalar `amount` for the charts. When the window spans
+   * more than one currency, data.mixedCurrency is set, every scalar is null,
+   * and nothing is charted or ranked by cost.
+   *
    * Nothing about shift semantics is reimplemented: ShiftPayCalendarRules
    * supplies the catalogue, its colours and its semantic columns. In particular
    * "on-call load" is derived from allow_weekend_holiday / allow_weekday, never
@@ -172,11 +178,15 @@
   data.trend   = report.trend;                 // one entry per month in the window
   data.mix     = report.mix;                   // per shift type, over the window
   data.totals  = report.totals;
+  data.mixedCurrency = report.mixedCurrency;
+  data.currency      = report.currency;   // '' when mixed, unknown or hidden
 
   // Both people-shaped reports are built from one name lookup over the union of
   // their two capped sets.
   if (data.showTeam) {
-    var teamRank = rankUsers(report.perUser, SHOW_PAY ? 'amount' : 'shifts');
+    // Cost cannot order people paid in different currencies.
+    var teamRank = rankUsers(report.perUser,
+                             SHOW_PAY && !report.mixedCurrency ? 'amount' : 'shifts');
     var actRank  = rankUsers(report.perUser, 'shifts');
     var people   = readPeople(teamRank.rows.concat(actRank.rows), 'userId');
 
@@ -302,7 +312,7 @@
         month:  WINDOW.periods[p].m,
         shifts: 0,
         onCall: 0,
-        amount: SHOW_PAY ? 0 : null,
+        money:  {},
         people: 0
       });
     }
@@ -317,8 +327,8 @@
     // being built here.
     var perUserMonth = {};
     var seenUser     = {};
-    var totals   = { shifts: 0, onCall: 0, amount: SHOW_PAY ? 0 : null,
-                     people: 0, currency: 'INR' };
+    var totals   = { shifts: 0, onCall: 0, money: {}, people: 0 };
+    var MONEY    = new ShiftPayMoney();
 
     var gr = new GlideRecord(TABLE_SUM);
     gr.addQuery('u_period_type', 'month');
@@ -336,15 +346,14 @@
       var sid    = gr.getValue('u_shift_type');
       var count  = parseInt(gr.getValue('u_count'), 10) || 0;
       var amount = parseFloat(gr.getValue('u_amount')) || 0;
+      var code   = gr.getValue('u_currency') || '';
       var onCall = onCallIds[sid] ? count : 0;
       if (!count) continue;
-
-      totals.currency = gr.getValue('u_currency') || totals.currency;
 
       // ── trend ──
       trend[idx].shifts += count;
       trend[idx].onCall += onCall;
-      if (SHOW_PAY) trend[idx].amount += amount;
+      if (SHOW_PAY) MONEY.add(trend[idx].money, code, amount);
       if (uid && !trendPeople[idx][uid]) {
         trendPeople[idx][uid] = true;
         trend[idx].people++;
@@ -363,21 +372,21 @@
           color_hex:    cat.color_hex || '',
           day_category: cat.day_category || '',
           count:        0,
-          amount:       SHOW_PAY ? 0 : null
+          money:        {}
         };
       }
       mixMap[sid].count += count;
-      if (SHOW_PAY) mixMap[sid].amount += amount;
+      if (SHOW_PAY) MONEY.add(mixMap[sid].money, code, amount);
 
       // ── per person, and per person per month ──
       if (uid) {
         if (!perUser[uid]) {
-          perUser[uid] = { shifts: 0, onCall: 0, amount: SHOW_PAY ? 0 : null };
+          perUser[uid] = { shifts: 0, onCall: 0, money: {} };
           perUserMonth[uid] = newZeroRow(trend.length);
         }
         perUser[uid].shifts += count;
         perUser[uid].onCall += onCall;
-        if (SHOW_PAY) perUser[uid].amount += amount;
+        if (SHOW_PAY) MONEY.add(perUser[uid].money, code, amount);
         perUserMonth[uid][idx] += count;
         if (!seenUser[uid]) { seenUser[uid] = true; totals.people++; }
       }
@@ -385,7 +394,7 @@
       // ── totals ──
       totals.shifts += count;
       totals.onCall += onCall;
-      if (SHOW_PAY) totals.amount += amount;
+      if (SHOW_PAY) MONEY.add(totals.money, code, amount);
     }
 
     // Catalogue order, so the donut's slices and the legend match the chips the
@@ -399,9 +408,29 @@
     }
     for (var leftover in mixMap) mix.push(mixMap[leftover]);   // deactivated types, last
 
+    // The window total decides whether anything is mixed: every other bucket is
+    // a subset of its rows.
+    var totalList = MONEY.toList(totals.money, MONEY.sharedCurrency(catalogue));
+    var mixed     = SHOW_PAY && MONEY.isMixed(totalList);
+    var currency  = (SHOW_PAY && !mixed) ? totalList[0].currency : '';
+
+    /** Swap a bucket's running bag for `amounts` and the chartable `amount`. */
+    function settle(bucket) {
+      var list = SHOW_PAY ? MONEY.toList(bucket.money, currency) : null;
+      bucket.amounts = list;
+      bucket.amount  = (SHOW_PAY && !mixed) ? list[0].amount : null;
+      delete bucket.money;
+    }
+
+    settle(totals);
+    for (var ti = 0; ti < trend.length; ti++) settle(trend[ti]);
+    for (var xi = 0; xi < mix.length; xi++) settle(mix[xi]);
+    for (var pu in perUser) settle(perUser[pu]);
+
     return {
       trend: trend, mix: mix, totals: totals,
-      perUser: perUser, perUserMonth: perUserMonth
+      perUser: perUser, perUserMonth: perUserMonth,
+      mixedCurrency: mixed, currency: currency
     };
   }
 
@@ -429,7 +458,8 @@
         // The comparison bars stack: weekday work below, on-call above,
         // summing to the person's total.
         weekday: perUser[uid].shifts - perUser[uid].onCall,
-        amount: perUser[uid].amount
+        amount: perUser[uid].amount,
+        amounts: perUser[uid].amounts
       });
     }
     rows.sort(function (a, b) { return (b[measure] || 0) - (a[measure] || 0); });

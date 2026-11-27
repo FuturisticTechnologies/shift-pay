@@ -41,7 +41,7 @@ api.controller = function ($scope, $element, $timeout) {
         label:     row.description || row.name,
         short:     row.name,
         rate:      Number(row.rate) || 0,
-        currency:  row.currency || 'INR',
+        currency:  row.currency || '',
         color:     color,
         colorSoft: softTint(color, 0.88),
         group:     row.day_category || 'other'

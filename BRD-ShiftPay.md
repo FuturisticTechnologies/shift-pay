@@ -201,7 +201,8 @@ After the approval window closes, the export runs **hands-off**. On a configured
 | BR-X3 | **Total monthly pay** for an employee = the sum of pay across all shift types for that month. |
 | BR-X4 | Only **approved** timesheets contribute to the totals in the export. |
 | BR-X5 | ShiftPay produces **gross shift allowance** only — no tax/statutory/net calculation. |
-| BR-X6 | Currency is taken from the catalogue (configurable per customer); the CSV states the currency. |
+| BR-X6 | Currency is taken from the catalogue (configurable per customer); the CSV states the currency. No currency is assumed: where the catalogue names none, none is shown. |
+| BR-X6a | Amounts in different currencies are **never added together or converted** (the product holds no exchange rates). A total that spans currencies is stated as one subtotal per currency, and is not used to chart or rank by cost. Zero amounts do not make a total mixed. This applies to BR-X3 and to the export's total monthly pay. |
 
 ### 9.4 CSV content (minimum columns)
 

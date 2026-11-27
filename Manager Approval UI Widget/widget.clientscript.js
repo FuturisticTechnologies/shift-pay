@@ -16,9 +16,10 @@ api.controller = function ($scope) {
   // data.rows            [{userId, name, initials, employeeId, status,
   //                        statusLabel, submittedOn, approver, actionedOn,
   //                        managerComment, mix[], totalShifts, weekdaysLogged,
-  //                        canAction, totalAmount?, currency?}]
+  //                        canAction, totalAmounts?}]
   // data.counts          {submitted, approved, rejected, notSubmitted, all}
-  // data.totals          {pendingAmount, approvedAmount, currency} | null
+  // data.totals          {pendingAmounts, approvedAmounts} | null
+  //                      each ...Amounts is [{currency, amount}], one per currency
   // data.showPay         boolean — false means amounts were never sent
   // data.weekdaysInMonth number
   // data.monthLabel      'August 2026'
@@ -375,11 +376,24 @@ api.controller = function ($scope) {
     return '○';                              // hollow circle — nothing yet
   };
 
+  /**
+   * One amount in its own currency. A code with no symbol here is printed as
+   * the code, and a missing one as a bare number — never as some other currency.
+   */
   c.money = function (amount, currency) {
     if (amount === null || amount === undefined) return '';
-    var sym = CURRENCY[currency || 'INR'] || '';
-    var n = Math.round(Number(amount) || 0);
-    return sym + groupDigits(n);
+    var n = groupDigits(Math.round(Number(amount) || 0));
+    if (!currency) return n;
+    return CURRENCY[currency] ? CURRENCY[currency] + n : currency + ' ' + n;
+  };
+
+  /** A total: one subtotal per currency, side by side and never added (BR-X6). */
+  c.moneyList = function (list) {
+    if (!list) return '';
+    return list.map(function (t) {
+      var text = c.money(t.amount, t.currency);
+      return (!t.currency && list.length > 1) ? text + ' (no currency)' : text;
+    }).join(' + ');
   };
 
 

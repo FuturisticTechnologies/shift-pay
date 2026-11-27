@@ -145,3 +145,20 @@ describe('pricing', () => {
     assert.deepEqual(agg.rows({ u_period_type: 'month' }).map((r) => [r.count, r.amount]), [[1, 0]]);
   });
 });
+
+// PC-2 / BR-X6: the currency is the catalogue's, and none is assumed.
+describe('currency', () => {
+  const written = (catalogue) => {
+    const agg = instance([logged(USER, '2026-10-05', 'day')], catalogue);
+    agg.recompute(['2026-10-05']);
+    return agg.tables.sum.map((r) => r.u_currency);
+  };
+
+  test('is taken from the catalogue', () => {
+    assert.deepEqual(written([{ sys_id: 'day', active: true, rate: '500', currency: 'USD' }]), ['USD', 'USD']);
+  });
+
+  test('is left blank when the catalogue names none', () => {
+    assert.deepEqual(written([{ sys_id: 'day', active: true, rate: '500' }]), ['', '']);
+  });
+});

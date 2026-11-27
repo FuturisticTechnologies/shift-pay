@@ -120,7 +120,7 @@ ShiftPayAggregator.prototype = {
     while (old.next()) {
       previous[old.getValue('u_shift_type')] = {
         rate:     old.getValue('u_rate_snapshot') || '0',
-        currency: old.getValue('u_currency')      || 'INR'
+        currency: old.getValue('u_currency')      || ''
       };
     }
 
@@ -141,7 +141,7 @@ ShiftPayAggregator.prototype = {
     for (var shiftId in counts) {
       var cnt = counts[shiftId];
       if (!cnt) continue;
-      var rm     = rateMap[shiftId] || previous[shiftId] || { rate: '0', currency: 'INR' };
+      var rm     = rateMap[shiftId] || previous[shiftId] || { rate: '0', currency: '' };
       var amount = cnt * parseFloat(rm.rate || 0);
 
       var ins = new GlideRecord(this.summaryTable);
@@ -155,7 +155,7 @@ ShiftPayAggregator.prototype = {
       ins.setValue('u_count',         cnt);
       ins.setValue('u_rate_snapshot', rm.rate || 0);
       ins.setValue('u_amount',        amount);
-      ins.setValue('u_currency',      rm.currency || 'INR');
+      ins.setValue('u_currency',      rm.currency);
       ins.insert();
     }
   },
@@ -192,7 +192,7 @@ ShiftPayAggregator.prototype = {
     while (gr.next()) {
       map[gr.getUniqueValue()] = {
         rate:     gr.getValue('rate')     || '0',
-        currency: gr.getValue('currency') || 'INR'
+        currency: gr.getValue('currency') || ''
       };
     }
     this._rateMap = map;

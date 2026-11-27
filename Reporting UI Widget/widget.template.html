@@ -81,7 +81,7 @@
   <div class="shift-rep__strip">
     <div class="shift-rep__stat shift-rep__stat--lead" ng-if="c.data.showPay">
       <span class="shift-rep__statk">Total cost</span>
-      <span class="shift-rep__statv">{{c.money(c.data.totals.amount)}}</span>
+      <span class="shift-rep__statv">{{c.moneyList(c.data.totals.amounts)}}</span>
       <span class="shift-rep__statn">over {{c.data.trendMonths}} months</span>
     </div>
     <div class="shift-rep__stat" ng-class="{'shift-rep__stat--lead': !c.data.showPay}">
@@ -139,8 +139,9 @@
         <div>
           <h3 class="shift-rep__panelt">Cost and volume by month</h3>
           <p class="shift-rep__panels">
-            <span ng-if="c.data.showPay">Bars are cost from the rate snapshot taken when each month was aggregated; the line is shift count.</span>
-            <span ng-if="!c.data.showPay">Bars are shift count; the line is the on-call subset.</span>
+            <span ng-if="c.chartsMoney()">Bars are cost from the rate snapshot taken when each month was aggregated; the line is shift count.</span>
+            <span ng-if="!c.chartsMoney()">Bars are shift count; the line is the on-call subset.</span>
+            <span ng-if="c.data.mixedCurrency">This period spans more than one currency, so cost is not charted: the table lists each currency separately.</span>
           </p>
         </div>
         <div class="shift-rep__seg shift-rep__seg--sm" role="group" aria-label="Months shown">
@@ -173,7 +174,7 @@
               <td class="shift-rep__num">{{t.shifts}}</td>
               <td class="shift-rep__num shift-rep__num--quiet">{{t.onCall}}</td>
               <td class="shift-rep__num shift-rep__num--quiet" ng-if="c.data.showTeam">{{t.people}}</td>
-              <td class="shift-rep__num" ng-if="c.data.showPay">{{c.money(t.amount)}}</td>
+              <td class="shift-rep__num" ng-if="c.data.showPay">{{c.moneyList(t.amounts)}}</td>
             </tr>
           </tbody>
         </table>
@@ -222,7 +223,7 @@
                 </td>
                 <td class="shift-rep__num">{{m.count}}</td>
                 <td class="shift-rep__num shift-rep__num--quiet">{{c.share(m.count)}}%</td>
-                <td class="shift-rep__num" ng-if="c.data.showPay">{{c.money(m.amount)}}</td>
+                <td class="shift-rep__num" ng-if="c.data.showPay">{{c.moneyList(m.amounts)}}</td>
               </tr>
             </tbody>
           </table>
@@ -267,7 +268,7 @@
               <td class="shift-rep__num">{{p.shifts}}</td>
               <td class="shift-rep__num shift-rep__num--quiet">{{p.onCall}}</td>
               <td class="shift-rep__num shift-rep__num--quiet">{{c.onCallShare(p)}}%</td>
-              <td class="shift-rep__num" ng-if="c.data.showPay">{{c.money(p.amount)}}</td>
+              <td class="shift-rep__num" ng-if="c.data.showPay">{{c.moneyList(p.amounts)}}</td>
             </tr>
           </tbody>
         </table>

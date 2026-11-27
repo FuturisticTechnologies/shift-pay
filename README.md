@@ -143,6 +143,8 @@ graph TD
         ENT["ShiftPayEntitlements\nCO lifecycle"]
         AGG["ShiftPayAggregator\nweekly + monthly totals"]
         RULES --> ENT
+        MONEY["ShiftPayMoney
+per-currency totals"]
     end
 
     subgraph Data["Data Layer (6 tables)"]
@@ -160,6 +162,8 @@ graph TD
     MGR --> AGG
     MGR --> DC
     REP --> RULES
+    MGR --> MONEY
+    REP --> MONEY
     RULES --> ST
     ENT --> CO
     AGG --> SUM
@@ -191,13 +195,14 @@ Client, JS, `data.month` and `input.month` are **0-indexed** (0 = January). The 
 
 ## Shared server logic
 
-Three Script Includes hold everything that more than one screen needs. Each is **parameterised by user**, so the calendar calls it for the signed-in employee and the manager widget calls it for a reportee. They are never forked — a second copy of payroll maths that drifts is a pay bug.
+Four Script Includes hold everything that more than one screen needs. Each is **parameterised by user**, so the calendar calls it for the signed-in employee and the manager widget calls it for a reportee. (`ShiftPayMoney` holds no user data and takes no parameters.) They are never forked — a second copy of payroll maths that drifts is a pay bug.
 
 | Script Include | Owns |
 |---|---|
 | `ShiftPayCalendarRules` | The catalogue read and its semantic columns, `configError` validation, the holiday set, weekend/holiday classification, and the composed allowed-shift list (`allowedForDate` / `allowedForMonth` / `isAllowedOn`). It **builds and owns** the `ShiftPayEntitlements` instance — call `rules.entitlements()` rather than constructing one alongside, or the catalogue is read twice and the two can disagree. |
 | `ShiftPayEntitlements` | The CO entitlement lifecycle: insert, consume, release, delete; the weekday-window arithmetic (`_nthWeekdayAfter`); and the ordering rules for changing a day that grants or consumes a CO (`releasePrevious` / `reserveForNew` / `commitForNew`). |
 | `ShiftPayAggregator` | Weekly and monthly aggregation with the rate snapshot. `recompute(dates)` deletes and rewrites the affected month row and each affected week row, per shift type. |
+| `ShiftPayMoney` | Totalling that may span currencies (BR-X6a). A total is a list of `{ currency, amount }`, one per currency; nothing is added across currencies or converted, and no currency is assumed. Used by the manager approval and reporting widgets. |
 
 A caller that knows only a user sys_id gets the whole rule set from `new ShiftPayCalendarRules({ userId: x })`.
 
