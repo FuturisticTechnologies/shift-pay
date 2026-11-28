@@ -88,4 +88,27 @@ describe('calendar refusals (SP-100)', () => {
     assert.equal(dayRow(tables, USER, SAT_OC).u_shift_type, 'oc');
     assert.equal(tables[TABLES.ent][0].u_co_entry, 'd-co');
   });
+
+  test('5. a CO cannot be applied in bulk and no day is written', () => {
+    const { errors, tables } = runCalendarServer({
+      user: USER,
+      input: { action: 'bulkSave', shift: 'co', dates: ['2026-10-07', '2026-10-08'], ...OCT },
+    });
+
+    assert.deepEqual(errors, [
+      'This shift type cannot be applied in bulk — please log it on each date individually.',
+    ]);
+    assert.equal(tables[TABLES.day].length, 0);
+  });
+
+  test('6. submitting with unlogged weekdays is refused and the month stays open', () => {
+    // October 2026 has 22 weekdays; nothing is logged.
+    const { errors, tables } = runCalendarServer({
+      user: USER,
+      input: { action: 'submitMonth', ...OCT },
+    });
+
+    assert.deepEqual(errors, ['Cannot submit: 22 weekday(s) still unlogged.']);
+    assert.equal(tables[TABLES.lock].length, 0);
+  });
 });
