@@ -47,7 +47,15 @@
       coEnabled:        true
     });
 
-    var open = rules.entitlements().loadUnconsumed();
+    // Unused is not the same as remaining: loadUnconsumed also returns rows
+    // whose window has closed. Those are not counted, matching what Reports
+    // calls open rather than expired. A window ending today is still open.
+    var unused = rules.entitlements().loadUnconsumed();
+    var today  = todayKey();
+    var open   = [];
+    for (var u = 0; u < unused.length; u++) {
+      if (unused[u].window_end >= today) open.push(unused[u]);
+    }
     data.coBalance = open.length;
 
     // Earliest window end, so the tile can say what is about to lapse rather
@@ -59,6 +67,16 @@
       }
     }
   }
+
+  /** Today in the user's time zone, as 'YYYY-MM-DD'. */
+  function todayKey() {
+    var g = new GlideDateTime();
+    return g.getYearLocalTime() + '-' +
+           pad(parseInt(g.getMonthLocalTime(), 10)) + '-' +
+           pad(parseInt(g.getDayOfMonthLocalTime(), 10));
+  }
+
+  function pad(n) { return n < 10 ? '0' + n : '' + n; }
 
   function pageUrl(value, fallback) {
     var pageId = String(value || fallback);
